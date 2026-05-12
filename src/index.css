@@ -1,0 +1,244 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 20% 98%;
+    --foreground: 220 25% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 14%;
+
+    --primary: 160 35% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 35 60% 52%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 40 15% 94%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 220 60% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 12% 89%;
+    --input: 40 12% 89%;
+    --ring: 160 35% 40%;
+
+    --radius: 0.75rem;
+
+    --sage-50: 150 20% 97%;
+    --sage-100: 150 18% 93%;
+    --sage-200: 155 16% 85%;
+    --sage-500: 160 25% 45%;
+    --sage-600: 160 35% 40%;
+    --sage-700: 160 40% 30%;
+
+    --amber-50: 40 60% 97%;
+    --amber-100: 38 55% 90%;
+    --amber-400: 35 85% 55%;
+    --amber-500: 35 60% 52%;
+    --amber-600: 30 65% 42%;
+
+    --sky-50: 210 50% 97%;
+    --sky-100: 210 45% 92%;
+    --sky-500: 220 60% 55%;
+
+    --rose-50: 350 50% 97%;
+    --rose-100: 350 40% 92%;
+    --rose-500: 350 65% 55%;
+
+    --surface-warm: 35 30% 96%;
+    --surface-cool: 210 25% 96%;
+
+    --sidebar-background: 150 15% 97%;
+    --sidebar-foreground: 220 25% 14%;
+    --sidebar-primary: 160 35% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 18% 93%;
+    --sidebar-accent-foreground: 220 25% 14%;
+    --sidebar-border: 40 12% 89%;
+    --sidebar-ring: 160 35% 40%;
+
+    --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+  }
+
+  .dark {
+    --background: 220 20% 8%;
+    --foreground: 40 15% 92%;
+    --card: 220 18% 12%;
+    --card-foreground: 40 15% 92%;
+    --popover: 220 18% 12%;
+    --popover-foreground: 40 15% 92%;
+    --primary: 160 35% 50%;
+    --primary-foreground: 220 20% 8%;
+    --secondary: 35 60% 52%;
+    --secondary-foreground: 220 20% 8%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 40 10% 60%;
+    --accent: 220 55% 60%;
+    --accent-foreground: 220 20% 8%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 40 15% 92%;
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 160 35% 50%;
+    --sidebar-background: 220 18% 10%;
+    --sidebar-foreground: 40 15% 92%;
+    --sidebar-primary: 160 35% 50%;
+    --sidebar-primary-foreground: 220 20% 8%;
+    --sidebar-accent: 220 15% 16%;
+    --sidebar-accent-foreground: 40 15% 92%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 160 35% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+  }
+}
+
+@layer components {
+  .card-warm {
+    @apply bg-card rounded-xl border border-border shadow-sm;
+  }
+
+  .card-interactive {
+    @apply card-warm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5;
+  }
+
+  .surface-sage {
+    background-color: hsl(var(--sage-50));
+  }
+
+  .surface-amber {
+    background-color: hsl(var(--amber-50));
+  }
+
+  .surface-sky {
+    background-color: hsl(var(--sky-50));
+  }
+
+  .surface-rose {
+    background-color: hsl(var(--rose-50));
+  }
+
+  .badge-sage {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background-color: hsl(var(--sage-100));
+    color: hsl(var(--sage-700));
+  }
+
+  .badge-amber {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background-color: hsl(var(--amber-100));
+    color: hsl(var(--amber-600));
+  }
+
+  .badge-sky {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background-color: hsl(var(--sky-100));
+    color: hsl(var(--sky-500));
+  }
+
+  .badge-rose {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background-color: hsl(var(--rose-100));
+    color: hsl(var(--rose-500));
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(var(--sage-50)) 0%, hsl(var(--amber-50)) 50%, hsl(var(--sky-50)) 100%);
+  }
+
+  .gradient-sage {
+    background: linear-gradient(135deg, hsl(var(--sage-500)) 0%, hsl(var(--sage-700)) 100%);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .progress-ring {
+    @apply rounded-full;
+    background: conic-gradient(hsl(var(--primary)) var(--progress, 0%), hsl(var(--muted)) 0%);
+  }
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fadeUp 0.5s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  header, nav, button, .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .card-warm, .surface-sage, .surface-amber, .surface-sky, .surface-rose {
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+    background: white !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1rem !important;
+  }
+  .badge-sage, .badge-amber, .badge-sky, .badge-rose {
+    border: 1px solid currentColor !important;
+    background: transparent !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

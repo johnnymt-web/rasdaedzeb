@@ -1,0 +1,1348 @@
+{
+  "common": {
+    "pathfinder": "Pathfinder",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "profile": "My Profile",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "and": "and",
+    "back_hub": "Back to Hub",
+    "view_history": "View History",
+    "to": "to",
+    "previous": "Previous",
+    "next": "Next",
+    "more_pages": "More pages",
+    "close": "Close",
+    "toggle_sidebar": "Toggle Sidebar",
+    "prev_slide": "Previous slide",
+    "next_slide": "Next slide",
+    "user": "there",
+    "likert": {
+      "very_inaccurate": "Very Inaccurate",
+      "moderately_inaccurate": "Moderately Inaccurate",
+      "neither": "Neither",
+      "moderately_accurate": "Moderately Accurate",
+      "very_accurate": "Very Accurate"
+    },
+    "pathway_types": {
+      "university": "University",
+      "vocational": "Vocational",
+      "apprenticeship": "Apprenticeship",
+      "self-directed": "Self-Directed"
+    }
+  },
+  "student_skills_page": {
+    "back": "Back to Journey",
+    "title": "My Employability Skills 🚀",
+    "subtitle": "These are the practical steps that prepare you for life after school. Track your progress and get verified by your guidance counselor.",
+    "why_matter": "Why these skills matter",
+    "verified_title": "Verified Readiness",
+    "verified_desc": "When a counselor \"Verifies\" a skill, it serves as an official endorsement of your readiness for university or the workplace.",
+    "transition_title": "Transition Support",
+    "transition_desc": "Students who complete these checks report feeling 40% more confident during their first semester of higher education.",
+    "counselor_review_title": "Counselor Review",
+    "counselor_review_desc": "Once you've self-marked a skill as complete, your assigned counselor will be notified to review it. They may schedule a short meeting to help you finalize your resume or practice interviews."
+  },
+  "assessment": {
+    "riasec": {
+      "title": "Interest Discovery",
+      "results_title": "Your Career Interest Profile",
+      "results_desc": "Here's a snapshot of your current interests.",
+      "complete_label": "Assessment Complete",
+      "self_reflection": "Self-Reflection",
+      "questions": {
+        "1": "I prefer working with tools, machines, or doing physical tasks.",
+        "2": "I enjoy building, fixing, or assembling things with my hands.",
+        "3": "I like working outdoors or being physically active.",
+        "4": "I'm interested in how machines and technology work.",
+        "5": "I prefer practical, hands-on tasks over theoretical ones.",
+        "6": "I enjoy figuring out how things work by taking them apart or experimenting.",
+        "7": "I'm curious about science and enjoy research or analysis.",
+        "8": "I like solving complex puzzles and brain teasers.",
+        "9": "I enjoy reading about new discoveries or scientific breakthroughs.",
+        "10": "I prefer to think through problems carefully before acting.",
+        "11": "I enjoy creating things — art, music, writing, or design.",
+        "12": "I like expressing myself through creative projects.",
+        "13": "I appreciate beautiful or unusual designs and aesthetics.",
+        "14": "I enjoy performing, whether it's music, drama, or public speaking.",
+        "15": "I prefer open-ended tasks where I can use my imagination.",
+        "16": "I like helping people solve their problems or feel better.",
+        "17": "I like teaching, mentoring, or coaching others.",
+        "18": "I enjoy working as part of a team rather than alone.",
+        "19": "I'm good at understanding other people's feelings.",
+        "20": "I feel energised when I can make a positive difference in someone's life.",
+        "21": "I like leading a group and making decisions.",
+        "22": "I enjoy persuading or influencing others.",
+        "23": "I'm interested in starting projects or businesses.",
+        "24": "I like taking risks and competing to win.",
+        "25": "I feel confident speaking up in group settings.",
+        "26": "I enjoy organizing information, following clear steps, and keeping things tidy.",
+        "27": "I like working with numbers, data, or spreadsheets.",
+        "28": "I prefer clear instructions and well-defined tasks.",
+        "29": "I'm good at paying attention to details and spotting errors.",
+        "30": "I like creating order and structure in my environment."
+      },
+      "complete_btn": "Complete Discovery",
+      "descriptions": {
+        "Realistic": { "tagline": "The Builder — practical, hands-on, and action-oriented", "careers": ["Engineering", "Trades", "Architecture"] },
+        "Investigative": { "tagline": "The Thinker — curious, analytical, and research-driven", "careers": ["Science", "Medicine", "Technology"] },
+        "Artistic": { "tagline": "The Creator — imaginative, expressive, and original", "careers": ["Design", "Writing", "Performing Arts"] },
+        "Social": { "tagline": "The Helper — empathetic, supportive, and people-focused", "careers": ["Teaching", "Counseling", "Healthcare"] },
+        "Enterprising": { "tagline": "The Leader — ambitious, persuasive, and goal-driven", "careers": ["Business", "Sales", "Entrepreneurship"] },
+        "Conventional": { "tagline": "The Organiser — detail-oriented, structured, and reliable", "careers": ["Accounting", "Administration", "Finance"] }
+      },
+      "categories": {
+        "Realistic": "Realistic",
+        "Investigative": "Investigative",
+        "Artistic": "Artistic",
+        "Social": "Social",
+        "Enterprising": "Enterprising",
+        "Conventional": "Conventional"
+      }
+    },
+    "skills": {
+      "title": "Skills Readiness",
+      "results_title": "Your Skills & Readiness Profile",
+      "results_desc": "Here's a snapshot of your current skills.",
+      "questions": {
+        "101": "I can clearly explain my ideas to others in writing or speaking.",
+        "102": "I enjoy finding creative solutions to difficult challenges.",
+        "103": "I am comfortable using new digital tools and software.",
+        "104": "I work well with others to achieve a common goal.",
+        "105": "I can easily adjust when plans change suddenly.",
+        "106": "I am good at active listening and empathy.",
+        "107": "I like breaking down large problems into smaller steps.",
+        "108": "I understand how to stay safe and professional online."
+      },
+      "complete_btn": "Complete Check",
+      "descriptions": {
+        "Communication": { "tagline": "Effective expression and active listening", "careers": ["Journalism", "Public Relations", "Management"] },
+        "Problem Solving": { "tagline": "Logical analysis and creative solutions", "careers": ["Software Dev", "Engineering", "Analysis"] },
+        "Digital Literacy": { "tagline": "Fluency with modern technology and data", "careers": ["IT Support", "Design", "Digital Marketing"] },
+        "Teamwork": { "tagline": "Collaborating effectively in diverse groups", "careers": ["Project Management", "Operations", "Sports"] },
+        "Adaptability": { "tagline": "Flexibility and resilience in changing environments", "careers": ["Crisis Management", "Strategy", "Teaching"] }
+      }
+    },
+    "options": {
+      "1": "Not like me",
+      "2": "A little like me",
+      "3": "Somewhat like me",
+      "4": "A lot like me",
+      "5": "Very much like me"
+    },
+    "nav": {
+      "previous": "Previous",
+      "next": "Next Question"
+    },
+    "toast": {
+      "success": "Assessment saved successfully!",
+      "error": "Could not save results: {{error}}"
+    },
+    "history": {
+      "title": "Assessment History",
+      "count_label": "{{count}} assessment{{plural}} completed",
+      "retake": "Retake Discovery",
+      "loading": "Loading discovery history…",
+      "no_data": "No discovery data yet",
+      "no_data_desc": "Take the career interest assessment to see your progress trends here.",
+      "start_btn": "Start Discovery",
+      "comparison_title": "Latest vs Previous",
+      "compared_to": "Compared to {{date}}",
+      "radar_title": "RIASEC Profile Comparison",
+      "radar_desc_single": "Complete another assessment to compare profiles over time.",
+      "radar_desc_multi": "Showing your {{count}} most recent interest profiles",
+      "latest_badge": "Latest",
+      "skills_radar_title": "Skills Check Comparison",
+      "skills_radar_desc_single": "Complete another skills check to compare your proficiency over time.",
+      "skills_radar_desc_multi": "Showing your {{count}} most recent skills profiles",
+      "type_discovery": "Discovery",
+      "type_skills": "Skills Check"
+    },
+    "big_five": {
+      "title": "Personality Profile",
+      "subtitle": "IPIP-NEO-50 Big Five Assessment",
+      "questions": {
+        "e1": "I am the life of the party.",
+        "e2": "I don't talk a lot.",
+        "e3": "I feel comfortable around people.",
+        "e4": "I keep in the background.",
+        "e5": "I start conversations.",
+        "e6": "I have little to say.",
+        "e7": "I talk to a lot of different people at parties.",
+        "e8": "I don't like to draw attention to myself.",
+        "e9": "I don't mind being the center of attention.",
+        "e10": "I am quiet around strangers.",
+        "a1": "I feel little concern for others.",
+        "a2": "I am interested in people.",
+        "a3": "I insult people.",
+        "a4": "I sympathize with others' feelings.",
+        "a5": "I am not interested in other people's problems.",
+        "a6": "I have a soft heart.",
+        "a7": "I am not really interested in others.",
+        "a8": "I take time out for others.",
+        "a9": "I feel others' emotions.",
+        "a10": "I make people feel at ease.",
+        "c1": "I am always prepared.",
+        "c2": "I leave my belongings around.",
+        "c3": "I pay attention to details.",
+        "c4": "I make a mess of things.",
+        "c5": "I get chores done right away.",
+        "c6": "I often forget to put things back in their proper place.",
+        "c7": "I like order.",
+        "c8": "I shirk my duties.",
+        "c9": "I follow a schedule.",
+        "c10": "I am exacting in my work.",
+        "n1": "I get stressed out easily.",
+        "n2": "I am relaxed most of the time.",
+        "n3": "I worry about things.",
+        "n4": "I seldom feel blue.",
+        "n5": "I am easily disturbed.",
+        "n6": "I get upset easily.",
+        "n7": "I change my mood a lot.",
+        "n8": "I have frequent mood swings.",
+        "n9": "I get irritated easily.",
+        "n10": "I often feel blue.",
+        "o1": "I have a rich vocabulary.",
+        "o2": "I have difficulty understanding abstract ideas.",
+        "o3": "I have a vivid imagination.",
+        "o4": "I am not interested in abstract ideas.",
+        "o5": "I have excellent ideas.",
+        "o6": "I do not have a good imagination.",
+        "o7": "I am quick to understand things.",
+        "o8": "I use difficult words.",
+        "o9": "I spend time reflecting on things.",
+        "o10": "I am full of ideas."
+      },
+      "answered": "{{count}} of {{total}} answered",
+      "page": "Page {{current}} of {{total}}",
+      "submit": "Submit Assessment",
+      "toast_success": "Assessment Complete!",
+      "toast_success_desc": "Your Big Five personality profile has been saved.",
+      "toast_error": "Error",
+      "toast_error_desc": "Failed to save assessment. Please try again."
+    }
+  },
+  "riasec": {
+    "Realistic": "Realistic",
+    "Investigative": "Investigative",
+    "Artistic": "Artistic",
+    "Social": "Social",
+    "Enterprising": "Enterprising",
+    "Conventional": "Conventional"
+  },
+  "assessment_results": {
+    "big_five": {
+      "title": "Personality Profile (Big Five)",
+      "subtitle": "IPIP-NEO-50 Big Five Assessment",
+      "analytical_insight": "Analytical Insight",
+      "footer": "Based on the IPIP-NEO-50 assessment • Completed {{date}}",
+      "traits": {
+        "openness": "Openness",
+        "conscientiousness": "Conscientiousness",
+        "extraversion": "Extraversion",
+        "agreeableness": "Agreeableness",
+        "neuroticism": "Emotional Stability"
+      },
+      "insights": {
+        "openness": "Your profile shows high cognitive flexibility and a love for complex ideas. You thrive in environments that reward innovation and non-traditional thinking.",
+        "conscientiousness": "You are highly reliable and disciplined. Your strength lies in execution, planning, and maintaining high standards in your work.",
+        "extraversion": "You draw energy from social interaction. This natural sociability makes you an effective communicator and influencer in team settings.",
+        "agreeableness": "You have a natural inclination toward cooperation and empathy. You are a 'bridge-builder' who excels in collaborative and person-centered environments.",
+        "neuroticism": "Your high emotional stability suggests exceptional resilience. You maintain clarity and composure even in high-pressure or unpredictable situations."
+      }
+    },
+    "eq": {
+      "title": "Emotional Intelligence (EQ)",
+      "analytical_insight": "Emotional Impact Analysis",
+      "footer": "Based on EQ-i Domains • Completed {{date}}",
+      "domains": {
+        "Self-Awareness": "Self-Awareness",
+        "Self-Management": "Self-Management",
+        "Social Awareness": "Social Awareness",
+        "Relationship Management": "Relationship Management"
+      },
+      "insights": {
+        "Self-Awareness": "Your primary strength is self-reflection. You have a keen understanding of how your internal state affects your choices, which is the foundation of authentic leadership.",
+        "Self-Management": "You possess high self-regulation. You are able to pivot under pressure and maintain a productive focus when others might feel overwhelmed.",
+        "Social Awareness": "You are highly attuned to the emotional 'frequency' of others. This empathy allows you to navigate diverse groups and understand unspoken dynamics.",
+        "Relationship Management": "You excel at interpersonal influence. You naturally know how to build bridges, resolve conflicts, and inspire others toward a shared vision."
+      }
+    },
+    "caas": {
+      "title": "Career Adaptability (CAAS)",
+      "analytical_insight": "Adaptability Profile",
+      "footer": "Based on Savickas CAAS Scale • Completed {{date}}",
+      "factors": {
+        "Concern": "Concern",
+        "Control": "Control",
+        "Curiosity": "Curiosity",
+        "Confidence": "Confidence"
+      },
+      "insights": {
+        "Concern": "Your high Concern score shows a strong orientation toward your professional future. You are proactive in planning and anticipating next steps.",
+        "Control": "You show high Control over your career decisions. You feel empowered to make choices and take responsibility for your professional path.",
+        "Curiosity": "Your high Curiosity indicates a deep drive to explore different options and learn about the world of work without fear of the unknown.",
+        "Confidence": "Your high Confidence means you believe in your ability to solve problems and overcome the obstacles that come with career changes."
+      },
+      "overall": "Overall Adapt-Ability",
+      "levels": {
+        "excellent": "Excellent — You are highly adaptable to career changes.",
+        "good": "Good — You have solid career adaptability skills.",
+        "developing": "Developing — Focus on building your career readiness.",
+        "emerging": "Emerging — Consider exploring more career development activities."
+      },
+      "sub_descs": {
+        "concern": "Planning for your future",
+        "control": "Taking ownership of decisions",
+        "curiosity": "Exploring career options",
+        "confidence": "Believing in your abilities"
+      }
+    },
+    "work_values": {
+      "title": "Work Values (O*NET)",
+      "analytical_insight": "Motivational Driver",
+      "footer": "Based on O*NET Work Values Inventory • Completed {{date}}",
+      "values": {
+        "achievement": "Achievement",
+        "independence": "Independence",
+        "recognition": "Recognition",
+        "relationships": "Relationships",
+        "support": "Support",
+        "working_conditions": "Working Conditions"
+      },
+      "insights": {
+        "achievement": "You are primarily motivated by a sense of accomplishment. You thrive in roles that allow you to use your strongest abilities and see visible results of your hard work.",
+        "independence": "Freedom and autonomy are your core requirements. You are most satisfied when you can plan your own work and make decisions with minimal supervision.",
+        "recognition": "You value status and potential for advancement. You are driven by environments that offer prestige and clear paths for professional growth and leadership.",
+        "relationships": "The 'human' aspect of work is vital for you. You find meaning in providing service to others and working in a friendly, non-competitive environment.",
+        "support": "You value stability and supportive management. You prefer organizations with strong leadership that stands behind its employees and provides a secure future.",
+        "working_conditions": "You prioritize the environment and structure of the work. You are most productive when your physical surroundings and the logistics of the job are consistent and well-managed."
+      }
+    },
+    "skills_gap": {
+      "title": "Skills Gap Analysis",
+      "readiness": "Readiness",
+      "matched_count": "{{count}} skills matched",
+      "to_develop_count": "{{count}} skills to develop",
+      "status": {
+        "match": "Match",
+        "close": "Close",
+        "gap": "Gap"
+      },
+      "levels": {
+        "you": "You",
+        "required": "Required"
+      },
+      "cta": "Take the Employability Skills Check to update your skill levels for more accurate analysis.",
+      "verified_readiness": "Verified Readiness",
+      "transition_support": "Transition Support",
+      "comparison_title": "Discovery vs. Skills",
+      "discovery_label": "Career Discovery",
+      "discovery_desc": "Finding your \"Why\" through interest exploration.",
+      "employability_label": "Employability Skills",
+      "employability_desc": "Building your \"How\" through practical preparation.",
+      "error": "Unable to load skills analysis."
+    },
+    "onet": {
+      "title": "Top O*NET Career Matches",
+      "job_zone": "Job Zone",
+      "key_tasks": "Key Tasks",
+      "top_skills": "Top Skills",
+      "education": "Education",
+      "salary_insight": "Salary Insight",
+      "median_salary": "Median Salary: {{salary}}",
+      "salary_fallback": "Salary information varies by region.",
+      "national_averages": "National averages shown. Local salaries may vary based on city and experience.",
+      "view_on_onet": "View on O*NET Online",
+      "error": "Unable to load career matches. Please try again later.",
+      "outlook": {
+        "Bright Outlook": "Bright Outlook",
+        "Average": "Average",
+        "Below Average": "Below Average"
+      }
+    }
+  },
+  "pathway": {
+    "title": "My Pathway Plan 🗺️",
+    "browse": "Browse Connections",
+    "empty": "You haven't saved any destination pathways yet.",
+    "start": "Start Exploring",
+    "advice_title": "Need advice?",
+    "advice_btn": "Chat with AI Coach"
+  },
+  "subjects": {
+    "no_interests": "No Interests Found",
+    "take_assessment": "Take Assessment",
+    "browse_all": "Browse all subjects instead"
+  },
+  "profile_page": {
+    "title": "My Profile",
+    "desc": "Manage your personal information and account settings.",
+    "personal_info": "Personal Information",
+    "connections": "Account Connections",
+    "no_children": "No children currently linked to your account."
+  },
+  "reflection": {
+    "title": "Take a moment to reflect",
+    "complete": "Reflection Complete",
+    "saved_desc": "Your thoughts have been saved to your portfolio. Taking time to reflect helps you build a clearer picture of your future.",
+    "your_reflection": "Your reflection:",
+    "placeholder": "I think I might like...",
+    "save_btn": "Save Reflection",
+    "toast_success": "Reflection saved!",
+    "toast_error": "Failed to save reflection",
+    "prefix": "Looking at your strong interest in {{interest}} activities, ",
+    "prompts": {
+      "0": "how do your top interests align with what you enjoy doing in your free time?",
+      "1": "what surprised you about your career interests profile?",
+      "2": "which of the suggested career families excites you the most and why?",
+      "3": "how can you explore these interests further at school?"
+    }
+  },
+  "nav": {
+    "explore": "Explore Careers",
+    "student": {
+      "journey": "My Journey",
+      "discovery_hub": "Discovery Hub",
+      "report": "Discovery Profile",
+      "skills": "Skills Check",
+      "coach": "Career Coach"
+    },
+    "parent": {
+      "child": "My Child",
+      "support": "How to Support",
+      "resources": "Events & Resources",
+      "assistant": "Parent Assistant",
+      "hub": "Resource Hub"
+    },
+    "counselor": {
+      "attention": "Students Needing Attention",
+      "insights": "Groups & Insights",
+      "notes": "Private Notes",
+      "gatsby": "Gatsby Benchmarks"
+    },
+    "admin": {
+      "overview": "School Overview",
+      "insights": "Insights Agent",
+      "users": "User Accounts",
+      "setup": "Platform Setup",
+      "bulk": "Bulk Management",
+      "settings": "Settings"
+    }
+  },
+  "hero": {
+    "badge": "School Career Guidance Platform",
+    "title": "Every student deserves a future they're excited about",
+    "subtitle": "A comprehensive, school-wide career development program that helps students discover who they are, explore what's possible, and plan their next steps — with support every step of the way.",
+    "cta_signup": "Sign Up Now",
+    "cta_signin": "Sign In",
+    "grades": "Grades 7–12",
+    "multilingual": "Multilingual",
+    "ai_powered": "AI-Powered",
+    "alt": "Students exploring career paths together"
+  },
+  "features": {
+    "title": "A complete guidance ecosystem",
+    "subtitle": "Not just a career test — a developmental, multi-year program that grows with every student.",
+    "items": {
+      "discovery": {
+        "title": "Self-Discovery",
+        "description": "Guided assessments help students understand their interests, strengths, and values through age-appropriate activities."
+      },
+      "exploration": {
+        "title": "Career Exploration",
+        "description": "Browse career families, real-world roles, pathways, and day-in-the-life stories to spark curiosity."
+      },
+      "planning": {
+        "title": "Pathway Planning",
+        "description": "Map out next steps across university, vocational, apprenticeship, entrepreneurship, and more."
+      },
+      "family": {
+        "title": "Family Engagement",
+        "description": "Parent-friendly reports and discussion guides that encourage supportive conversations at home."
+      },
+      "counselor": {
+        "title": "Counselor & Admin Tools",
+        "description": "Priority dashboards, intervention tracking, meeting logs, and school-wide analytics."
+      },
+      "coach": {
+        "title": "AI Career Coach",
+        "description": "Safe, age-appropriate AI agents that help students explore, reflect, and plan — with human oversight built in."
+      }
+    }
+  },
+  "journey": {
+    "title": "A journey, not a one-time test",
+    "subtitle": "Career guidance develops over time. Our program grows with each student across their school years.",
+    "stages": {
+      "discovery": {
+        "grade": "Grades 7–8",
+        "title": "Discover Myself",
+        "description": "Early self-discovery through interests, strengths, and values. Simple activities with no pressure."
+      },
+      "exploration": {
+        "grade": "Grades 9–10",
+        "title": "Explore Possibilities",
+        "description": "Deeper career profiling, subject-choice support, and exposure to the world of work."
+      },
+      "planning": {
+        "grade": "Grades 11–12",
+        "title": "Plan My Path",
+        "description": "Pathway planning, application readiness, portfolio building, and transition support."
+      },
+      "launch": {
+        "grade": "Beyond",
+        "title": "Launch with Confidence",
+        "description": "Employability skills, interview prep, personal statements, and real-world readiness."
+      }
+    }
+  },
+  "roles": {
+    "title": "Built for everyone in the school community",
+    "subtitle": "Each role gets a tailored experience designed around what they need most.",
+    "items": {
+      "student": {
+        "title": "Students",
+        "subtitle": "Discover, Explore, Plan",
+        "description": "Complete guided activities, explore careers, build your personal profile, and get AI-powered support along your journey.",
+        "cta": "Enter as Student"
+      },
+      "parent": {
+        "title": "Parents",
+        "subtitle": "Understand & Support",
+        "description": "See your child's interests, get discussion guides, and learn how to support their exploration without pressure.",
+        "cta": "Enter as Parent"
+      },
+      "counselor": {
+        "title": "Counselors",
+        "subtitle": "Guide & Intervene",
+        "description": "Track student progress, prioritize who needs attention, plan meetings, and use AI copilot for workflow efficiency.",
+        "cta": "Enter as Counselor"
+      },
+      "admin": {
+        "title": "Administrators",
+        "subtitle": "Oversee & Improve",
+        "description": "Monitor school-wide participation, spot trends, manage program cycles, and ensure quality guidance delivery.",
+        "cta": "Enter as Admin"
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to continue your journey",
+      "submit": "Sign in",
+      "forgot": "Forgot your password?",
+      "no_account": "Don't have an account?",
+      "signup_link": "Sign up"
+    },
+    "signup": {
+      "title": "Create your account",
+      "subtitle": "Get started with Pathfinder",
+      "submit": "Create account",
+      "already_account": "Already have an account?",
+      "signin_link": "Sign in",
+      "full_name": "Full name",
+      "full_name_placeholder": "Your full name",
+      "i_am_a": "I am a…",
+      "grade_label": "What grade are you in?",
+      "grade_placeholder": "Select your grade",
+      "confirm_password": "Confirm Password",
+      "confirm_password_placeholder": "Repeat your password",
+      "success_title": "Account created! 🎉",
+      "success_desc": "Check your email to confirm your account, then log in.",
+      "error_passwords_match": "Passwords don't match",
+      "error_passwords_match_desc": "Please make sure your passwords match exactly."
+    },
+    "form": {
+      "email": "Email",
+      "email_placeholder": "you@school.edu",
+      "password": "Password",
+      "password_placeholder": "At least 6 characters",
+      "submitting": "Please wait…"
+    },
+    "roles": {
+      "student": { "label": "Student", "desc": "Explore careers & interests" },
+      "parent": { "label": "Parent / Guardian", "desc": "Support your child's journey" },
+      "counselor": { "label": "Counselor", "desc": "Guide and support students" },
+      "admin": { "label": "Administrator", "desc": "Manage school program" }
+    },
+    "branding": {
+      "title_discover": "Discover your path.",
+      "title_step": "One step at a time.",
+      "desc": "A trusted career guidance platform that helps students explore their interests, strengths, and future pathways — with support from counselors, parents, and AI."
+    },
+    "finalizing": {
+      "title": "Finalizing your account...",
+      "desc": "We're setting up your personalized dashboard. This usually takes just a few seconds.",
+      "refresh": "Refresh Page"
+    }
+  },
+  "dashboard": {
+    "student": {
+      "welcome": "Welcome back, {{name}} 👋",
+      "progress_subtitle": "You're making great progress on your journey. Here's what's next.",
+      "school_loading": "Loading School...",
+      "counselor_label": "Counselor:",
+      "counselor_loading": "Loading...",
+      "unknown_school": "Unassigned School",
+      "unknown_counselor": "Unassigned Counselor",
+      "chat": "Chat",
+      "journey_title": "My Journey",
+      "journey_progress": "{{completed}} of {{total}} completed",
+      "journey_steps": {
+        "assessment": "Career Interest Assessment",
+        "profile": "Discovery Profile",
+        "skills": "Employability Skills Check",
+        "portfolio": "Portfolio & Goals",
+        "start_now": "Start now",
+        "view_trends": "View trends",
+        "mark_skills": "Mark skills",
+        "open_portfolio": "Open portfolio",
+        "locked": "Locked",
+        "completed": "Completed"
+      },
+      "insight_title": "Here's what we noticed",
+      "loading_results": "Loading your results…",
+      "top_interests": "Your top interest areas are {{list}}. These are great starting points for exploration!",
+      "riasec_profile": "Your RIASEC Profile",
+      "skills_profile": "Your Skills Profile",
+      "full_report": "See my full report",
+      "compare": "Compare over time",
+      "no_assessment": "Complete your first assessment to see your interest profile here.",
+      "actions_needed": "Actions Needed",
+      "assigned_by": "Assigned by your counselor",
+      "coach": {
+        "title": "AI Career Coach",
+        "desc": "Have questions about your results or want to explore ideas? I'm here to help.",
+        "cta": "Start a conversation",
+        "prompts": {
+          "match": "What careers match my interests?",
+          "strengths": "Help me reflect on my strengths",
+          "subjects": "What subjects should I explore?"
+        }
+      },
+      "quick_explore": {
+        "title": "Quick Explore",
+        "careers": { "label": "Explore Careers", "desc": "Browse 6 RIASEC families" },
+        "pathways": { "label": "Pathway Explorer", "desc": "Search all 60+ degrees & trades" },
+        "history": { "label": "Assessment History", "desc": "Compare results over time" },
+        "opportunities": { "label": "Opportunities", "desc": "Internships & Job Shadowing" }
+      }
+    }
+  },
+  "report": {
+    "no_assessment": "No completed assessment found",
+    "go_dashboard": "Go to Dashboard",
+    "back": "Back to Journey",
+    "title": "Your Career Interest Profile",
+    "subtitle": "Here's what your responses tell us — remember, this is a starting point for exploration!",
+    "pdf": "PDF",
+    "what_means": "What this means",
+    "meaning_desc": "You are primarily drawn to <strong>{{primary}}</strong> and <strong>{{secondary}}</strong>. There are many exciting paths that combine these interests — and you don't have to choose just one right now.",
+    "meaning_unknown": "We're still learning about your interests! Try taking the assessment again or exploring different career families to see what resonates with you.",
+    "strongest_interests": "Your Strongest Interests",
+    "unknown": "Unknown",
+    "career_families": "Career Families to Explore",
+    "career_families_desc": "These broad areas connect well with your interests.",
+    "explore": "Explore",
+    "subjects": "Subjects to Consider",
+    "subjects_desc": "These subjects may connect well with your interest areas.",
+    "next_steps": "Suggested Next Steps",
+    "actions": {
+      "0": "Research a professional whose work involves your top interests",
+      "1": "Look into a university program related to your interests",
+      "2": "Talk to your counselor about subject choices",
+      "3": "Write a short reflection below about what surprised you"
+    },
+    "disclaimer": "This report is for exploration and discussion only. It reflects your current responses and is not a fixed diagnosis or prediction. Your interests, strengths, and goals will evolve over time. Talk to your counselor for more personalized guidance."
+  },
+  "portfolio": {
+    "goal_saved_locally": "Goal saved locally (Offline Mode)",
+    "goal_added": "Goal added!",
+    "back": "Back to Dashboard",
+    "title": "My Portfolio",
+    "subtitle": "Your aggregated career explorations, saves, and personal goals.",
+    "action_goals": "Action Goals",
+    "goal_placeholder": "e.g., Talk to counselor about computer science...",
+    "no_goals": "No goals added yet.",
+    "past_reflections": "Past Reflections",
+    "no_reflections": "No reflections saved yet.",
+    "saved_subjects": "Saved Subjects",
+    "no_subjects": "No subjects saved.",
+    "saved_careers": "Saved Careers",
+    "no_careers": "No careers saved.",
+    "saved_pathways": "Saved Pathways",
+    "no_pathways": "No pathways saved.",
+    "interest_families": "Interest Families",
+    "no_families": "No families saved."
+  },
+  "bands": {
+    "discovery": {
+      "dashboardSubtitle": "Let's discover what you enjoy and what you might be good at. There are no wrong answers!",
+      "reportInsight": "At this stage, it's all about broad exploration. Don't worry about choosing a career yet. Just look for subjects and activities that sound fun and interesting to you.",
+      "coachPrompt": "I'm in Grade 7 or 8. Help me discover broad interests without pressure."
+    },
+    "alignment": {
+      "dashboardSubtitle": "Let's connect your interests to your upcoming subject choices.",
+      "reportInsight": "Now is a good time to start looking for patterns in your interests. These patterns can help you decide which subjects to focus on in your final school years.",
+      "coachPrompt": "I'm in Grade 9 or 10. Help me connect my interests to my school subject choices."
+    },
+    "decision": {
+      "dashboardSubtitle": "Let's focus your plan for life after school.",
+      "reportInsight": "Your interests are becoming clearer. Let's start looking at specific pathways — university courses, apprenticeships, or vocational training — that align with these interests.",
+      "coachPrompt": "I'm in Grade 11 or 12. Help me explore specific pathways like university or apprenticeships."
+    },
+    "default": {
+      "dashboardSubtitle": "Start your career exploration journey by taking the assessment.",
+      "reportInsight": "Your interests, strengths, and goals will evolve over time. Use this report as a starting point for exploration.",
+      "coachPrompt": "Help me explore my career interests."
+    }
+  },
+  "report_strategic": {
+    "portrait_title": "Strategic Professional Portrait",
+    "persona_prefix": "The",
+    "personas": {
+      "Precision Engineer": "Precision Engineer",
+      "Visionary Researcher": "Visionary Researcher",
+      "Creative Catalyst": "Creative Catalyst",
+      "Empathetic Strategist": "Empathetic Strategist",
+      "Dynamic Growth Leader": "Dynamic Growth Leader",
+      "Operational Architect": "Operational Architect",
+      "Balanced Professional": "Balanced Professional"
+    },
+    "portrait_desc": "A multidimensional profile that bridges the gap between <strong>{{primary}}</strong> interests and the strategic capacity of {{capacity}} high-performer.",
+    "conscientious": "a conscientious",
+    "adaptable": "an adaptable",
+    "synergy_title": "Interests-Personality Synergy",
+    "synergy_desc_base": "Your dominant interest in <strong>{{primary}}</strong> is not an isolated trait; it is powered by your core personality.",
+    "synergy_desc_high_openness": " With a high Openness score, you don't just follow {{primary}} paths—you innovate within them.",
+    "synergy_desc_disciplined": " With a disciplined Conscientiousness score, you perfect the operational excellence of {{primary}} fields.",
+    "synergy_desc_generic": " This combination suggests a natural drive toward professional mastery in your chosen field.",
+    "resilience_title": "Career Resilience",
+    "resilience_adaptability": "Adaptability Index (CAAS)",
+    "resilience_desc": "High adaptability combined with your {{focus}} creates a <strong> \"Human Capital Advantage.\"</strong> You are capable of navigating market shifts and collaborative complexity with ease.",
+    "focus_social": "social intuition",
+    "focus_technical": "technical focus",
+    "resilience_factor_label": "Key Resilience Factor:",
+    "resilience_factor_curiosity": "Limitless Intellectual Curiosity",
+    "resilience_factor_control": "Strategic Self-Control",
+    "pathways_title": "Strategic Career Pathways",
+    "pathways_desc": "High-alignment opportunities based on O*NET Web Services integration.",
+    "academic_focus": "Academic Focus (IGCSE/IB)",
+    "networking_title": "Professional Networking",
+    "networking_desc": "Your profile excels in <strong>Mentorship-Driven</strong> growth. We recommend identifying leaders in the <strong>{{primary}}</strong> sector to understand the \"hidden curriculum\" of your future industry.",
+    "roadmap_title": "Strategic Development Roadmap",
+    "action_plan_label": "Action Plan:",
+    "appendix_title": "Psychometric Data Appendix",
+    "appendix_desc": "Comprehensive data validation and score breakdowns across all assessment vectors.",
+    "riasec_profile": "RIASEC Profile",
+    "core_interests": "Core Interests (Top 3)",
+    "market_value_title": "Market Value Analysis",
+    "market_value_desc": "The high score in <strong>{{category}}</strong> indicates a strong functional capacity to convert your interests into measurable professional outcomes. This is your primary leverage point in the current job market.",
+    "skills_appendix_title": "Employability Asset Check",
+    "skills_market_value_desc": "The high score in <strong>{{category}}</strong> indicates a strong functional capacity to convert your interests into measurable professional outcomes. This is your primary leverage point in the current job market.",
+    "data_required": "Assessment Data Required",
+    "data_required_desc": "Complete your RIASEC career assessment to unlock this world-class professional strategy.",
+    "start_discovery": "Start Career Discovery",
+    "roadmap": {
+      "phase_1": {
+        "title": "Identity Mastery",
+        "goal": "Deepen understanding of core strengths and industry archetypes.",
+        "tasks": [
+          "Review the 'Psychometric Data Appendix' below for score details.",
+          "Discuss your 'Strategic Persona' with your counselor.",
+          "Reflect on how your Big Five traits influence your daily choices."
+        ]
+      },
+      "phase_2": {
+        "title": "Network Synthesis",
+        "goal": "Establish professional connections and gather cross-industry insights.",
+        "tasks": [
+          "Identify 3 shadow-mentors in your top RIASEC field.",
+          "Use 'Career Explorer' to bookmark 5 interesting job profiles.",
+          "Attend at least one career-related seminar or webinar."
+        ]
+      },
+      "phase_3": {
+        "title": "Asset Deployment",
+        "goal": "Apply employability skills in real-world projects or internships.",
+        "tasks": [
+          "Update your CV highlighting the 'Employability Assets' from this report.",
+          "Seek a 1-week work shadowing experience.",
+          "Complete a project that demonstrates your primary employability skill."
+        ]
+      }
+    }
+  },
+  "discovery_hub": {
+    "title": "Discovery Hub",
+    "subtitle": "Choose an assessment tailored for your grade ({{grade}}) to find your path.",
+    "start_btn": "Start Assessment",
+    "history_title": "Want to see your previous results?",
+    "history_link": "View Assessment History",
+    "assessments": {
+      "riasec": {
+        "title": "Career Interest Discovery",
+        "desc": "The standard RIASEC assessment to find your career matches based on interests.",
+        "duration": "10 mins"
+      },
+      "skills": {
+        "title": "Employability Skills Check",
+        "desc": "A self-assessment of your workplace readiness and transition skills.",
+        "duration": "5 mins"
+      },
+      "bigfive": {
+        "title": "Personality Profile (Big Five)",
+        "desc": "Discover your personality traits across Openness, Conscientiousness, Extraversion, Agreeableness, and Emotional Stability.",
+        "duration": "12 mins"
+      },
+      "caas": {
+        "title": "Career Adaptability (CAAS)",
+        "desc": "Measure your readiness to handle career transitions across Concern, Control, Curiosity, and Confidence.",
+        "duration": "8 mins"
+      },
+      "work_values": {
+        "title": "Work Values (O*NET)",
+        "desc": "Understand what motivates you in a job, from independence and achievement to relationships and support.",
+        "duration": "6 mins"
+      },
+      "eq": {
+        "title": "Emotional Intelligence (EQ)",
+        "desc": "Measure your emotional awareness and interpersonal skills across four core domains.",
+        "duration": "5 mins"
+      },
+      "onet": {
+        "title": "Official O*NET Interest Profiler",
+        "desc": "The full, official assessment widget provided by the U.S. Department of Labor for interest discovery.",
+        "duration": "15 mins"
+      }
+    }
+  },
+  "explorer": {
+    "back": "Back to dashboard",
+    "back_all": "Back to all careers",
+    "title": "Explore Career Families 🌍",
+    "desc": "Discover six career families based on the RIASEC framework. Each one represents a different way people like to work — tap any card to explore professions and pathways.",
+    "search": "Search careers, families, or professions…",
+    "professions": "professions",
+    "no_match": "No careers match \"{{query}}\"",
+    "try_different": "Try a different search term",
+    "related_subjects": "Related subjects",
+    "example_professions": "Example Professions",
+    "compare": "Compare",
+    "compare_title": "Compare Careers ⚖️",
+    "added": "✓ Added",
+    "add_compare": "+ Compare",
+    "growth": "growth",
+    "pathways": "Pathways Into This Field",
+    "clear": "Clear",
+    "selected": "career(s) selected",
+    "compare_hint": "Select at least 2 professions to compare.",
+    "comparison_rows": {
+      "description": "Description",
+      "salary": "Salary Range",
+      "growth": "Job Growth",
+      "education": "Education Needed"
+    },
+    "onet_results": "Results from O*NET Online",
+    "onet_error": "O*NET Service Error",
+    "onet_desc": "Explore global career details, skills, and outlook",
+    "onet_disclaimer": "This site incorporates information from O*NET Web Services by the USDOL/ETA. O*NET® is a trademark of USDOL/ETA."
+  },
+  "parent": {
+    "no_linked": "No student linked yet",
+    "no_linked_desc": "Your account hasn't been linked to a student yet. Please ask your school counselor or administrator to connect your account.",
+    "journey": "{{name}}'s career journey",
+    "back_profile": "Back to {{name}}'s Profile",
+    "support_title": "How to Support {{name}} 🤝",
+    "review_desc": "Review {{name}}'s latest exploration results and interest profile.",
+    "no_assessment": "{{name}} hasn't completed an assessment yet.",
+    "support_desc": "Guidance and tools to help you navigate these important career conversations together.",
+    "my_children": "My Children",
+    "noticed": "What we've noticed about {{name}}",
+    "top_match": "Top Match",
+    "secondary": "Secondary",
+    "tertiary": "Tertiary",
+    "history_profile": "Historical Interest Profile",
+    "support_guide": "View Support Guide & Conversation Starters",
+    "pending": "Assessment pending",
+    "pending_desc": "{{name}} hasn't completed a career interest assessment yet. Once they do, you'll see their interest profile and summaries here.",
+    "tips_title": "Effective Support Tips",
+    "convo_title": "Conversation Starters",
+    "ai_title": "Parent Guidance Assistant",
+    "ai_desc": "Have specific questions about {{name}}'s results or how to navigate these conversations? Ask our AI assistant for parents.",
+    "consult_coach": "Consult Parent Coach"
+  },
+  "admin": {
+    "back_overview": "Back to Overview",
+    "switch_school": "Switch School:",
+    "global_view": "Global View",
+    "school_overview": "School Overview",
+    "ask_ai": "Ask AI Insights",
+    "no_students_title": "No students registered yet",
+    "no_students_desc": "Once students create accounts and start assessments, you'll see participation data, completion rates, and interest trends here. You can begin by setting up parent-student links in the Program Setup tab.",
+    "stat_total": "Total Students",
+    "stat_completion": "Assessment Completion",
+    "stat_done": "Assessments Done",
+    "stat_followup": "Need Follow-up",
+    "completion_by_grade": "Completion by Grade",
+    "no_grade_data": "No grade data available yet. Students need grade information in their profiles.",
+    "students": "students",
+    "top_interests": "Top Interest Areas",
+    "top_interests_desc": "Most common primary interest areas across all assessed students.",
+    "interest_no_data": "Interest data will appear once students complete assessments.",
+    "attention_title": "What needs attention",
+    "action_followup_title": "Students need follow-up",
+    "action_followup_desc": "{{count}} student(s) haven't completed an assessment or started one. Consider scheduling check-ins.",
+    "action_parent_title": "Parent engagement gap",
+    "action_parent_desc": "Only {{pct}}% of registered parents are linked to students. Consider sending reminder communications.",
+    "action_grade_title": "Low completion grades",
+    "action_grade_desc": "{{grades}} have below 50% assessment completion. Consider targeted outreach.",
+    "action_all_good_title": "All on track",
+    "action_all_good_desc": "No urgent actions needed right now. Check back as more students complete assessments.",
+    "urgency_attention": "Needs attention",
+    "urgency_important": "Important",
+    "urgency_upcoming": "Upcoming",
+    "urgency_good": "Good",
+    "setup_title": "Program Setup 🛠️",
+    "setup_desc": "Manage parent-student links and data configuration.",
+    "content_title": "Knowledge Hub CMS 📚",
+    "content_desc": "Curate articles and resources for students and parents.",
+    "users_title": "User Accounts 👥",
+    "users_desc": "Manage and audit Student, Parent, and Counselor accounts.",
+    "bulk_title": "Bulk Management 🚀",
+    "bulk_desc": "Export reports and bulk import students or counselors.",
+    "settings_title": "Platform Settings ⚙️",
+    "settings_desc": "Configure school-wide parameters and counselor access permissions.",
+    "perf_all": "Real-time performance across all registered schools.",
+    "perf_school": "Performance and engagement data for {{name}}.",
+    "insights": {
+      "back_dashboard": "Back to Dashboard",
+      "agent_title": "Program Insights Agent",
+      "live_context": "Live Data Context Active",
+      "initial_title": "Analyzing your School's Data...",
+      "initial_desc": "Ask me to summarize trends, identify participation gaps, or suggest strategic guidance actions.",
+      "placeholder": "Ask about program metrics or strategies...",
+      "loading_data": "Loading school data...",
+      "analyzing": "Analyzing trends...",
+      "disclaimer": "Insights are based on current database snapshots. Always verify strategic decisions with your guidance team.",
+      "error_assistant": "I'm sorry, I'm unable to analyze the data right now. Please check back later.",
+      "starters": {
+        "health": "Summarize our current program health",
+        "outreach": "Which grades need more outreach?",
+        "interests": "What are the trending career interests?",
+        "engagement": "How can we improve parent engagement?"
+      }
+    }
+  },
+  "bulk": {
+    "export_title": "Data Export",
+    "export_desc": "Download full institution reports (including archived records).",
+    "export_btn": "Download All Data",
+    "family_title": "Comprehensive Family Onboarding",
+    "family_desc": "Onboard students, parents, and link them in a single operation.",
+    "family_btn": "Upload Comprehensive CSV",
+    "download_sample": "Download Sample",
+    "student_title": "Student Onboarding",
+    "student_btn": "Upload Students CSV",
+    "workload_title": "Workload & Schools",
+    "workload_btn": "Upload Assignment CSV",
+    "linking_title": "Parent-Student Linking",
+    "linking_btn": "Upload Linking CSV",
+    "maintenance_title": "Maintenance & Lifecycle",
+    "promotion_title": "Bulk Role Promotion",
+    "promotion_desc": "Assign admin or counselor roles to specific emails.",
+    "promotion_btn": "Promote via CSV",
+    "archive_title": "Bulk Archiving",
+    "archive_desc": "Clean up dashboards by moving users to history.",
+    "archive_btn": "Archive via CSV",
+    "csv_role_hint": "Role Promo CSV:",
+    "csv_role_cols": "email, role (admin, counselor, student)",
+    "csv_archive_hint": "Archiving CSV:",
+    "csv_archive_cols": "email OR grade (e.g. Year 13)",
+    "status_total": "Total",
+    "status_success": "Success",
+    "status_failed": "Failed",
+    "status_archived": "Archived",
+    "status_completed": "Completed",
+    "status_pending": "Pending",
+    "toast": {
+      "no_students": "No students found.",
+      "export_success": "Report exported!",
+      "export_failed": "Export failed.",
+      "csv_empty": "The CSV file is empty.",
+      "email_required": "Invalid CSV format: 'email' column is required.",
+      "db_error": "Database connection error. Please try again.",
+      "creating_accounts": "Creating {{count}} user accounts...",
+      "creation_failed": "Account creation failed. Users saved to pre-boarding.",
+      "creation_success": "{{count}} accounts created successfully.",
+      "import_failed": "Import failed. 0 users processed out of {{total}}.",
+      "import_success": "Processed {{count}} users.",
+      "import_warning": "{{count}} users could not be imported.",
+      "unexpected_error": "An unexpected error occurred during import.",
+      "assignment_success": "Successfully assigned {{count}} records.",
+      "assignment_failed": "Assignment import failed.",
+      "promotion_failed": "Promotion failed. No users were updated.",
+      "promotion_success": "Promoted {{count}} users.",
+      "promotion_failed_count": "{{count}} failed.",
+      "archive_success": "Archived users successfully. ({{count}} profiles updated)",
+      "archive_failed": "Archiving failed.",
+      "linking_failed": "Linking failed. 0 links created.",
+      "linking_success": "Successfully assigned {{count}} links.",
+      "linking_process_failed": "Linking process failed.",
+      "master_failed": "Master import failed.",
+      "family_success": "Family onboarding processed for {{count}} rows."
+    }
+  },
+  "skills_tracker": {
+    "title": "Employability Skills",
+    "desc": "Track your readiness for post-school transitions. Mark items as complete; your counselor can officially verify them.",
+    "resume": "Resume Built",
+    "resume_desc": "You have a modern, ATS-friendly resume.",
+    "interview": "Interview Prep",
+    "interview_desc": "You've practiced common interview questions.",
+    "networking": "Networking Profile",
+    "networking_desc": "You have a professional online presence (e.g. LinkedIn).",
+    "financial": "Financial Literacy",
+    "financial_desc": "You understand basics of student loans, taxes, and budgeting.",
+    "verified": "Verified by Counselor",
+    "self_marked": "Self-Marked Complete",
+    "not_started": "Not Started",
+    "maintenance": "System Maintenance",
+    "connection_issue": "Connection Issue",
+    "maintenance_desc": "The skills tracking system is being updated. You can still use the platform, but skill progress may not sync with your counselor temporarily.",
+    "connection_desc": "Could not connect to the skills tracking system. Please check your connection.",
+    "offline_mode": "Continue in Offline Mode",
+    "retry": "Retry Connection",
+    "offline_activated": "Offline mode activated",
+    "saved_locally": "Progress saved locally (Offline Mode)",
+    "update_failed": "Failed to update skill status",
+    "verified_locked": "Skill is verified by a counselor and cannot be un-checked."
+  },
+  "coach": {
+    "back": "Back to dashboard",
+    "welcome_title": "Hi! I'm your Career Coach 👋",
+    "welcome_desc": "I'm here to help you explore your interests, discover career paths, and connect what you love to what you learn. Ask me anything!",
+    "welcome_disclaimer": "I'm an AI assistant — for personal support, please talk to your school counselor.",
+    "prompt_1": "What careers match my interests?",
+    "prompt_2": "Help me reflect on my strengths",
+    "prompt_3": "What subjects should I explore?",
+    "prompt_4": "Tell me about different career families",
+    "prompt_5": "How do I choose the right pathway after school?",
+    "safeguarding": "Important — please read carefully",
+    "input_placeholder": "Ask me about careers, interests, or school subjects…",
+    "disclaimer": "AI Career Coach provides exploratory guidance only — not professional advice. Talk to your counselor for personal support.",
+    "rate_limit": "You've reached your daily AI guidance limit. Please come back tomorrow to continue your exploration!",
+    "error": "Sorry, I couldn't connect right now. Please try again in a moment. 😊"
+  },
+  "counselor": {
+    "back_dashboard": "Back to Dashboard",
+    "insights_title": "Groups & Insights 📈",
+    "insights_desc": "School-wide participation metrics and career interest trends across your student cohorts.",
+    "interest_dist": "Interest Distribution",
+    "progress_grade": "Progress by Grade",
+    "done_label": "{{pct}}% Done",
+    "greeting_morning": "Good morning, {{name}}",
+    "greeting_afternoon": "Good afternoon, {{name}}",
+    "greeting_evening": "Good evening, {{name}}",
+    "greeting_generic": "Hello, {{name}}",
+    "attention_subtitle": "Here's what needs your attention today.",
+    "tracking": "Currently tracking",
+    "students_count": "{{count}} Students",
+    "stat_students": "Students",
+    "stat_assessments": "Assessments Done",
+    "stat_attention": "Need Attention",
+    "stat_completed": "Completed",
+    "attention_title": "Students Needing Attention",
+    "students_count_label": "{{count}} students",
+    "all_on_track": "All students are on track!",
+    "no_assessment": "No assessment started yet",
+    "incomplete_days": "Assessment incomplete for {{count}} days",
+    "in_progress_days": "Assessment in progress — started {{count}} days ago",
+    "parents_label": "Parents: {{names}}",
+    "unnamed_student": "Unnamed Student",
+    "recent_title": "Recently Completed",
+    "no_recent": "No completed assessments yet.",
+    "copilot_title": "Counselor Copilot 🧠",
+    "copilot_desc": "Get AI-assisted summaries, meeting prep, and intervention suggestions.",
+    "copilot_btn": "Open Copilot",
+    "unnamed": "Unnamed",
+    "global_dashboard": "Global Dashboard",
+    "student_detail": {
+      "not_found": "Student not found.",
+      "joined": "Joined {{date}}",
+      "assessments_count": "Assessments",
+      "skills_title": "Skills & Readiness",
+      "verify": "Verify",
+      "verified": "Verified",
+      "radar_title": "RIASEC Profile",
+      "top_interests": "Top Interests",
+      "history_title": "Assessment History",
+      "status_completed": "Completed",
+      "status_in_progress": "In Progress",
+      "at": "at"
+    },
+    "copilot": {
+      "initial_desc": "Your AI-powered assistant for student profile summaries, meeting prep, intervention strategies, and parent communication drafts.",
+      "initial_judgment": "AI-generated suggestions — always apply your professional judgment.",
+      "placeholder": "Ask about a student, prepare for a meeting, or get intervention ideas…",
+      "limit_reached": "Daily limit reached. Please try again tomorrow.",
+      "error": "Sorry, I couldn't connect right now. Please try again in a moment.",
+      "disclaimer": "AI Copilot provides suggestions only — always apply your professional judgment and school policies.",
+      "starters": {
+        "meeting": "Prepare for a student meeting — they haven't finished their assessment",
+        "subjects": "Which students need subject-choice support this term?",
+        "summary": "Draft a parent meeting summary for a disengaged student",
+        "interventions": "Suggest interventions for students with narrow exploration",
+        "profile": "Summarize a student profile: SIA code, Grade 11, low exploration breadth"
+      }
+    },
+    "followups": {
+      "title": "Action Board",
+      "subtitle": "Track your pending interventions, follow-ups, and upcoming student meetings.",
+      "pending_title": "Pending Action Items",
+      "assign_title": "Assign New Task",
+      "select_student": "Select a student...",
+      "task_placeholder": "Task description...",
+      "no_pending": "No pending action items.",
+      "for_label": "For: {{name}}",
+      "meetings_title": "Upcoming Meetings",
+      "no_meetings": "You have no upcoming meetings scheduled via the platform.",
+      "recently_completed": "Recently Completed",
+      "no_completed": "No completed items.",
+      "added_toast": "Follow-up added",
+      "error_toast": "Failed to add follow-up"
+    },
+    "notes": {
+      "title": "Private Counselor Notes 📔",
+      "subtitle": "A unified feed of your private observations and meeting summaries across all student profiles.",
+      "search_placeholder": "Search notes or students...",
+      "no_notes": "No notes found",
+      "no_notes_search": "Try a different search term.",
+      "no_notes_desc": "Use a student's profile page to add your first private note.",
+      "label_private": "Private Note",
+      "last_edited": "Last edited {{time}}",
+      "error_loading": "Unable to load notes",
+      "no_content": "No content provided."
+    }
+  },
+  "settings": {
+    "counselor": {
+      "title": "Counselor Team",
+      "desc": "Manage your school's guidance team and their platform access.",
+      "add": "Add Counselor",
+      "promote_title": "Promote New Counselor",
+      "search_placeholder": "Search by name...",
+      "no_match": "No users matching \"{{query}}\"",
+      "no_counselors": "No counselors assigned yet.",
+      "certified": "Certified Counselor",
+      "revoke": "Revoke Access",
+      "promote_success": "Promoted to Counselor",
+      "revoke_success": "Revoked Counselor access",
+      "update_error": "Failed to update role. Check permissions.",
+      "delete_success": "Account deleted permanently",
+      "delete_error": "Failed to delete account",
+      "revoke_confirm": "Remove counselor access for {{name}}?",
+      "delete_confirm": "PERMANENTLY DELETE account for {{name}}?\n\nThis cannot be undone.",
+      "promote_btn": "Promote"
+    },
+    "school": {
+      "title": "Academic Parameters",
+      "desc": "Configure the default schedule and grade availability for your school.",
+      "reset": "Reset",
+      "save": "Save Changes",
+      "assessment_cycle": "Assessment Cycle",
+      "year_start": "Academic Year Start",
+      "next_cycle": "Next Year Cycle",
+      "window": "Assessment Window (Dates)",
+      "scope": "Scope & Access",
+      "alerts": "Counselor Alerts",
+      "alerts_desc": "Notify guidance team for high-priority cases",
+      "grade_span": "Grade level Span",
+      "min_grade": "Min Grade",
+      "max_grade": "Max Grade",
+      "policy_title": "Global Policy Info",
+      "policy_desc": "These parameters define the timeline and scope for all student dashboards and counselor report generation. Currently, these settings are saved locally to this browser.",
+      "save_success": "School parameters updated successfully"
+    }
+  },
+  "setup": {
+    "linker": {
+      "title": "Link Parent to Student",
+      "parent_label": "Parent",
+      "student_label": "Student",
+      "change": "Change",
+      "search_parents": "Search parents…",
+      "search_students": "Search students…",
+      "no_parents": "No parents found",
+      "no_students": "No students found",
+      "link_btn": "Link Parent to Student",
+      "links_title": "Existing Links",
+      "total": "total",
+      "no_links": "No parent-student links yet.",
+      "link_success": "Parent linked to student",
+      "link_exists": "This link already exists",
+      "link_error": "Failed to create link",
+      "remove_success": "Link removed",
+      "remove_error": "Failed to remove link",
+      "select_both": "Select both parent and student"
+    }
+  },
+  "users": {
+    "title": "Account Management",
+    "desc": "Search and manage all user accounts across the platform.",
+    "search_placeholder": "Search by name or email...",
+    "filter_all": "All Roles",
+    "filter_student": "Students",
+    "filter_parent": "Parents",
+    "filter_counselor": "Counselors",
+    "filter_admin": "Admins",
+    "no_users": "No users found",
+    "no_users_desc": "Try adjusting your search or filters.",
+    "delete": "Delete",
+    "delete_success": "User account deleted permanently",
+    "delete_error": "Failed to delete user. Check permissions.",
+    "delete_confirm": "PERMANENTLY DELETE account for {{name}}?\n\nThis action cannot be undone.",
+    "unnamed": "Unnamed User",
+    "no_email": "No Email",
+    "unassigned": "Unassigned",
+    "unknown_school": "Unknown School",
+    "profile_missing": "Profile Missing",
+    "not_available": "N/A"
+  },
+  "cms": {
+    "title": "Content Library",
+    "desc": "Add and manage articles for the student Knowledge Hub.",
+    "add_btn": "Add Resource",
+    "search_placeholder": "Search resources...",
+    "edit_title": "Edit Resource",
+    "create_title": "Create New Resource",
+    "field_title": "Title",
+    "field_title_placeholder": "Enter article title",
+    "field_category": "Category",
+    "field_audience": "Target Audience",
+    "field_content": "Content (Markdown supported)",
+    "field_content_placeholder": "Type your article content here...",
+    "save_btn": "Save Resource",
+    "cancel_btn": "Cancel",
+    "no_resources": "No resources found matching your search.",
+    "delete_confirm": "Are you sure you want to delete this resource?",
+    "save_success": "Resource saved successfully!",
+    "delete_success": "Resource deleted successfully!",
+    "save_error": "Error saving resource: {{error}}",
+    "delete_error": "Error deleting resource: {{error}}"
+  },
+  "career_families": {
+    "realistic": {
+      "name": "Builders & Makers",
+      "tagline": "Hands-on, practical, mechanical",
+      "description": "You like working with your hands, tools, machines, or animals. You prefer concrete tasks and seeing tangible results from your work.",
+      "subjects": ["Design & Technology", "Engineering", "Physics", "Agriculture"],
+      "professions": {
+        "civil_engineer": { "title": "Civil Engineer", "description": "Design and oversee construction of infrastructure like roads and bridges", "salary": "$65K–$110K", "growth": "7%", "education": "Bachelor's degree" },
+        "electrician": { "title": "Electrician", "description": "Install and maintain electrical systems in buildings", "salary": "$45K–$80K", "growth": "9%", "education": "Apprenticeship" },
+        "mechanical_engineer": { "title": "Mechanical Engineer", "description": "Design and develop mechanical systems and devices", "salary": "$70K–$120K", "growth": "5%", "education": "Bachelor's degree" },
+        "vet_tech": { "title": "Veterinary Technician", "description": "Assist veterinarians in caring for animals", "salary": "$30K–$50K", "growth": "15%", "education": "Associate degree" }
+      },
+      "pathways": {
+        "engineering": { "name": "Engineering Degree", "duration": "4 years", "description": "University program in mechanical, civil, or electrical engineering" },
+        "trades": { "name": "Trades Apprenticeship", "duration": "2–4 years", "description": "Hands-on training in electrical, plumbing, or carpentry" },
+        "technical": { "name": "Technical Diploma", "duration": "2 years", "description": "Vocational program in manufacturing, construction, or mechanics" }
+      }
+    },
+    "investigative": {
+      "name": "Thinkers & Analysts",
+      "tagline": "Analytical, intellectual, scientific",
+      "description": "You enjoy researching, analyzing data, and solving complex problems. You're curious and love understanding how things work.",
+      "subjects": ["Mathematics", "Biology", "Chemistry", "Computer Science"],
+      "professions": {
+        "data_scientist": { "title": "Data Scientist", "description": "Analyze large datasets to extract insights and build predictive models", "salary": "$80K–$140K", "growth": "36%", "education": "Master's degree" },
+        "biomedical": { "title": "Biomedical Researcher", "description": "Study diseases and develop treatments to improve health", "salary": "$60K–$100K", "growth": "17%", "education": "Doctoral degree" },
+        "software_dev": { "title": "Software Developer", "description": "Design and build software applications and systems", "salary": "$75K–$130K", "growth": "25%", "education": "Bachelor's degree" },
+        "env_scientist": { "title": "Environmental Scientist", "description": "Study the environment and develop solutions to environmental problems", "salary": "$55K–$90K", "growth": "8%", "education": "Bachelor's degree" }
+      },
+      "pathways": {
+        "stem": { "name": "STEM Degree", "duration": "4 years", "description": "University program in science, technology, engineering, or math" },
+        "research": { "name": "Research Pathway", "duration": "5–7 years", "description": "Advanced degree (Master's or PhD) for research roles" },
+        "coding": { "name": "Coding Bootcamp", "duration": "3–6 months", "description": "Intensive training in software development and data science" }
+      }
+    },
+    "artistic": {
+      "name": "Creators & Visionaries",
+      "tagline": "Creative, expressive, independent",
+      "description": "You value self-expression, creativity, and imagination. You enjoy creating art, music, writing, or design in various forms.",
+      "subjects": ["Art & Design", "Music", "Drama", "English Literature", "Media Studies"],
+      "professions": {
+        "ux_ui": { "title": "UX/UI Designer", "description": "Design intuitive and beautiful digital interfaces for apps and websites", "salary": "$65K–$115K", "growth": "16%", "education": "Bachelor's degree" },
+        "architect": { "title": "Architect", "description": "Design buildings and spaces that are functional and aesthetically pleasing", "salary": "$60K–$110K", "growth": "3%", "education": "Master's degree" },
+        "content_creator": { "title": "Content Creator", "description": "Produce engaging content for social media, blogs, and video platforms", "salary": "$35K–$85K", "growth": "12%", "education": "Self-directed" },
+        "graphic": { "title": "Graphic Designer", "description": "Create visual concepts for branding, marketing, and communication", "salary": "$40K–$75K", "growth": "3%", "education": "Bachelor's degree" }
+      },
+      "pathways": {
+        "fine_arts": { "name": "Fine Arts Degree", "duration": "4 years", "description": "University program in visual arts, design, or performing arts" },
+        "design_dip": { "name": "Design Diploma", "duration": "2 years", "description": "Vocational program in graphic design, animation, or multimedia" },
+        "portfolio": { "name": "Portfolio Building", "duration": "Ongoing", "description": "Self-directed learning through online courses, freelancing, and personal projects" }
+      }
+    },
+    "social": {
+      "name": "Helpers & Educators",
+      "tagline": "Helping, teaching, counseling",
+      "description": "You care deeply about others and want to make a positive difference. You enjoy teaching, coaching, healing, and supporting people.",
+      "subjects": ["Psychology", "Sociology", "Health Sciences", "Physical Education"],
+      "professions": {
+        "counselor": { "title": "School Counselor", "description": "Guide students through academic, social, and career challenges", "salary": "$50K–$85K", "growth": "10%", "education": "Master's degree" },
+        "nurse": { "title": "Nurse", "description": "Provide patient care and support in hospitals and clinics", "salary": "$55K–$95K", "growth": "6%", "education": "Bachelor's degree" },
+        "social_worker": { "title": "Social Worker", "description": "Help individuals and families cope with challenges and access services", "salary": "$45K–$70K", "growth": "9%", "education": "Master's degree" },
+        "pt": { "title": "Physical Therapist", "description": "Help patients recover from injuries and improve mobility", "salary": "$70K–$100K", "growth": "17%", "education": "Doctoral degree" }
+      },
+      "pathways": {
+        "healthcare": { "name": "Healthcare Degree", "duration": "4 years", "description": "University program in nursing, therapy, or public health" },
+        "education": { "name": "Education Degree", "duration": "4 years", "description": "Teaching qualification with classroom placement" },
+        "care": { "name": "Care Apprenticeship", "duration": "1–2 years", "description": "Entry-level training in health and social care" }
+      }
+    },
+    "enterprising": {
+      "name": "Leaders & Persuaders",
+      "tagline": "Leading, persuading, managing",
+      "description": "You're energetic, ambitious, and love taking charge. You enjoy leading teams, starting ventures, and influencing outcomes.",
+      "subjects": ["Business Studies", "Economics", "Law", "Marketing"],
+      "professions": {
+        "marketing": { "title": "Marketing Manager", "description": "Develop strategies to promote products and grow brand awareness", "salary": "$65K–$130K", "growth": "10%", "education": "Bachelor's degree" },
+        "entrepreneur": { "title": "Entrepreneur", "description": "Start and manage your own business venture", "salary": "Variable", "growth": "N/A", "education": "Self-directed" },
+        "lawyer": { "title": "Lawyer", "description": "Advise and represent clients in legal matters", "salary": "$70K–$160K", "growth": "10%", "education": "Doctoral degree" },
+        "pm": { "title": "Project Manager", "description": "Plan and oversee projects from start to finish", "salary": "$60K–$110K", "growth": "7%", "education": "Bachelor's degree" }
+      },
+      "pathways": {
+        "business": { "name": "Business Degree", "duration": "4 years", "description": "University program in business, management, or economics" },
+        "law": { "name": "Law Degree", "duration": "7 years", "description": "Undergraduate + law school for legal careers" },
+        "biz_app": { "name": "Business Apprenticeship", "duration": "2 years", "description": "Work-based training in sales, management, or finance" }
+      }
+    },
+    "conventional": {
+      "name": "Organizers & Planners",
+      "tagline": "Organizing, detail-oriented, structured",
+      "description": "You like order, structure, and working with data. You enjoy organizing information, following procedures, and ensuring accuracy.",
+      "subjects": ["Mathematics", "Accounting", "ICT", "Business Studies"],
+      "professions": {
+        "accountant": { "title": "Accountant", "description": "Manage financial records and help businesses make financial decisions", "salary": "$55K–$95K", "growth": "6%", "education": "Bachelor's degree" },
+        "db_admin": { "title": "Database Administrator", "description": "Manage and secure an organization's data systems", "salary": "$60K–$100K", "growth": "8%", "education": "Bachelor's degree" },
+        "fin_analyst": { "title": "Financial Analyst", "description": "Evaluate investments and help businesses make financial plans", "salary": "$65K–$110K", "growth": "9%", "education": "Bachelor's degree" },
+        "logistics": { "title": "Logistics Coordinator", "description": "Organize supply chains and ensure efficient delivery of goods", "salary": "$45K–$75K", "growth": "4%", "education": "Associate degree" }
+      },
+      "pathways": {
+        "finance": { "name": "Finance/Accounting Degree", "duration": "4 years", "description": "University program in accounting, finance, or information systems" },
+        "it_cert": { "name": "IT Certification", "duration": "6–12 months", "description": "Professional certifications in database management or IT" },
+        "admin_app": { "name": "Business Admin Apprenticeship", "duration": "2 years", "description": "Work-based training in administration, finance, or logistics" }
+      }
+    }
+  },
+  "footer": {
+    "copyright": "© 2026 Pathfinder Career Guidance. Built for schools that believe every student's future matters."
+  }
+}

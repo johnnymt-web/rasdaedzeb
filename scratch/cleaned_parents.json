@@ -1,0 +1,1382 @@
+﻿[
+    {
+        "parent_id":  "PAR-0001",
+        "last_name":  "Dolidze",
+        "temp_password":  "SxQh99zfT6",
+        "first_name":  "Natia",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Natia Dolidze",
+        "email":  "parent1@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0002",
+        "last_name":  "Javakhishvili",
+        "temp_password":  "pSyXS35UlI",
+        "first_name":  "Nikoloz",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nikoloz Javakhishvili",
+        "email":  "parent2@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0003",
+        "last_name":  "Kobakhidze",
+        "temp_password":  "HKfjwviLQr",
+        "first_name":  "Guram",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Guram Kobakhidze",
+        "email":  "parent3@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0004",
+        "last_name":  "Iashvili",
+        "temp_password":  "pM3uACv7vk",
+        "first_name":  "Nestan",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nestan Iashvili",
+        "email":  "parent4@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0005",
+        "last_name":  "Tvaltvadze",
+        "temp_password":  "eIoKwOmO6q",
+        "first_name":  "Mamuka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Mamuka Tvaltvadze",
+        "email":  "parent5@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0006",
+        "last_name":  "Ratiani",
+        "temp_password":  "CiZFC8RNud",
+        "first_name":  "Nika",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nika Ratiani",
+        "email":  "parent6@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0007",
+        "last_name":  "Tabatadze",
+        "temp_password":  "das9AsRpaR",
+        "first_name":  "Jemal",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Jemal Tabatadze",
+        "email":  "parent7@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0008",
+        "last_name":  "Chikovani",
+        "temp_password":  "lH2L0FA1bL",
+        "first_name":  "Maka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Maka Chikovani",
+        "email":  "parent8@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0009",
+        "last_name":  "Kvaratskhelia",
+        "temp_password":  "scnasLru2L",
+        "first_name":  "Dato",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Dato Kvaratskhelia",
+        "email":  "parent9@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0010",
+        "last_name":  "Gogitidze",
+        "temp_password":  "NjHjY87eo6",
+        "first_name":  "Maia",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Maia Gogitidze",
+        "email":  "parent10@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0011",
+        "last_name":  "Khachidze",
+        "temp_password":  "o0F5g4IZV1",
+        "first_name":  "Koba",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Koba Khachidze",
+        "email":  "parent11@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0012",
+        "last_name":  "Andronikashvili",
+        "temp_password":  "xL3SjEpsi9",
+        "first_name":  "Tamar",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Tamar Andronikashvili",
+        "email":  "parent12@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0013",
+        "last_name":  "Chikovani",
+        "temp_password":  "A5hHbqRadx",
+        "first_name":  "Nika",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nika Chikovani",
+        "email":  "parent13@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0014",
+        "last_name":  "Kvachadze",
+        "temp_password":  "bQ8LgPNOXk",
+        "first_name":  "Thea",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Thea Kvachadze",
+        "email":  "parent14@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0015",
+        "last_name":  "Gogitidze",
+        "temp_password":  "0pFJxF8IRF",
+        "first_name":  "Dato",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Dato Gogitidze",
+        "email":  "parent15@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0016",
+        "last_name":  "Sulaberidze",
+        "temp_password":  "lsnKLC4vbm",
+        "first_name":  "Mamuka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Mamuka Sulaberidze",
+        "email":  "parent16@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0017",
+        "last_name":  "Lortkipanidze",
+        "temp_password":  "YGmZqu7RPU",
+        "first_name":  "Sandro",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Sandro Lortkipanidze",
+        "email":  "parent17@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0018",
+        "last_name":  "Abashidze",
+        "temp_password":  "Dldvd3PY7J",
+        "first_name":  "Kakha",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Kakha Abashidze",
+        "email":  "parent18@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0019",
+        "last_name":  "Kvaratskhelia",
+        "temp_password":  "PKaPC0IPnn",
+        "first_name":  "Marika",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Marika Kvaratskhelia",
+        "email":  "parent19@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0020",
+        "last_name":  "Tsiklauri",
+        "temp_password":  "rGiJQNJhjs",
+        "first_name":  "David",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "David Tsiklauri",
+        "email":  "parent20@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0021",
+        "last_name":  "Robakidze",
+        "temp_password":  "ddIrovXyZ9",
+        "first_name":  "Zurab",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Zurab Robakidze",
+        "email":  "parent21@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0022",
+        "last_name":  "Dgebuadze",
+        "temp_password":  "wIBnh5SAmS",
+        "first_name":  "Maia",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Maia Dgebuadze",
+        "email":  "parent22@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0023",
+        "last_name":  "Goguadze",
+        "temp_password":  "8kEykeV16K",
+        "first_name":  "Tornike",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Tornike Goguadze",
+        "email":  "parent23@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0024",
+        "last_name":  "Shengelaia",
+        "temp_password":  "ywd7pKNEcH",
+        "first_name":  "Beka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Beka Shengelaia",
+        "email":  "parent24@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0025",
+        "last_name":  "Palavandishvili",
+        "temp_password":  "grf7vTyar4",
+        "first_name":  "Revaz",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Revaz Palavandishvili",
+        "email":  "parent25@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0026",
+        "last_name":  "Kvaratskhelia",
+        "temp_password":  "qm8svgY86E",
+        "first_name":  "Avtandil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Avtandil Kvaratskhelia",
+        "email":  "parent26@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0027",
+        "last_name":  "Tsereteli",
+        "temp_password":  "nx4s65A4h3",
+        "first_name":  "Dato",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Dato Tsereteli",
+        "email":  "parent27@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0028",
+        "last_name":  "Lortkipanidze",
+        "temp_password":  "jADeDCbRnH",
+        "first_name":  "Lela",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Lela Lortkipanidze",
+        "email":  "parent28@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0029",
+        "last_name":  "Robakidze",
+        "temp_password":  "GunUIjVBtk",
+        "first_name":  "Medea",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Medea Robakidze",
+        "email":  "parent29@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0030",
+        "last_name":  "Peikrishvili",
+        "temp_password":  "qvIP0Fq9fl",
+        "first_name":  "Tornike",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Tornike Peikrishvili",
+        "email":  "parent30@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0031",
+        "last_name":  "Chkheidze",
+        "temp_password":  "1nEC5kzCPI",
+        "first_name":  "Mamuka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Mamuka Chkheidze",
+        "email":  "parent31@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0032",
+        "last_name":  "Tsiklauri",
+        "temp_password":  "F8lvfc7wIk",
+        "first_name":  "Levan",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Levan Tsiklauri",
+        "email":  "parent32@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0033",
+        "last_name":  "Kvaratskhelia",
+        "temp_password":  "YdN9lxJ6vA",
+        "first_name":  "Gogi",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Gogi Kvaratskhelia",
+        "email":  "parent33@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0034",
+        "last_name":  "Gabaidze",
+        "temp_password":  "5yyhSwWZd5",
+        "first_name":  "Nika",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nika Gabaidze",
+        "email":  "parent34@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0035",
+        "last_name":  "Maisuradze",
+        "temp_password":  "qWKrXHZEhK",
+        "first_name":  "Avtandil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Avtandil Maisuradze",
+        "email":  "parent35@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0036",
+        "last_name":  "Tvaltvadze",
+        "temp_password":  "2zwBghFten",
+        "first_name":  "Teona",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Teona Tvaltvadze",
+        "email":  "parent36@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0037",
+        "last_name":  "Tsereteli",
+        "temp_password":  "0SrOMoYLTR",
+        "first_name":  "Omar",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Omar Tsereteli",
+        "email":  "parent37@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0038",
+        "last_name":  "Tabatadze",
+        "temp_password":  "MiP9qFANG6",
+        "first_name":  "Omar",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Omar Tabatadze",
+        "email":  "parent38@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0039",
+        "last_name":  "Janelidze",
+        "temp_password":  "oAT84eOamf",
+        "first_name":  "Nugzar",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nugzar Janelidze",
+        "email":  "parent39@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0040",
+        "last_name":  "Otiashvili",
+        "temp_password":  "RLKvLA7Q9m",
+        "first_name":  "Nino",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nino Otiashvili",
+        "email":  "parent40@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0041",
+        "last_name":  "Chikovani",
+        "temp_password":  "dKU0lK4tcT",
+        "first_name":  "Lasha",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Lasha Chikovani",
+        "email":  "parent41@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0042",
+        "last_name":  "Shengelaia",
+        "temp_password":  "RnVLECdjv4",
+        "first_name":  "Natia",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Natia Shengelaia",
+        "email":  "parent42@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0043",
+        "last_name":  "Chkheidze",
+        "temp_password":  "zcdGS89Ese",
+        "first_name":  "Natia",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Natia Chkheidze",
+        "email":  "parent43@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0044",
+        "last_name":  "Kobakhidze",
+        "temp_password":  "ZfkbiQBTn7",
+        "first_name":  "Dali",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Dali Kobakhidze",
+        "email":  "parent44@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0045",
+        "last_name":  "Gelashvili",
+        "temp_password":  "t8igxieMEv",
+        "first_name":  "Avtandil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Avtandil Gelashvili",
+        "email":  "parent45@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0046",
+        "last_name":  "Palavandishvili",
+        "temp_password":  "MGZcLx6PmX",
+        "first_name":  "Nestan",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nestan Palavandishvili",
+        "email":  "parent46@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0047",
+        "last_name":  "Goguadze",
+        "temp_password":  "dCCYAUwGgp",
+        "first_name":  "Ketevan",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Ketevan Goguadze",
+        "email":  "parent47@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0048",
+        "last_name":  "Goguadze",
+        "temp_password":  "fVEN0gR75I",
+        "first_name":  "Temur",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Temur Goguadze",
+        "email":  "parent48@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0049",
+        "last_name":  "Khachidze",
+        "temp_password":  "akZ5B6JCBC",
+        "first_name":  "Omar",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Omar Khachidze",
+        "email":  "parent49@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0050",
+        "last_name":  "Javakhishvili",
+        "temp_password":  "Cs2YrwW6U8",
+        "first_name":  "Guram",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Guram Javakhishvili",
+        "email":  "parent50@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0051",
+        "last_name":  "Kipshidze",
+        "temp_password":  "h15Q412nYx",
+        "first_name":  "Shorena",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Shorena Kipshidze",
+        "email":  "parent51@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0052",
+        "last_name":  "Kipshidze",
+        "temp_password":  "Fyct5cS4Ux",
+        "first_name":  "Avtandil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Avtandil Kipshidze",
+        "email":  "parent52@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0053",
+        "last_name":  "Tsereteli",
+        "temp_password":  "3I2vC60UbP",
+        "first_name":  "Thea",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Thea Tsereteli",
+        "email":  "parent53@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0054",
+        "last_name":  "Chikvatia",
+        "temp_password":  "OXNuXCTDIu",
+        "first_name":  "Revaz",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Revaz Chikvatia",
+        "email":  "parent54@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0055",
+        "last_name":  "Robakidze",
+        "temp_password":  "7eeAP3VZSt",
+        "first_name":  "Nato",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nato Robakidze",
+        "email":  "parent55@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0056",
+        "last_name":  "Tsereteli",
+        "temp_password":  "SAMtCuDcUb",
+        "first_name":  "Kakha",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Kakha Tsereteli",
+        "email":  "parent56@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0057",
+        "last_name":  "Chikvatia",
+        "temp_password":  "mcx51zfoaM",
+        "first_name":  "Tata",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Tata Chikvatia",
+        "email":  "parent57@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0058",
+        "last_name":  "Ratiani",
+        "temp_password":  "s0EYbYUBtV",
+        "first_name":  "Lamara",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Lamara Ratiani",
+        "email":  "parent58@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0059",
+        "last_name":  "Iashvili",
+        "temp_password":  "J0YDT81dN8",
+        "first_name":  "Gogi",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Gogi Iashvili",
+        "email":  "parent59@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0060",
+        "last_name":  "Iashvili",
+        "temp_password":  "bABTdPXkEe",
+        "first_name":  "Manana",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Manana Iashvili",
+        "email":  "parent60@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0061",
+        "last_name":  "Dolidze",
+        "temp_password":  "rVo6FeWwzd",
+        "first_name":  "Tata",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Tata Dolidze",
+        "email":  "parent61@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0062",
+        "last_name":  "Mgaloblishvili",
+        "temp_password":  "qNb3QY9J0X",
+        "first_name":  "Nino",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nino Mgaloblishvili",
+        "email":  "parent62@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0063",
+        "last_name":  "Dolidze",
+        "temp_password":  "TZsB2wTuNj",
+        "first_name":  "Maka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Maka Dolidze",
+        "email":  "parent63@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0064",
+        "last_name":  "Tsereteli",
+        "temp_password":  "bMW1MfxjXi",
+        "first_name":  "Jemal",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Jemal Tsereteli",
+        "email":  "parent64@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0065",
+        "last_name":  "Gaprindashvili",
+        "temp_password":  "Tq0WKIZ3tF",
+        "first_name":  "Nestan",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nestan Gaprindashvili",
+        "email":  "parent65@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0066",
+        "last_name":  "Mgaloblishvili",
+        "temp_password":  "xgNX48CO5G",
+        "first_name":  "Maka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Maka Mgaloblishvili",
+        "email":  "parent66@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0067",
+        "last_name":  "Tsiklauri",
+        "temp_password":  "VoSIlgL5KU",
+        "first_name":  "Nino",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nino Tsiklauri",
+        "email":  "parent67@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0068",
+        "last_name":  "Gogitidze",
+        "temp_password":  "Ag8BeJ7YCm",
+        "first_name":  "Giorgi",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Giorgi Gogitidze",
+        "email":  "parent68@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0069",
+        "last_name":  "Abashidze",
+        "temp_password":  "GyxcekPRDV",
+        "first_name":  "Lamara",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Lamara Abashidze",
+        "email":  "parent69@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0070",
+        "last_name":  "Chikovani",
+        "temp_password":  "XVSDjbuVfg",
+        "first_name":  "Thea",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Thea Chikovani",
+        "email":  "parent70@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0071",
+        "last_name":  "Chkheidze",
+        "temp_password":  "sr40by9LhZ",
+        "first_name":  "Nestan",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nestan Chkheidze",
+        "email":  "parent71@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0072",
+        "last_name":  "Gogitidze",
+        "temp_password":  "MJP7h4NwpN",
+        "first_name":  "Dali",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Dali Gogitidze",
+        "email":  "parent72@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0073",
+        "last_name":  "Kapanadze",
+        "temp_password":  "0oCLhga6Si",
+        "first_name":  "Manana",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Manana Kapanadze",
+        "email":  "parent73@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0074",
+        "last_name":  "Goguadze",
+        "temp_password":  "yYuprhZbDf",
+        "first_name":  "Jemal",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Jemal Goguadze",
+        "email":  "parent74@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0075",
+        "last_name":  "Gelashvili",
+        "temp_password":  "2wU99PdCmv",
+        "first_name":  "Shota",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Shota Gelashvili",
+        "email":  "parent75@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0076",
+        "last_name":  "Goguadze",
+        "temp_password":  "B4KEIsJxvF",
+        "first_name":  "Nika",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nika Goguadze",
+        "email":  "parent76@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0077",
+        "last_name":  "Otiashvili",
+        "temp_password":  "PeJtrqsHFF",
+        "first_name":  "Dali",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Dali Otiashvili",
+        "email":  "parent77@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0078",
+        "last_name":  "Mchedlidze",
+        "temp_password":  "Kpd1y6AIya",
+        "first_name":  "Manana",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Manana Mchedlidze",
+        "email":  "parent78@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0079",
+        "last_name":  "Kvaratskhelia",
+        "temp_password":  "0xSzVVqYNL",
+        "first_name":  "Natia",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Natia Kvaratskhelia",
+        "email":  "parent79@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0080",
+        "last_name":  "Shengelaia",
+        "temp_password":  "DT8y6fDMw4",
+        "first_name":  "Sophio",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Sophio Shengelaia",
+        "email":  "parent80@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0081",
+        "last_name":  "Lortkipanidze",
+        "temp_password":  "zrTWczox90",
+        "first_name":  "Avtandil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Avtandil Lortkipanidze",
+        "email":  "parent81@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0082",
+        "last_name":  "Iashvili",
+        "temp_password":  "yXMhjtaNC9",
+        "first_name":  "Maka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Maka Iashvili",
+        "email":  "parent82@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0083",
+        "last_name":  "Kvaratskhelia",
+        "temp_password":  "ZST1MpJPLE",
+        "first_name":  "Dali",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Dali Kvaratskhelia",
+        "email":  "parent83@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0084",
+        "last_name":  "Chikovani",
+        "temp_password":  "3hXbG2Jf3R",
+        "first_name":  "Ia",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Ia Chikovani",
+        "email":  "parent84@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0085",
+        "last_name":  "Nadiradze",
+        "temp_password":  "yZOyclnEt0",
+        "first_name":  "Sophio",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Sophio Nadiradze",
+        "email":  "parent85@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0086",
+        "last_name":  "Robakidze",
+        "temp_password":  "RVepHyb5Ai",
+        "first_name":  "Nana",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nana Robakidze",
+        "email":  "parent86@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0087",
+        "last_name":  "Abashidze",
+        "temp_password":  "ZffGDMCgGA",
+        "first_name":  "Lamara",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Lamara Abashidze",
+        "email":  "parent87@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0088",
+        "last_name":  "Javakhishvili",
+        "temp_password":  "7WZyxiEEkH",
+        "first_name":  "Archil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Archil Javakhishvili",
+        "email":  "parent88@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0089",
+        "last_name":  "Beridze",
+        "temp_password":  "OIG0hfh6zI",
+        "first_name":  "Rusudan",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Rusudan Beridze",
+        "email":  "parent89@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0090",
+        "last_name":  "Tvaltvadze",
+        "temp_password":  "skfA1qyetP",
+        "first_name":  "Lasha",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Lasha Tvaltvadze",
+        "email":  "parent90@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0091",
+        "last_name":  "Beridze",
+        "temp_password":  "6pe6ZbAVcR",
+        "first_name":  "Lasha",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Lasha Beridze",
+        "email":  "parent91@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0092",
+        "last_name":  "Beridze",
+        "temp_password":  "SR3s2Ridbn",
+        "first_name":  "Irma",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Irma Beridze",
+        "email":  "parent92@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0093",
+        "last_name":  "Tsereteli",
+        "temp_password":  "hLMn755uyC",
+        "first_name":  "Salome",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Salome Tsereteli",
+        "email":  "parent93@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0094",
+        "last_name":  "Otiashvili",
+        "temp_password":  "4kmbPfStN4",
+        "first_name":  "Tornike",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Tornike Otiashvili",
+        "email":  "parent94@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0095",
+        "last_name":  "Gelashvili",
+        "temp_password":  "A2bTEi4hbf",
+        "first_name":  "Beka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Beka Gelashvili",
+        "email":  "parent95@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0096",
+        "last_name":  "Zurabishvili",
+        "temp_password":  "VDWMGzm3wK",
+        "first_name":  "Lasha",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Lasha Zurabishvili",
+        "email":  "parent96@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0097",
+        "last_name":  "Chikvatia",
+        "temp_password":  "trkEJ9Ypek",
+        "first_name":  "Archil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Archil Chikvatia",
+        "email":  "parent97@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0098",
+        "last_name":  "Kipshidze",
+        "temp_password":  "EwPPABiR9x",
+        "first_name":  "Ramaz",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Ramaz Kipshidze",
+        "email":  "parent98@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0099",
+        "last_name":  "Chkheidze",
+        "temp_password":  "ocXnoxjkYU",
+        "first_name":  "Andro",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Andro Chkheidze",
+        "email":  "parent99@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0100",
+        "last_name":  "Dolidze",
+        "temp_password":  "ERAwt5HPtz",
+        "first_name":  "Jemal",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Jemal Dolidze",
+        "email":  "parent100@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0101",
+        "last_name":  "Abashidze",
+        "temp_password":  "CHHdyK0YZF",
+        "first_name":  "Koba",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Koba Abashidze",
+        "email":  "parent101@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0102",
+        "last_name":  "Tabatadze",
+        "temp_password":  "kfh8kzrO7d",
+        "first_name":  "Ia",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Ia Tabatadze",
+        "email":  "parent102@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0103",
+        "last_name":  "Dolidze",
+        "temp_password":  "V4xY9G26BB",
+        "first_name":  "Archil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Archil Dolidze",
+        "email":  "parent103@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0104",
+        "last_name":  "Mgaloblishvili",
+        "temp_password":  "HwgzTyPQEU",
+        "first_name":  "Andro",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Andro Mgaloblishvili",
+        "email":  "parent104@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0105",
+        "last_name":  "Tsiklauri",
+        "temp_password":  "ujonpOw36c",
+        "first_name":  "Valeri",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Valeri Tsiklauri",
+        "email":  "parent105@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0106",
+        "last_name":  "Lortkipanidze",
+        "temp_password":  "cUUP44WaO9",
+        "first_name":  "Ramaz",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Ramaz Lortkipanidze",
+        "email":  "parent106@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0107",
+        "last_name":  "Kobakhidze",
+        "temp_password":  "o9OPmGAn92",
+        "first_name":  "Archil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Archil Kobakhidze",
+        "email":  "parent107@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0108",
+        "last_name":  "Zurabishvili",
+        "temp_password":  "rW7mGFgUDB",
+        "first_name":  "Guram",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Guram Zurabishvili",
+        "email":  "parent108@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0109",
+        "last_name":  "Mgaloblishvili",
+        "temp_password":  "BNz2jrn7pB",
+        "first_name":  "Nana",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nana Mgaloblishvili",
+        "email":  "parent109@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0110",
+        "last_name":  "Peikrishvili",
+        "temp_password":  "gIqvHdkmmN",
+        "first_name":  "Mamuka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Mamuka Peikrishvili",
+        "email":  "parent110@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0111",
+        "last_name":  "Kvaratskhelia",
+        "temp_password":  "7XnwxRXLWP",
+        "first_name":  "Lasha",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Lasha Kvaratskhelia",
+        "email":  "parent111@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0112",
+        "last_name":  "Dgebuadze",
+        "temp_password":  "83w7ejWdAv",
+        "first_name":  "Nato",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nato Dgebuadze",
+        "email":  "parent112@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0113",
+        "last_name":  "Kvaratskhelia",
+        "temp_password":  "2wp99GLT9c",
+        "first_name":  "Gogi",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Gogi Kvaratskhelia",
+        "email":  "parent113@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0114",
+        "last_name":  "Tvaltvadze",
+        "temp_password":  "bUpM1DcF8A",
+        "first_name":  "Tornike",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Tornike Tvaltvadze",
+        "email":  "parent114@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0115",
+        "last_name":  "Iashvili",
+        "temp_password":  "Ek3gvF3hRw",
+        "first_name":  "Nikoloz",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nikoloz Iashvili",
+        "email":  "parent115@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0116",
+        "last_name":  "Javakhishvili",
+        "temp_password":  "68whtLiiGR",
+        "first_name":  "Jemal",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Jemal Javakhishvili",
+        "email":  "parent116@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0117",
+        "last_name":  "Peikrishvili",
+        "temp_password":  "ZNsPzTLuSn",
+        "first_name":  "Nestan",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nestan Peikrishvili",
+        "email":  "parent117@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0118",
+        "last_name":  "Abashidze",
+        "temp_password":  "EUS13je6Bt",
+        "first_name":  "Avtandil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Avtandil Abashidze",
+        "email":  "parent118@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0119",
+        "last_name":  "Kipshidze",
+        "temp_password":  "MwXmX1dA0d",
+        "first_name":  "Guram",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Guram Kipshidze",
+        "email":  "parent119@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0120",
+        "last_name":  "Khachidze",
+        "temp_password":  "rtoi2rnujL",
+        "first_name":  "Ia",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Ia Khachidze",
+        "email":  "parent120@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0121",
+        "last_name":  "Palavandishvili",
+        "temp_password":  "A5es0ElzhY",
+        "first_name":  "Shota",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Shota Palavandishvili",
+        "email":  "parent121@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0122",
+        "last_name":  "Abashidze",
+        "temp_password":  "xGl9Lfk5Xs",
+        "first_name":  "Gogi",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Gogi Abashidze",
+        "email":  "parent122@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0123",
+        "last_name":  "Chikvatia",
+        "temp_password":  "MP7vplVt63",
+        "first_name":  "Giorgi",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Giorgi Chikvatia",
+        "email":  "parent123@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0124",
+        "last_name":  "Tsiklauri",
+        "temp_password":  "HVhqIFYVfn",
+        "first_name":  "Shorena",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Shorena Tsiklauri",
+        "email":  "parent124@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0125",
+        "last_name":  "Janelidze",
+        "temp_password":  "e48aaHaI9I",
+        "first_name":  "Salome",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Salome Janelidze",
+        "email":  "parent125@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0126",
+        "last_name":  "Abashidze",
+        "temp_password":  "5qBOqNyP5Y",
+        "first_name":  "Sandro",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Sandro Abashidze",
+        "email":  "parent126@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0127",
+        "last_name":  "Shengelaia",
+        "temp_password":  "Dl2E9pxSH9",
+        "first_name":  "Maka",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Maka Shengelaia",
+        "email":  "parent127@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0128",
+        "last_name":  "Gelashvili",
+        "temp_password":  "AMMFqbDmeM",
+        "first_name":  "Nato",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nato Gelashvili",
+        "email":  "parent128@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0129",
+        "last_name":  "Andronikashvili",
+        "temp_password":  "LTJAu9Fv4K",
+        "first_name":  "Lela",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Lela Andronikashvili",
+        "email":  "parent129@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0130",
+        "last_name":  "Gabaidze",
+        "temp_password":  "GhD0vwYDaE",
+        "first_name":  "Archil",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Archil Gabaidze",
+        "email":  "parent130@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0131",
+        "last_name":  "Chikvatia",
+        "temp_password":  "bPSOfVwi8N",
+        "first_name":  "Guram",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Guram Chikvatia",
+        "email":  "parent131@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0132",
+        "last_name":  "Zurabishvili",
+        "temp_password":  "eTrzdqVKAh",
+        "first_name":  "Salome",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Salome Zurabishvili",
+        "email":  "parent132@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0133",
+        "last_name":  "Gogitidze",
+        "temp_password":  "IdQ9TvZRYQ",
+        "first_name":  "Zurab",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Zurab Gogitidze",
+        "email":  "parent133@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0134",
+        "last_name":  "Chikovani",
+        "temp_password":  "q7QyhbHTmM",
+        "first_name":  "Tamar",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Tamar Chikovani",
+        "email":  "parent134@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0135",
+        "last_name":  "Tsereteli",
+        "temp_password":  "ClRR0DsXTf",
+        "first_name":  "Temur",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Temur Tsereteli",
+        "email":  "parent135@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0136",
+        "last_name":  "Nadiradze",
+        "temp_password":  "1t5PIPNIcq",
+        "first_name":  "Ramaz",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Ramaz Nadiradze",
+        "email":  "parent136@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0137",
+        "last_name":  "Beridze",
+        "temp_password":  "FOclJl3pXz",
+        "first_name":  "Nika",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Nika Beridze",
+        "email":  "parent137@gmail.com"
+    },
+    {
+        "parent_id":  "PAR-0138",
+        "last_name":  "Dolidze",
+        "temp_password":  "Y8o4dRxBUG",
+        "first_name":  "Ramaz",
+        "status":  "active",
+        "role":  "parent",
+        "full_name":  "Ramaz Dolidze",
+        "email":  "parent138@gmail.com"
+    }
+]
