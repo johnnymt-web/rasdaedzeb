@@ -21,6 +21,7 @@ import CounselorNotes from "./pages/CounselorNotes";
 import ParentDashboard from "./pages/ParentDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminInsights from "./pages/AdminInsights";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import AssessmentSelection from "./pages/AssessmentSelection";
 import AssessmentPage from "./pages/AssessmentPage";
 import StudentReport from "./pages/StudentReport";
@@ -82,7 +83,7 @@ const App = () => {
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route element={<ProtectedRoute allowedRoles={["student", "parent", "counselor", "admin"]}><RoleLayout /></ProtectedRoute>}>
+            <Route element={<ProtectedRoute allowedRoles={["student", "parent", "counselor", "admin", "superadmin"]}><RoleLayout /></ProtectedRoute>}>
               <Route path="/profile" element={<Profile />} />
               <Route path="/explore" element={<CareerExplorer />} />
               <Route path="/explore/resources" element={<KnowledgeHub />} />
@@ -141,6 +142,11 @@ const App = () => {
               <Route path="/admin/bulk" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminDashboard />} />
               <Route path="/admin/settings" element={<AdminDashboard />} />
+            </Route>
+
+            {/* SuperAdmin routes */}
+            <Route element={<ProtectedRoute allowedRoles={["superadmin"]}><DashboardLayout role="superadmin"><Outlet /></DashboardLayout></ProtectedRoute>}>
+              <Route path="/superadmin" element={<SuperAdminDashboard />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

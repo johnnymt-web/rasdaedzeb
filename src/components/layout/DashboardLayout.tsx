@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  role: "student" | "parent" | "counselor" | "admin";
+  role: "student" | "parent" | "counselor" | "admin" | "superadmin";
 }
 
 const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {

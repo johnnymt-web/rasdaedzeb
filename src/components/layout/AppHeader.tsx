@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 interface AppHeaderProps {
-  role?: "student" | "parent" | "counselor" | "admin";
+  role?: "student" | "parent" | "counselor" | "admin" | "superadmin";
   minimal?: boolean;
 }
 
@@ -40,6 +40,11 @@ const getRoleNav = (t: any): Record<string, { label: string; path: string }[]> =
     { label: t("nav.admin.setup"), path: "/admin/setup" },
     { label: t("nav.admin.bulk"), path: "/admin/bulk" },
     { label: t("nav.admin.settings"), path: "/admin/settings" },
+  ],
+  superadmin: [
+    { label: t("nav.superadmin.overview", "Super Overview"), path: "/superadmin" },
+    { label: t("nav.admin.insights"), path: "/admin/insights" },
+    { label: t("nav.admin.users"), path: "/admin/users" },
   ],
 });
 

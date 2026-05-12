@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
 interface AppSidebarProps {
-  role: "student" | "parent" | "counselor" | "admin";
+  role: "student" | "parent" | "counselor" | "admin" | "superadmin";
 }
 
 const getRoleNav = (t: any) => ({
@@ -50,6 +50,11 @@ const getRoleNav = (t: any) => ({
     { label: t("nav.admin.insights"), path: "/admin/insights", icon: BarChart3 },
     { label: t("nav.admin.users"), path: "/admin/users", icon: Users },
     { label: t("nav.admin.bulk"), path: "/admin/bulk", icon: Settings },
+  ],
+  superadmin: [
+    { label: t("nav.superadmin.overview", "Super Overview"), path: "/superadmin", icon: LayoutDashboard },
+    { label: t("nav.admin.insights"), path: "/admin/insights", icon: BarChart3 },
+    { label: t("nav.admin.users"), path: "/admin/users", icon: Users },
   ],
 });
 
