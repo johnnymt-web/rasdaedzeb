@@ -45,10 +45,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (profileError) console.error("Profile fetch error:", profileError);
       
-      if (roleData) setRole(roleData.role as AppRole);
-      else if (currentUser?.user_metadata?.role) setRole(currentUser.user_metadata.role as AppRole); // Final fallback
+      if (roleData) {
+        console.log("Auth Debug - Role found:", roleData.role);
+        setRole(roleData.role as AppRole);
+      } else if (currentUser?.user_metadata?.role) {
+        console.log("Auth Debug - Role from metadata:", currentUser.user_metadata.role);
+        setRole(currentUser.user_metadata.role as AppRole);
+      }
       
-      if (profileData) setProfile(profileData);
+      if (profileData) {
+        console.log("Auth Debug - Profile found:", profileData);
+        setProfile(profileData);
+      } else {
+        console.warn("Auth Debug - No profile found in DB for user:", userId);
+      }
+
+      console.log("Auth Debug - Full User Metadata:", currentUser?.user_metadata);
     } catch (err) {
       console.error("Critical Auth Data Fetch Error:", err);
     }

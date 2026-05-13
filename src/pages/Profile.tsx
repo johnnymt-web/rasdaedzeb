@@ -251,7 +251,7 @@ export default function Profile() {
                           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block flex items-center gap-1.5">
                             <GraduationCap className="w-3.5 h-3.5" /> Grade
                           </label>
-                          <p className="text-base font-medium">{data?.profile?.grade || "Not specified"}</p>
+                          <p className="text-base font-medium">{data?.profile?.grade || user?.user_metadata?.grade || "Not specified"}</p>
                         </div>
                       </div>
                       
