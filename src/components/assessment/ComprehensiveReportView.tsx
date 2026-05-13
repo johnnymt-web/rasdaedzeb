@@ -120,16 +120,48 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
 
   const subjectSuggestions = Array.from(new Set(subjectMap[primaryInterest] || [])).slice(0, 5);
 
-  // DYNAMIC ROADMAP LOGIC
+  // DYNAMIC ROADMAP LOGIC (Enhanced with cross-test findings)
   const getDynamicRoadmap = () => {
     const numericGrade = parseInt(grade?.replace(/\D/g, "") || "12");
     const bandKey = numericGrade <= 8 ? "discovery" : numericGrade <= 10 ? "alignment" : "decision";
     
     const getTasks = (phase: string, params: any) => {
-      return t(`report_strategic.roadmap.bands.${bandKey}.${phase}.tasks`, { 
+      const baseTasks = t(`report_strategic.roadmap.bands.${bandKey}.${phase}.tasks`, { 
         returnObjects: true,
         ...params
       }) as string[];
+
+      // Synthesis Logic: Add findings from other tests if they exist
+      const extraTasks: string[] = [];
+      
+      if (phase === "phase_1") {
+        if (caas && caas.total_score < 3.5) {
+          extraTasks.push(t("report_strategic.roadmap.synthesis.improve_adaptability", "Work with your counselor to improve your 'Career Concern' (planning) score."));
+        }
+        if (assessments?.workvalues) {
+          const topValue = (assessments.workvalues.results as any[]).sort((a,b) => b.score - a.score)[0];
+          if (topValue) {
+            extraTasks.push(t("report_strategic.roadmap.synthesis.value_alignment", { value: t(`assessment_results.work_values.values.${topValue.name}`) }));
+          }
+        }
+      }
+
+      if (phase === "phase_2") {
+        if (bigFive && bigFive.neuroticism < 40) {
+          extraTasks.push(t("report_strategic.roadmap.synthesis.stress_management"));
+        }
+      }
+
+      if (phase === "phase_3") {
+        if (eq && eq.results) {
+          const lowEq = (eq.results as any[]).find(r => r.score < 50);
+          if (lowEq) {
+            extraTasks.push(t("report_strategic.roadmap.synthesis.eq_focus", { domain: t(`assessment_results.eq.domains.${lowEq.name}`) }));
+          }
+        }
+      }
+
+      return [...baseTasks, ...extraTasks].slice(0, 4); // Keep it concise
     };
 
     return [
@@ -198,6 +230,63 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
                     return part;
                   })}
                 </p>
+              </div>
+            </div>
+          </section>
+
+          {/* SECTION 1.5: THE DIAGNOSTIC RATIONALE */}
+          <section className="card-warm p-8 bg-muted/30 border-muted-foreground/10">
+            <div className="flex flex-col md:flex-row gap-8">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-heading font-bold text-foreground">{t("report_strategic.rationale_title")}</h3>
+                </div>
+                <p className="text-sm text-foreground/80 leading-relaxed mb-6">
+                  {t("report_strategic.rationale_desc")}
+                </p>
+                <div className="p-4 rounded-xl bg-white/50 border border-border/50">
+                  <h4 className="text-xs font-bold text-primary uppercase mb-2">{t("report_strategic.rationale_synthesis_title")}</h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {t("report_strategic.rationale_synthesis_desc", {
+                      primary: primaryLabel,
+                      trait: bigFive ? (bigFive.openness > 60 ? t("assessment_results.big_five.traits.openness") : t("assessment_results.big_five.traits.conscientiousness")) : t("report_strategic.adaptable"),
+                      value: assessments?.workvalues ? t(`assessment_results.work_values.values.${(assessments.workvalues.results as any[]).sort((a,b) => b.score - a.score)[0]?.name}`) : t("common.and")
+                    })}
+                  </p>
+                </div>
+              </div>
+              <div className="md:w-64">
+                <h4 className="text-xs font-bold text-secondary uppercase mb-4">{t("report_strategic.evidence_base")}</h4>
+                <div className="space-y-3">
+                  {assessments?.riasec && (
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground/70">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary" /> RIASEC Interest Profile
+                    </div>
+                  )}
+                  {assessments?.bigFive && (
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground/70">
+                      <div className="w-1.5 h-1.5 rounded-full bg-violet-500" /> Big Five Personality
+                    </div>
+                  )}
+                  {assessments?.caas && (
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground/70">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Career Adaptability
+                    </div>
+                  )}
+                  {assessments?.workvalues && (
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground/70">
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Work Values
+                    </div>
+                  )}
+                  {assessments?.eq && (
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground/70">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Emotional Intelligence
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </section>
