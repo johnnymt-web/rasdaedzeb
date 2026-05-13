@@ -267,118 +267,40 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
   // DYNAMIC ROADMAP LOGIC
   const getDynamicRoadmap = () => {
     const numericGrade = parseInt(grade?.replace(/\D/g, "") || "12");
+    const bandKey = numericGrade <= 8 ? "discovery" : numericGrade <= 10 ? "alignment" : "decision";
     
-    // Base Roadmap structure
-    if (numericGrade <= 8) {
-      return [
-        {
-          phase: "PHASE 01",
-          title: t("report_strategic.roadmap.phase_1.title"),
-          goal: "Explore your natural talents and what makes you unique.",
-          icon: <UserIcon className="w-5 h-5"/>,
-          tasks: [
-            `Discover how being a ${persona} shows up in your favorite school subjects.`,
-            "Draw or write about 3 careers that sound like 'fun' and check if they match your interests.",
-            "Talk to a family member about what they think your biggest strength is."
-          ]
-        },
-        {
-          phase: "PHASE 02",
-          title: "Curiosity Building",
-          goal: "Look at the world of work as a giant playground of possibilities.",
-          icon: <Share2Icon className="w-5 h-5"/>,
-          tasks: [
-            `Find one person who works in a ${primaryLabel} field and ask them one question about their job.`,
-            "Use the 'Career Explorer' to find a job you've never heard of before.",
-            "Join a school club or activity that connects to your top interest areas."
-          ]
-        },
-        {
-          phase: "PHASE 03",
-          title: "Skill Seeds",
-          goal: "Start growing the 'how-to' skills you'll need later.",
-          icon: <Zap className="w-5 h-5"/>,
-          tasks: [
-            "Complete one school project where you take the lead on a task you enjoy.",
-            "Try a new hobby this month that uses your secondary interest area.",
-            "Keep a 'Success Journal' for a week—write down one thing you did well each day."
-          ]
-        }
-      ];
-    } else if (numericGrade <= 10) {
-      return [
-        {
-          phase: "PHASE 01",
-          title: "Subject Alignment",
-          goal: "Ensure your school choices match your emerging professional identity.",
-          icon: <UserIcon className="w-5 h-5"/>,
-          tasks: [
-            `Review your top subjects: ${subjectSuggestions.slice(0, 2).join(", ")}. Do they excite you?`,
-            "Discuss with your counselor how your Big Five traits affect your study habits.",
-            "Set one academic goal for this term that connects to your primary interest."
-          ]
-        },
-        {
-          phase: "PHASE 02",
-          title: "Exposure & Validation",
-          goal: "Test your interests against real-world professional stories.",
-          icon: <Share2Icon className="w-5 h-5"/>,
-          tasks: [
-            `Research 3 professionals in ${primaryLabel} fields and look at their 'Pathway' (what they studied).`,
-            "Watch a 'Day in the Life' video for your top matched career on O*NET.",
-            "Participate in a school career fair or talk and ask about 'soft skills'."
-          ]
-        },
-        {
-          phase: "PHASE 03",
-          title: "Transition Readiness",
-          goal: "Prepare for the shift to senior secondary or vocational focus.",
-          icon: <Zap className="w-5 h-5"/>,
-          tasks: [
-            "Create a draft CV that focuses on your 'Employability Assets'.",
-            "Identify one specific skill (like public speaking or coding) you want to master next year.",
-            "Reflect on your CAAS score—which area (Concern, Control, Curiosity, Confidence) can you improve?"
-          ]
-        }
-      ];
-    } else {
-      // Grade 11-13 (Existing strategic logic but more tailored)
-      return [
-        {
-          phase: "PHASE 01",
-          title: "Strategic Selection",
-          goal: "Finalize your post-school destination and academic focus.",
-          icon: <UserIcon className="w-5 h-5"/>,
-          tasks: [
-            "Match your university or vocational choices against your RIASEC and Work Values profile.",
-            "Review your 'Market Value Analysis' in this report with a mentor.",
-            "Finalize your choice of higher-level subjects to ensure they meet entry requirements."
-          ]
-        },
-        {
-          phase: "PHASE 02",
-          title: "Professional Synthesis",
-          goal: "Bridge the gap between being a student and becoming a professional.",
-          icon: <Share2Icon className="w-5 h-5"/>,
-          tasks: [
-            `Reach out to 2 professionals in ${primaryLabel} for a 15-minute 'Informational Interview'.`,
-            "Secure a job-shadowing or internship placement for the next school break.",
-            "Optimize your digital presence (Portfolio or LinkedIn) to reflect your Strategic Persona."
-          ]
-        },
-        {
-          phase: "PHASE 03",
-          title: "Asset Deployment",
-          goal: "Launch into your next stage with a clear competitive advantage.",
-          icon: <Zap className="w-5 h-5"/>,
-          tasks: [
-            "Perfect your personal statement or application essay using your 'Synergy' analysis.",
-            "Complete a 'Capstone Project' that serves as an evidence-piece for your top skill.",
-            "Mock-interview with your counselor focusing on your 'Human Capital Advantage'."
-          ]
-        }
-      ];
-    }
+    const getTasks = (phase: string, params: any) => {
+      return t(`report_strategic.roadmap.bands.${bandKey}.${phase}.tasks`, { 
+        returnObjects: true,
+        ...params
+      }) as string[];
+    };
+
+    return [
+      {
+        phase: "PHASE 01",
+        title: bandKey === "discovery" 
+          ? t("report_strategic.roadmap.phase_1.title") 
+          : t(`report_strategic.roadmap.bands.${bandKey}.phase_1.title`),
+        goal: t(`report_strategic.roadmap.bands.${bandKey}.phase_1.goal`, { persona }),
+        icon: <UserIcon className="w-5 h-5"/>,
+        tasks: getTasks("phase_1", { persona, subjects: subjectSuggestions.slice(0, 2).join(", ") })
+      },
+      {
+        phase: "PHASE 02",
+        title: t(`report_strategic.roadmap.bands.${bandKey}.phase_2.title`),
+        goal: t(`report_strategic.roadmap.bands.${bandKey}.phase_2.goal`, { primaryLabel }),
+        icon: <Share2Icon className="w-5 h-5"/>,
+        tasks: getTasks("phase_2", { primaryLabel })
+      },
+      {
+        phase: "PHASE 03",
+        title: t(`report_strategic.roadmap.bands.${bandKey}.phase_3.title`),
+        goal: t(`report_strategic.roadmap.bands.${bandKey}.phase_3.goal`),
+        icon: <Zap className="w-5 h-5"/>,
+        tasks: getTasks("phase_3", { primaryLabel })
+      }
+    ];
   };
 
   const roadmap = getDynamicRoadmap();

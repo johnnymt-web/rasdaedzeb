@@ -777,6 +777,94 @@
           "Seek a 1-week work shadowing experience.",
           "Complete a project that demonstrates your primary employability skill."
         ]
+      },
+      "bands": {
+        "discovery": {
+          "phase_1": {
+            "goal": "Explore your natural talents and what makes you unique.",
+            "tasks": [
+              "Discover how being a {{persona}} shows up in your favorite school subjects.",
+              "Draw or write about 3 careers that sound like 'fun' and check if they match your interests.",
+              "Talk to a family member about what they think your biggest strength is."
+            ]
+          },
+          "phase_2": {
+            "title": "Curiosity Building",
+            "goal": "Look at the world of work as a giant playground of possibilities.",
+            "tasks": [
+              "Find one person who works in a {{primaryLabel}} field and ask them one question about their job.",
+              "Use the 'Career Explorer' to find a job you've never heard of before.",
+              "Join a school club or activity that connects to your top interest areas."
+            ]
+          },
+          "phase_3": {
+            "title": "Skill Seeds",
+            "goal": "Start growing the 'how-to' skills you'll need later.",
+            "tasks": [
+              "Complete one school project where you take the lead on a task you enjoy.",
+              "Try a new hobby this month that uses your secondary interest area.",
+              "Keep a 'Success Journal' for a week—write down one thing you did well each day."
+            ]
+          }
+        },
+        "alignment": {
+          "phase_1": {
+            "title": "Subject Alignment",
+            "goal": "Ensure your school choices match your emerging professional identity.",
+            "tasks": [
+              "Review your top subjects: {{subjects}}. Do they excite you?",
+              "Discuss with your counselor how your Big Five traits affect your study habits.",
+              "Set one academic goal for this term that connects to your primary interest."
+            ]
+          },
+          "phase_2": {
+            "title": "Exposure & Validation",
+            "goal": "Test your interests against real-world professional stories.",
+            "tasks": [
+              "Research 3 professionals in {{primaryLabel}} fields and look at their 'Pathway' (what they studied).",
+              "Watch a 'Day in the Life' video for your top matched career on O*NET.",
+              "Participate in a school career fair or talk and ask about 'soft skills'."
+            ]
+          },
+          "phase_3": {
+            "title": "Transition Readiness",
+            "goal": "Prepare for the shift to senior secondary or vocational focus.",
+            "tasks": [
+              "Create a draft CV that focuses on your 'Employability Assets'.",
+              "Identify one specific skill (like public speaking or coding) you want to master next year.",
+              "Reflect on your CAAS score—which area (Concern, Control, Curiosity, Confidence) can you improve?"
+            ]
+          }
+        },
+        "decision": {
+          "phase_1": {
+            "title": "Strategic Selection",
+            "goal": "Finalize your post-school destination and academic focus.",
+            "tasks": [
+              "Match your university or vocational choices against your RIASEC and Work Values profile.",
+              "Review your 'Market Value Analysis' in this report with a mentor.",
+              "Finalize your choice of higher-level subjects to ensure they meet entry requirements."
+            ]
+          },
+          "phase_2": {
+            "title": "Professional Synthesis",
+            "goal": "Bridge the gap between being a student and becoming a professional.",
+            "tasks": [
+              "Reach out to 2 professionals in {{primaryLabel}} for a 15-minute 'Informational Interview'.",
+              "Secure a job-shadowing or internship placement for the next school break.",
+              "Optimize your digital presence (Portfolio or LinkedIn) to reflect your Strategic Persona."
+            ]
+          },
+          "phase_3": {
+            "title": "Asset Deployment",
+            "goal": "Launch into your next stage with a clear competitive advantage.",
+            "tasks": [
+              "Perfect your personal statement or application essay using your 'Synergy' analysis.",
+              "Complete a 'Capstone Project' that serves as an evidence-piece for your top skill.",
+              "Mock-interview with your counselor focusing on your 'Human Capital Advantage'."
+            ]
+          }
+        }
       }
     }
   },
