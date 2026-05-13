@@ -716,71 +716,47 @@
       "Operational Architect": "Operational Architect",
       "Balanced Professional": "Balanced Professional"
     },
-    "portrait_desc": "A multidimensional profile that bridges the gap between <strong>{{primary}}</strong> interests and the strategic capacity of {{capacity}} high-performer.",
-    "conscientious": "a conscientious",
-    "adaptable": "an adaptable",
-    "synergy_title": "Interests-Personality Synergy",
-    "synergy_desc_base": "Your dominant interest in <strong>{{primary}}</strong> is not an isolated trait; it is powered by your core personality.",
-    "synergy_desc_high_openness": " With a high Openness score, you don't just follow {{primary}} paths—you innovate within them.",
-    "synergy_desc_disciplined": " With a disciplined Conscientiousness score, you perfect the operational excellence of {{primary}} fields.",
+    "portrait_desc": "A multi-dimensional profile bridging <strong>{{primary}}</strong> and <strong>{{secondary}}</strong> interests with the {{capacity}} capacity of a high-performing strategic professional.",
+    "conscientious": "disciplined and detail-oriented",
+    "adaptable": "adaptable and growth-oriented",
+    "capacity_innovative": "innovative and intellectually curious",
+    "capacity_outgoing": "socially dynamic and persuasive",
+    "synergy_title": "Interests & Personality Synergy",
+    "synergy_desc_base": "Your dominant interest in <strong>{{primary}}</strong> is not an isolated trait; it is powered by your core personality markers.",
+    "synergy_desc_high_openness": " With high Openness, you don't just follow {{primary}} pathways—you innovate within them.",
+    "synergy_desc_disciplined": " With disciplined Conscientiousness, you perfect the operational efficiency within {{primary}} domains.",
     "synergy_desc_generic": " This combination suggests a natural drive toward professional mastery in your chosen field.",
     "resilience_title": "Career Resilience",
     "resilience_adaptability": "Adaptability Index (CAAS)",
-    "resilience_desc": "High adaptability combined with your {{focus}} creates a <strong> \"Human Capital Advantage.\"</strong> You are capable of navigating market shifts and collaborative complexity with ease.",
+    "resilience_desc": "High adaptability combined with your {{focus}} creates a <strong>\"Human Capital Advantage.\"</strong> You can navigate market shifts and collaborative complexities with ease.",
     "focus_social": "social intuition",
     "focus_technical": "technical focus",
-    "resilience_factor_label": "Key Resilience Factor:",
+    "resilience_factor_label": "Core Resilience Factor:",
     "resilience_factor_curiosity": "Limitless Intellectual Curiosity",
     "resilience_factor_control": "Strategic Self-Control",
     "pathways_title": "Strategic Career Pathways",
     "pathways_desc": "High-alignment opportunities based on O*NET Web Services integration.",
     "academic_focus": "Academic Focus (IGCSE/IB)",
     "networking_title": "Professional Networking",
-    "networking_desc": "Your profile excels in <strong>Mentorship-Driven</strong> growth. We recommend identifying leaders in the <strong>{{primary}}</strong> sector to understand the \"hidden curriculum\" of your future industry.",
+    "networking_desc": "Your profile excels in <strong>mentorship-driven</strong> growth. We recommend finding leaders in the <strong>{{primary}}</strong> sector to understand the 'hidden curriculum' of your future industry.",
     "roadmap_title": "Strategic Development Roadmap",
-    "action_plan_label": "Action Plan:",
+    "action_plan_label": "ACTION PLAN:",
     "appendix_title": "Psychometric Data Appendix",
-    "appendix_desc": "Comprehensive data validation and score breakdowns across all assessment vectors.",
+    "appendix_desc": "Comprehensive data validation and granular score analysis across all assessment vectors.",
     "riasec_profile": "RIASEC Profile",
     "core_interests": "Core Interests (Top 3)",
     "market_value_title": "Market Value Analysis",
-    "market_value_desc": "The high score in <strong>{{category}}</strong> indicates a strong functional capacity to convert your interests into measurable professional outcomes. This is your primary leverage point in the current job market.",
+    "market_value_desc": "A high score in <strong>{{category}}</strong> indicates a strong functional ability to translate your interests into measurable professional outcomes.",
     "skills_appendix_title": "Employability Asset Check",
-    "skills_market_value_desc": "The high score in <strong>{{category}}</strong> indicates a strong functional capacity to convert your interests into measurable professional outcomes. This is your primary leverage point in the current job market.",
+    "skills_market_value_desc": "A high score in <strong>{{category}}</strong> indicates a strong functional ability to translate your interests into measurable professional outcomes. This is your primary leverage in the modern labor market.",
     "data_required": "Assessment Data Required",
     "data_required_desc": "Complete your RIASEC career assessment to unlock this world-class professional strategy.",
     "start_discovery": "Start Career Discovery",
     "roadmap": {
-      "phase_1": {
-        "title": "Identity Mastery",
-        "goal": "Deepen understanding of core strengths and industry archetypes.",
-        "tasks": [
-          "Review the 'Psychometric Data Appendix' below for score details.",
-          "Discuss your 'Strategic Persona' with your counselor.",
-          "Reflect on how your Big Five traits influence your daily choices."
-        ]
-      },
-      "phase_2": {
-        "title": "Network Synthesis",
-        "goal": "Establish professional connections and gather cross-industry insights.",
-        "tasks": [
-          "Identify 3 shadow-mentors in your top RIASEC field.",
-          "Use 'Career Explorer' to bookmark 5 interesting job profiles.",
-          "Attend at least one career-related seminar or webinar."
-        ]
-      },
-      "phase_3": {
-        "title": "Asset Deployment",
-        "goal": "Apply employability skills in real-world projects or internships.",
-        "tasks": [
-          "Update your CV highlighting the 'Employability Assets' from this report.",
-          "Seek a 1-week work shadowing experience.",
-          "Complete a project that demonstrates your primary employability skill."
-        ]
-      },
       "bands": {
         "discovery": {
           "phase_1": {
+            "title": "Discovery Journey",
             "goal": "Explore your natural talents and what makes you unique.",
             "tasks": [
               "Discover how being a {{persona}} shows up in your favorite school subjects.",

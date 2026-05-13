@@ -5,6 +5,7 @@ import { Sparkles, BookOpen, Target, Users, Loader2, ChevronRight, BarChart3, Br
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/useAuth";
 import { normalizeRiasecResults } from "@/utils/riasec";
 import { getGradeBand, getBandMessaging } from "@/utils/gradeBands";
 import OnetCareerSection from "./OnetCareerSection";
@@ -83,14 +84,24 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
   const messaging = getBandMessaging(band);
 
   // ARCHETYPE LOGIC (The Strategic Persona)
+  // Two-tier matching: strict (RIASEC + Big Five/EQ) first, then interest-only fallback
   const getStrategicPersona = () => {
     let key = "Balanced Professional";
+
+    // Tier 1: Combined RIASEC + personality trait match (strongest signal)
     if (primaryInterest === 'Realistic' && bigFive?.conscientiousness > 65) key = "Precision Engineer";
     else if (primaryInterest === 'Investigative' && bigFive?.openness > 70) key = "Visionary Researcher";
     else if (primaryInterest === 'Artistic' && bigFive?.openness > 70) key = "Creative Catalyst";
-    else if (primaryInterest === 'Social' && eq && Array.isArray(eq.results)) key = "Empathetic Strategist";
+    else if (primaryInterest === 'Social' && (eq || bigFive?.agreeableness > 60)) key = "Empathetic Strategist";
     else if (primaryInterest === 'Enterprising' && bigFive?.extraversion > 65) key = "Dynamic Growth Leader";
     else if (primaryInterest === 'Conventional' && bigFive?.conscientiousness > 75) key = "Operational Architect";
+    // Tier 2: Fallback based on primary RIASEC interest alone
+    else if (primaryInterest === 'Realistic') key = "Precision Engineer";
+    else if (primaryInterest === 'Investigative') key = "Visionary Researcher";
+    else if (primaryInterest === 'Artistic') key = "Creative Catalyst";
+    else if (primaryInterest === 'Social') key = "Empathetic Strategist";
+    else if (primaryInterest === 'Enterprising') key = "Dynamic Growth Leader";
+    else if (primaryInterest === 'Conventional') key = "Operational Architect";
     
     return t(`report_strategic.personas.${key}`, key);
   };
@@ -108,161 +119,6 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
   };
 
   const subjectSuggestions = Array.from(new Set(subjectMap[primaryInterest] || [])).slice(0, 5);
-
-  return (
-    <div className="space-y-16 pb-20">
-      {latestAssessment && latestAssessment.completed_at ? (
-        <>
-          {/* SECTION 1: THE EXECUTIVE SUMMARY (PORTRAIT) */}
-          <section className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-[2.5rem] -m-4 -z-10" />
-            <div className="flex flex-col md:flex-row gap-8 items-center p-8 bg-white/80 backdrop-blur-sm border border-white shadow-2xl rounded-[2.5rem]">
-              <div className="w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 flex-shrink-0 rotate-3">
-                <Award className="w-12 h-12" />
-              </div>
-              <div className="flex-1 space-y-3">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-bold text-primary uppercase tracking-widest">
-                  <Sparkles className="w-3 h-3" /> {t("report_strategic.portrait_title")}
-                </div>
-                <h2 className="text-3xl font-heading font-black text-foreground tracking-tight">
-                  {t("report_strategic.persona_prefix")} {persona}
-                </h2>
-                <p className="text-base text-foreground/80 leading-relaxed max-w-2xl font-medium italic border-l-4 border-primary/20 pl-6 py-2">
-                  {t("report_strategic.portrait_desc", { 
-                    primary: primaryLabel, 
-                    capacity: bigFive ? t("report_strategic.conscientious") : t("report_strategic.adaptable") 
-                  }).split('<strong>').map((part, i) => {
-                    if (part.includes('</strong>')) {
-                      const [bold, rest] = part.split('</strong>');
-                      return <span key={i}><strong>{bold}</strong>{rest}</span>;
-                    }
-                    return part;
-                  })}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* SECTION 2: MULTIDIMENSIONAL CORE ANALYSIS (CORRELATIONS) */}
-          <section className="grid md:grid-cols-3 gap-8">
-            {/* Interests & Values */}
-            <div className="md:col-span-2 card-warm p-8 bg-white border-primary/10 shadow-lg relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
-                <Zap className="w-40 h-40 text-primary" />
-              </div>
-              <h3 className="text-lg font-heading font-bold text-foreground mb-6 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-primary" />
-                {t("report_strategic.synergy_title")}
-              </h3>
-              <div className="space-y-6">
-                <p className="text-sm text-foreground/70 leading-relaxed">
-                  {t("report_strategic.synergy_desc_base", { primary: primaryLabel }).split('<strong>').map((part, i) => {
-                    if (part.includes('</strong>')) {
-                      const [bold, rest] = part.split('</strong>');
-                      return <span key={i}><strong>{bold}</strong>{rest}</span>;
-                    }
-                    return part;
-                  })}
-                  {bigFive ? (
-                    bigFive.openness > 65 
-                      ? t("report_strategic.synergy_desc_high_openness", { primary: primaryLabel })
-                      : t("report_strategic.synergy_desc_disciplined", { primary: primaryLabel })
-                  ) : (
-                    t("report_strategic.synergy_desc_generic")
-                  )}
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  {topInterests.map((int, i) => (
-                    <div key={i} className="p-4 rounded-2xl bg-muted/30 border border-border/50">
-                      <div className="text-[10px] font-black text-muted-foreground uppercase mb-1">{int.label}</div>
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-primary" style={{ width: `${int.pct}%` }} />
-                        </div>
-                        <span className="text-xs font-bold">{int.pct}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Human Capital Index (EQ + CAAS) */}
-            <div className="card-warm p-8 bg-gradient-to-br from-secondary/10 to-background border-secondary/20 shadow-lg">
-              <h3 className="text-lg font-heading font-bold text-foreground mb-6 flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-secondary" />
-                {t("report_strategic.resilience_title")}
-              </h3>
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="text-3xl font-black text-secondary">{caas?.total_score ? caas.total_score.toFixed(1) : '4.2'}</div>
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase leading-tight">
-                    {t("report_strategic.resilience_adaptability")}
-                  </div>
-                </div>
-                <p className="text-xs text-foreground/70 leading-relaxed">
-                  {t("report_strategic.resilience_desc", { 
-                    focus: eq ? t("report_strategic.focus_social") : t("report_strategic.focus_technical") 
-                  }).split('<strong>').map((part, i) => {
-                    if (part.includes('</strong>')) {
-                      const [bold, rest] = part.split('</strong>');
-                      return <span key={i}><strong>{bold}</strong>{rest}</span>;
-                    }
-                    return part;
-                  })}
-                </p>
-                <div className="pt-4 border-t border-secondary/10">
-                  <div className="text-[10px] font-bold text-secondary uppercase mb-2">{t("report_strategic.resilience_factor_label")}</div>
-                  <div className="text-sm font-bold text-foreground italic">
-                    "{caas?.curiosity > 3.5 ? t("report_strategic.resilience_factor_curiosity") : t("report_strategic.resilience_factor_control")}"
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* SECTION 3: STRATEGIC CAREER PATHWAYS (MATCHES) */}
-          <section className="space-y-8">
-            <div className="flex items-end justify-between border-b pb-4">
-              <div>
-                <h3 className="text-2xl font-heading font-bold text-foreground">{t("report_strategic.pathways_title")}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{t("report_strategic.pathways_desc")}</p>
-              </div>
-            </div>
-            
-            <OnetCareerSection riasecCode={topInterests.map(i => i.name[0]).join("").slice(0, 3)} />
-
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="card-warm p-8 border-sage-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-6">
-                  <BookOpen className="w-5 h-5 text-primary" />
-                  <h4 className="font-heading font-bold text-foreground">{t("report_strategic.academic_focus")}</h4>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {subjectSuggestions.map((s) => (
-                    <div key={s} className="px-5 py-2.5 rounded-xl bg-primary/5 text-primary text-sm font-bold border border-primary/10 hover:bg-primary hover:text-white transition-all cursor-default">
-                      {s}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="card-warm p-8 border-amber-100 bg-amber-50/30">
-                <div className="flex items-center gap-2 mb-4">
-                  <Users className="w-5 h-5 text-amber-600" />
-                  <h4 className="font-heading font-bold text-amber-900">{t("report_strategic.networking_title")}</h4>
-                </div>
-                <p className="text-sm text-amber-800 leading-relaxed">
-                  {t("report_strategic.networking_desc", { primary: primaryLabel }).split('<strong>').map((part, i) => {
-                    if (part.includes('</strong>')) {
-                      const [bold, rest] = part.split('</strong>');
-                      return <span key={i}><strong>{bold}</strong>{rest}</span>;
-                    }
-                    return part;
-                  })}
-                </p>
-              </div>
-            </div>
-          </section>
 
   // DYNAMIC ROADMAP LOGIC
   const getDynamicRoadmap = () => {
@@ -326,7 +182,14 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
                 <p className="text-base text-foreground/80 leading-relaxed max-w-2xl font-medium italic border-l-4 border-primary/20 pl-6 py-2">
                   {t("report_strategic.portrait_desc", { 
                     primary: primaryLabel, 
-                    capacity: bigFive ? t("report_strategic.conscientious") : t("report_strategic.adaptable") 
+                    secondary: secondaryLabel,
+                    capacity: bigFive 
+                      ? (bigFive.openness > bigFive.conscientiousness && bigFive.openness > bigFive.extraversion 
+                          ? t("report_strategic.capacity_innovative", "innovative and intellectually curious")
+                        : bigFive.conscientiousness > bigFive.extraversion 
+                          ? t("report_strategic.conscientious") 
+                          : t("report_strategic.capacity_outgoing", "socially dynamic and persuasive"))
+                      : t("report_strategic.adaptable") 
                   }).split('<strong>').map((part, i) => {
                     if (part.includes('</strong>')) {
                       const [bold, rest] = part.split('</strong>');
@@ -468,7 +331,7 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
               </div>
               <h3 className="text-2xl font-heading font-bold mb-8">{t("report_strategic.roadmap_title")}</h3>
               <div className="grid md:grid-cols-3 gap-8">
-                {roadmap.map((m, i) => (
+                {roadmap.map((m: any, i: number) => (
                   <div 
                     key={i} 
                     className="space-y-4 p-7 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/15 transition-all group flex flex-col h-full"
@@ -480,7 +343,7 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
                     <div className="pt-4 border-t border-white/10 space-y-3 flex-grow">
                       <div className="text-[10px] font-bold text-primary uppercase tracking-wider">{t("report_strategic.action_plan_label")}</div>
                       <ul className="space-y-2">
-                        {m.tasks.map((task, idx) => (
+                        {m.tasks.map((task: string, idx: number) => (
                           <li key={idx} className="text-xs text-background/80 leading-relaxed flex gap-2">
                             <span className="text-primary">•</span>
                             {task}
