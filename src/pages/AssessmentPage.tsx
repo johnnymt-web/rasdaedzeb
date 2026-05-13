@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronLeft, Sparkles, Briefcase } from "lucide-react";
+import { ChevronRight, ChevronLeft, Sparkles, Briefcase, Loader2 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +69,7 @@ export default function AssessmentPage() {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [showResults, setShowResults] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuth();
 
   const questions = useMemo(() => 
@@ -91,31 +92,32 @@ export default function AssessmentPage() {
 
   const handleFinish = async () => {
     console.log("Finishing assessment...");
+    setIsSaving(true);
     
-    // Instant UI Switch
-    setShowResults(true);
-    
-    // Background Save with Timeout
-    if (user) {
-      const savePromise = supabase.from("assessments").insert({
-        user_id: user.id,
-        assessment_type: type || "riasec",
-        answers: answers as any,
-        results: results as any,
-        completed_at: new Date().toISOString(),
-      });
+    try {
+      if (user) {
+        const { error } = await supabase.from("assessments").insert({
+          user_id: user.id,
+          assessment_type: type || "riasec",
+          answers: answers as any,
+          results: results as any,
+          completed_at: new Date().toISOString(),
+        });
 
-      // Don't wait for it to block the UI, but handle result
-      savePromise.then(({ error }) => {
         if (error) {
           console.error("Save error:", error);
-          toast.error("Could not sync to cloud, but your results are shown below.");
+          toast.error("Could not sync to cloud, but showing results locally.");
         } else {
           toast.success("Assessment saved successfully!");
         }
-      }).catch(err => {
-        console.error("Silent save failure:", err);
-      });
+      }
+      setShowResults(true);
+    } catch (err) {
+      console.error("Critical save failure:", err);
+      toast.error("An unexpected error occurred. Showing results locally.");
+      setShowResults(true);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -205,10 +207,14 @@ export default function AssessmentPage() {
             </Button>
             <Button 
               onClick={() => currentQ === questions.length - 1 ? handleFinish() : setCurrentQ(currentQ + 1)} 
-              disabled={!answers[question?.id]}
+              disabled={!answers[question?.id] || isSaving}
             >
-              {currentQ === questions.length - 1 ? "Complete Discovery" : "Next Question"}
-              <ChevronRight className="w-4 h-4 ml-2" />
+              {isSaving ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+              ) : (
+                currentQ === questions.length - 1 ? "Complete Discovery" : "Next Question"
+              )}
+              {!isSaving && <ChevronRight className="w-4 h-4 ml-2" />}
             </Button>
           </div>
         </motion.div>

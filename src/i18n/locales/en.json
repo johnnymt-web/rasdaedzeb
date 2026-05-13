@@ -1419,5 +1419,57 @@
   },
   "footer": {
     "copyright": "© 2026 Pathfinder Career Guidance. Built for schools that believe every student's future matters."
+  },
+  "assessment": {
+    "options": {
+      "1": "Strongly Dislike",
+      "2": "Dislike",
+      "3": "Neutral",
+      "4": "Like",
+      "5": "Strongly Like"
+    },
+    "riasec": {
+      "questions": {
+        "1": "I enjoy building or repairing things with my hands.",
+        "2": "I like working outdoors or with plants and animals.",
+        "3": "I am interested in operating machinery or tools.",
+        "4": "I prefer working on physical projects rather than desk work.",
+        "5": "I enjoy solving problems by fixing hardware or structures.",
+        "6": "I like to analyze data and solve complex puzzles.",
+        "7": "I enjoy conducting scientific experiments or research.",
+        "8": "I am curious about how things work at a deep level.",
+        "9": "I prefer working independently on intellectual challenges.",
+        "10": "I like to explore new ideas through logical thinking.",
+        "11": "I enjoy expressing myself through art, music, or writing.",
+        "12": "I like to come up with original ideas and creative solutions.",
+        "13": "I prefer working in environments that allow for self-expression.",
+        "14": "I enjoy designing visuals or creating aesthetic projects.",
+        "15": "I like to use my imagination to solve problems.",
+        "16": "I enjoy helping others learn new skills or information.",
+        "17": "I am interested in working with people to improve their lives.",
+        "18": "I like to listen to others and provide emotional support.",
+        "19": "I enjoy collaborating in teams to achieve social goals.",
+        "20": "I am a good communicator and enjoy social interactions.",
+        "21": "I like to lead groups and make important decisions.",
+        "22": "I enjoy persuading others to see my point of view.",
+        "23": "I am interested in starting or managing a business.",
+        "24": "I like to take risks and explore new opportunities.",
+        "25": "I enjoy setting goals and motivating others to reach them.",
+        "26": "I like to organize information and keep detailed records.",
+        "27": "I prefer working with clear rules and structured procedures.",
+        "28": "I enjoy managing budgets or financial data.",
+        "29": "I am detail-oriented and value accuracy in my work.",
+        "30": "I like to ensure that tasks are completed systematically."
+      }
+    },
+    "skills": {
+      "questions": {
+        "101": "I can communicate my ideas clearly in writing and speaking.",
+        "102": "I am able to identify problems and find effective solutions.",
+        "103": "I feel confident using digital tools and software for productivity.",
+        "104": "I work well with others and contribute to team goals.",
+        "105": "I can easily adapt to new situations or changing requirements."
+      }
+    }
   }
 }
