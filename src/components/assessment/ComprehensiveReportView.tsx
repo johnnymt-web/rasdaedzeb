@@ -129,7 +129,9 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
       const baseTasks = t(`report_strategic.roadmap.bands.${bandKey}.${phase}.tasks`, { 
         returnObjects: true,
         ...params
-      }) as string[];
+      });
+      
+      const tasksArray = Array.isArray(baseTasks) ? baseTasks : [];
 
       // Synthesis Logic: Add findings from other tests if they exist
       const extraTasks: string[] = [];
@@ -161,15 +163,13 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
         }
       }
 
-      return [...baseTasks, ...extraTasks].slice(0, 4); // Keep it concise
+      return [...tasksArray, ...extraTasks].slice(0, 4); // Keep it concise
     };
 
     return [
       {
         phase: "PHASE 01",
-        title: bandKey === "discovery" 
-          ? t("report_strategic.roadmap.phase_1.title") 
-          : t(`report_strategic.roadmap.bands.${bandKey}.phase_1.title`),
+        title: t(`report_strategic.roadmap.bands.${bandKey}.phase_1.title`),
         goal: t(`report_strategic.roadmap.bands.${bandKey}.phase_1.goal`, { persona }),
         icon: <UserIcon className="w-5 h-5"/>,
         tasks: getTasks("phase_1", { persona, subjects: subjectSuggestions.slice(0, 2).join(", ") })
