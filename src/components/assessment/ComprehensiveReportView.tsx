@@ -23,8 +23,10 @@ interface Props {
   isCounselorView?: boolean;
 }
 
-const ComprehensiveReportView = ({ studentId, grade, isCounselorView }: Props) => {
+const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView }: Props) => {
   const { t } = useTranslation();
+  const { user, profile: authProfile } = useAuth();
+  const grade = propGrade || authProfile?.grade || user?.user_metadata?.grade;
 
   const { data: assessments, isLoading } = useQuery({
     queryKey: ["gold-standard-report", studentId],
