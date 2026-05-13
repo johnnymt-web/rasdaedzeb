@@ -262,6 +262,280 @@ const ComprehensiveReportView = ({ studentId, grade, isCounselorView }: Props) =
             </div>
           </section>
 
+  // DYNAMIC ROADMAP LOGIC
+  const getDynamicRoadmap = () => {
+    const numericGrade = parseInt(grade?.replace(/\D/g, "") || "12");
+    
+    // Base Roadmap structure
+    if (numericGrade <= 8) {
+      return [
+        {
+          phase: "PHASE 01",
+          title: t("report_strategic.roadmap.phase_1.title"),
+          goal: "Explore your natural talents and what makes you unique.",
+          icon: <UserIcon className="w-5 h-5"/>,
+          tasks: [
+            `Discover how being a ${persona} shows up in your favorite school subjects.`,
+            "Draw or write about 3 careers that sound like 'fun' and check if they match your interests.",
+            "Talk to a family member about what they think your biggest strength is."
+          ]
+        },
+        {
+          phase: "PHASE 02",
+          title: "Curiosity Building",
+          goal: "Look at the world of work as a giant playground of possibilities.",
+          icon: <Share2Icon className="w-5 h-5"/>,
+          tasks: [
+            `Find one person who works in a ${primaryLabel} field and ask them one question about their job.`,
+            "Use the 'Career Explorer' to find a job you've never heard of before.",
+            "Join a school club or activity that connects to your top interest areas."
+          ]
+        },
+        {
+          phase: "PHASE 03",
+          title: "Skill Seeds",
+          goal: "Start growing the 'how-to' skills you'll need later.",
+          icon: <Zap className="w-5 h-5"/>,
+          tasks: [
+            "Complete one school project where you take the lead on a task you enjoy.",
+            "Try a new hobby this month that uses your secondary interest area.",
+            "Keep a 'Success Journal' for a week—write down one thing you did well each day."
+          ]
+        }
+      ];
+    } else if (numericGrade <= 10) {
+      return [
+        {
+          phase: "PHASE 01",
+          title: "Subject Alignment",
+          goal: "Ensure your school choices match your emerging professional identity.",
+          icon: <UserIcon className="w-5 h-5"/>,
+          tasks: [
+            `Review your top subjects: ${subjectSuggestions.slice(0, 2).join(", ")}. Do they excite you?`,
+            "Discuss with your counselor how your Big Five traits affect your study habits.",
+            "Set one academic goal for this term that connects to your primary interest."
+          ]
+        },
+        {
+          phase: "PHASE 02",
+          title: "Exposure & Validation",
+          goal: "Test your interests against real-world professional stories.",
+          icon: <Share2Icon className="w-5 h-5"/>,
+          tasks: [
+            `Research 3 professionals in ${primaryLabel} fields and look at their 'Pathway' (what they studied).`,
+            "Watch a 'Day in the Life' video for your top matched career on O*NET.",
+            "Participate in a school career fair or talk and ask about 'soft skills'."
+          ]
+        },
+        {
+          phase: "PHASE 03",
+          title: "Transition Readiness",
+          goal: "Prepare for the shift to senior secondary or vocational focus.",
+          icon: <Zap className="w-5 h-5"/>,
+          tasks: [
+            "Create a draft CV that focuses on your 'Employability Assets'.",
+            "Identify one specific skill (like public speaking or coding) you want to master next year.",
+            "Reflect on your CAAS score—which area (Concern, Control, Curiosity, Confidence) can you improve?"
+          ]
+        }
+      ];
+    } else {
+      // Grade 11-13 (Existing strategic logic but more tailored)
+      return [
+        {
+          phase: "PHASE 01",
+          title: "Strategic Selection",
+          goal: "Finalize your post-school destination and academic focus.",
+          icon: <UserIcon className="w-5 h-5"/>,
+          tasks: [
+            "Match your university or vocational choices against your RIASEC and Work Values profile.",
+            "Review your 'Market Value Analysis' in this report with a mentor.",
+            "Finalize your choice of higher-level subjects to ensure they meet entry requirements."
+          ]
+        },
+        {
+          phase: "PHASE 02",
+          title: "Professional Synthesis",
+          goal: "Bridge the gap between being a student and becoming a professional.",
+          icon: <Share2Icon className="w-5 h-5"/>,
+          tasks: [
+            `Reach out to 2 professionals in ${primaryLabel} for a 15-minute 'Informational Interview'.`,
+            "Secure a job-shadowing or internship placement for the next school break.",
+            "Optimize your digital presence (Portfolio or LinkedIn) to reflect your Strategic Persona."
+          ]
+        },
+        {
+          phase: "PHASE 03",
+          title: "Asset Deployment",
+          goal: "Launch into your next stage with a clear competitive advantage.",
+          icon: <Zap className="w-5 h-5"/>,
+          tasks: [
+            "Perfect your personal statement or application essay using your 'Synergy' analysis.",
+            "Complete a 'Capstone Project' that serves as an evidence-piece for your top skill.",
+            "Mock-interview with your counselor focusing on your 'Human Capital Advantage'."
+          ]
+        }
+      ];
+    }
+  };
+
+  const roadmap = getDynamicRoadmap();
+
+  return (
+    <div className="space-y-16 pb-20">
+      {latestAssessment && latestAssessment.completed_at ? (
+        <>
+          {/* SECTION 1: THE EXECUTIVE SUMMARY (PORTRAIT) */}
+          <section className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-[2.5rem] -m-4 -z-10" />
+            <div className="flex flex-col md:flex-row gap-8 items-center p-8 bg-white/80 backdrop-blur-sm border border-white shadow-2xl rounded-[2.5rem]">
+              <div className="w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 flex-shrink-0 rotate-3">
+                <Award className="w-12 h-12" />
+              </div>
+              <div className="flex-1 space-y-3">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-bold text-primary uppercase tracking-widest">
+                  <Sparkles className="w-3 h-3" /> {t("report_strategic.portrait_title")}
+                </div>
+                <h2 className="text-3xl font-heading font-black text-foreground tracking-tight">
+                  {t("report_strategic.persona_prefix")} {persona}
+                </h2>
+                <p className="text-base text-foreground/80 leading-relaxed max-w-2xl font-medium italic border-l-4 border-primary/20 pl-6 py-2">
+                  {t("report_strategic.portrait_desc", { 
+                    primary: primaryLabel, 
+                    capacity: bigFive ? t("report_strategic.conscientious") : t("report_strategic.adaptable") 
+                  }).split('<strong>').map((part, i) => {
+                    if (part.includes('</strong>')) {
+                      const [bold, rest] = part.split('</strong>');
+                      return <span key={i}><strong>{bold}</strong>{rest}</span>;
+                    }
+                    return part;
+                  })}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* SECTION 2: MULTIDIMENSIONAL CORE ANALYSIS (CORRELATIONS) */}
+          <section className="grid md:grid-cols-3 gap-8">
+            {/* Interests & Values */}
+            <div className="md:col-span-2 card-warm p-8 bg-white border-primary/10 shadow-lg relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                <Zap className="w-40 h-40 text-primary" />
+              </div>
+              <h3 className="text-lg font-heading font-bold text-foreground mb-6 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                {t("report_strategic.synergy_title")}
+              </h3>
+              <div className="space-y-6">
+                <p className="text-sm text-foreground/70 leading-relaxed">
+                  {t("report_strategic.synergy_desc_base", { primary: primaryLabel }).split('<strong>').map((part, i) => {
+                    if (part.includes('</strong>')) {
+                      const [bold, rest] = part.split('</strong>');
+                      return <span key={i}><strong>{bold}</strong>{rest}</span>;
+                    }
+                    return part;
+                  })}
+                  {bigFive ? (
+                    bigFive.openness > 65 
+                      ? t("report_strategic.synergy_desc_high_openness", { primary: primaryLabel })
+                      : t("report_strategic.synergy_desc_disciplined", { primary: primaryLabel })
+                  ) : (
+                    t("report_strategic.synergy_desc_generic")
+                  )}
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  {topInterests.map((int, i) => (
+                    <div key={i} className="p-4 rounded-2xl bg-muted/30 border border-border/50">
+                      <div className="text-[10px] font-black text-muted-foreground uppercase mb-1">{int.label}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-primary" style={{ width: `${int.pct}%` }} />
+                        </div>
+                        <span className="text-xs font-bold">{int.pct}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Human Capital Index (EQ + CAAS) */}
+            <div className="card-warm p-8 bg-gradient-to-br from-secondary/10 to-background border-secondary/20 shadow-lg">
+              <h3 className="text-lg font-heading font-bold text-foreground mb-6 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-secondary" />
+                {t("report_strategic.resilience_title")}
+              </h3>
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="text-3xl font-black text-secondary">{caas?.total_score ? caas.total_score.toFixed(1) : '4.2'}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase leading-tight">
+                    {t("report_strategic.resilience_adaptability")}
+                  </div>
+                </div>
+                <p className="text-xs text-foreground/70 leading-relaxed">
+                  {t("report_strategic.resilience_desc", { 
+                    focus: eq ? t("report_strategic.focus_social") : t("report_strategic.focus_technical") 
+                  }).split('<strong>').map((part, i) => {
+                    if (part.includes('</strong>')) {
+                      const [bold, rest] = part.split('</strong>');
+                      return <span key={i}><strong>{bold}</strong>{rest}</span>;
+                    }
+                    return part;
+                  })}
+                </p>
+                <div className="pt-4 border-t border-secondary/10">
+                  <div className="text-[10px] font-bold text-secondary uppercase mb-2">{t("report_strategic.resilience_factor_label")}</div>
+                  <div className="text-sm font-bold text-foreground italic">
+                    "{caas?.curiosity > 3.5 ? t("report_strategic.resilience_factor_curiosity") : t("report_strategic.resilience_factor_control")}"
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* SECTION 3: STRATEGIC CAREER PATHWAYS (MATCHES) */}
+          <section className="space-y-8">
+            <div className="flex items-end justify-between border-b pb-4">
+              <div>
+                <h3 className="text-2xl font-heading font-bold text-foreground">{t("report_strategic.pathways_title")}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{t("report_strategic.pathways_desc")}</p>
+              </div>
+            </div>
+            
+            <OnetCareerSection riasecCode={topInterests.map(i => i.name[0]).join("").slice(0, 3)} />
+
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="card-warm p-8 border-sage-100 shadow-sm">
+                <div className="flex items-center gap-2 mb-6">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                  <h4 className="font-heading font-bold text-foreground">{t("report_strategic.academic_focus")}</h4>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {subjectSuggestions.map((s) => (
+                    <div key={s} className="px-5 py-2.5 rounded-xl bg-primary/5 text-primary text-sm font-bold border border-primary/10 hover:bg-primary hover:text-white transition-all cursor-default">
+                      {s}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="card-warm p-8 border-amber-100 bg-amber-50/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <Users className="w-5 h-5 text-amber-600" />
+                  <h4 className="font-heading font-bold text-amber-900">{t("report_strategic.networking_title")}</h4>
+                </div>
+                <p className="text-sm text-amber-800 leading-relaxed">
+                  {t("report_strategic.networking_desc", { primary: primaryLabel }).split('<strong>').map((part, i) => {
+                    if (part.includes('</strong>')) {
+                      const [bold, rest] = part.split('</strong>');
+                      return <span key={i}><strong>{bold}</strong>{rest}</span>;
+                    }
+                    return part;
+                  })}
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* SECTION 4: PROFESSIONAL DEVELOPMENT ROADMAP (MILESTONES) */}
           <section>
             <div className="bg-foreground text-background rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden">
@@ -270,29 +544,7 @@ const ComprehensiveReportView = ({ studentId, grade, isCounselorView }: Props) =
               </div>
               <h3 className="text-2xl font-heading font-bold mb-8">{t("report_strategic.roadmap_title")}</h3>
               <div className="grid md:grid-cols-3 gap-8">
-                {[
-                  { 
-                    phase: "PHASE 01", 
-                    title: t("report_strategic.roadmap.phase_1.title"), 
-                    goal: t("report_strategic.roadmap.phase_1.goal"), 
-                    icon: <UserIcon className="w-5 h-5"/>,
-                    tasks: t("report_strategic.roadmap.phase_1.tasks", { returnObjects: true }) as string[]
-                  },
-                  { 
-                    phase: "PHASE 02", 
-                    title: t("report_strategic.roadmap.phase_2.title"), 
-                    goal: t("report_strategic.roadmap.phase_2.goal"), 
-                    icon: <Share2Icon className="w-5 h-5"/>,
-                    tasks: t("report_strategic.roadmap.phase_2.tasks", { returnObjects: true }) as string[]
-                  },
-                  { 
-                    phase: "PHASE 03", 
-                    title: t("report_strategic.roadmap.phase_3.title"), 
-                    goal: t("report_strategic.roadmap.phase_3.goal"), 
-                    icon: <Zap className="w-5 h-5"/>,
-                    tasks: t("report_strategic.roadmap.phase_3.tasks", { returnObjects: true }) as string[]
-                  }
-                ].map((m, i) => (
+                {roadmap.map((m, i) => (
                   <div 
                     key={i} 
                     className="space-y-4 p-7 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/15 transition-all group flex flex-col h-full"
