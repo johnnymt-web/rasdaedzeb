@@ -4,87 +4,13 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
-
 import { Brain, Compass } from "lucide-react";
-
-const ASSESSMENTS = [
-  {
-    id: "riasec",
-    title: "Career Interest Discovery",
-    desc: "The standard RIASEC assessment to find your career matches based on interests.",
-    icon: Sparkles,
-    color: "bg-primary/10 text-primary",
-    bgColor: "from-primary/5 to-transparent",
-    href: "/student/assessment/riasec",
-    duration: "10 mins"
-  },
-  {
-    id: "skills",
-    title: "Employability Skills Check",
-    desc: "A self-assessment of your workplace readiness and transition skills.",
-    icon: Briefcase,
-    color: "bg-amber-500/10 text-amber-600",
-    bgColor: "from-amber-500/5 to-transparent",
-    href: "/student/assessment/skills",
-    duration: "5 mins"
-  },
-  {
-    id: "bigfive",
-    title: "Personality Profile (Big Five)",
-    desc: "Discover your personality traits across Openness, Conscientiousness, Extraversion, Agreeableness, and Emotional Stability.",
-    icon: Brain,
-    color: "bg-violet-500/10 text-violet-600",
-    bgColor: "from-violet-500/5 to-transparent",
-    href: "/student/assessment/bigfive",
-    duration: "12 mins"
-  },
-  {
-    id: "caas",
-    title: "Career Adaptability (CAAS)",
-    desc: "Measure your readiness to handle career transitions across Concern, Control, Curiosity, and Confidence.",
-    icon: Compass,
-    color: "bg-emerald-500/10 text-emerald-600",
-    bgColor: "from-emerald-500/5 to-transparent",
-    href: "/student/assessment/caas",
-    duration: "8 mins"
-  },
-  {
-    id: "work-values",
-    title: "Work Values (O*NET)",
-    desc: "Understand what motivates you in a job, from independence and achievement to relationships and support.",
-    icon: Target,
-    color: "bg-rose-500/10 text-rose-600",
-    bgColor: "from-rose-500/5 to-transparent",
-    href: "/student/assessment/workvalues",
-    duration: "6 mins"
-  },
-  {
-    id: "eq",
-    title: "Emotional Intelligence (EQ)",
-    desc: "Measure your emotional awareness and interpersonal skills across four core domains.",
-    icon: Brain,
-    color: "bg-blue-500/10 text-blue-600",
-    bgColor: "from-blue-500/5 to-transparent",
-    href: "/student/assessment/eq",
-    duration: "5 mins"
-  },
-  {
-    id: "onet-official",
-    title: "Official O*NET Interest Profiler",
-    desc: "The full, official assessment widget provided by the U.S. Department of Labor for interest discovery.",
-    icon: ExternalLink,
-    color: "bg-blue-600/10 text-blue-600",
-    bgColor: "from-blue-600/5 to-transparent",
-    href: "/student/assessment/onet",
-    duration: "15 mins"
-  }
-];
+import { parseGrade, isAssessmentVisible } from "@/utils/gradeLogic";
 
 export default function AssessmentSelection() {
   const { profile, user } = useAuth();
   const { t } = useTranslation();
-  const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
-  const grade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+  const grade = parseGrade(profile?.grade || user?.user_metadata?.grade);
 
   const assessments = [
     {
@@ -128,7 +54,7 @@ export default function AssessmentSelection() {
       duration: t("discovery_hub.assessments.caas.duration")
     },
     {
-      id: "work-values",
+      id: "workvalues",
       title: t("discovery_hub.assessments.work_values.title"),
       desc: t("discovery_hub.assessments.work_values.desc"),
       icon: Target,
@@ -148,7 +74,7 @@ export default function AssessmentSelection() {
       duration: t("discovery_hub.assessments.eq.duration")
     },
     {
-      id: "onet-official",
+      id: "onet",
       title: t("discovery_hub.assessments.onet.title"),
       desc: t("discovery_hub.assessments.onet.desc"),
       icon: ExternalLink,
@@ -159,22 +85,7 @@ export default function AssessmentSelection() {
     }
   ];
 
-  const filteredAssessments = assessments.filter(item => {
-    // Level 1: Grades 7-8
-    if (grade >= 7 && grade <= 8) {
-      return ["riasec", "skills"].includes(item.id);
-    }
-    // Level 2: Grades 9-10
-    if (grade >= 9 && grade <= 10) {
-      return ["riasec", "skills", "bigfive", "work-values"].includes(item.id);
-    }
-    // Level 3: Grades 11-13
-    if (grade >= 11) {
-      return true; // All assessments
-    }
-    // Fallback for smaller grades or undefined
-    return ["riasec", "skills"].includes(item.id);
-  });
+  const filteredAssessments = assessments.filter(item => isAssessmentVisible(item.id, grade));
 
   return (
     <div className="py-8">

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { normalizeAllAssessments, getTopResults, getLowResults } from "@/utils/assessmentNormalization";
+import { parseGrade, isAssessmentVisible } from "@/utils/gradeLogic";
 import OnetCareerSection from "./OnetCareerSection";
 
 
@@ -19,15 +20,9 @@ interface Props {
 const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView }: Props) => {
   const { t } = useTranslation();
   const { user, profile: authProfile } = useAuth();
-  const rawGrade = propGrade || authProfile?.grade || user?.user_metadata?.grade || "7";
-  const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+  const numericGrade = parseGrade(propGrade || authProfile?.grade || user?.user_metadata?.grade);
 
-  const isVisible = (id: string) => {
-    const g = numericGrade;
-    if (g >= 11) return true;
-    if (g >= 9) return ["riasec", "skills", "bigfive", "workvalues"].includes(id);
-    return ["riasec", "skills"].includes(id);
-  };
+  const isVisible = (id: string) => isAssessmentVisible(id, numericGrade);
 
   const { data: normData, isLoading } = useQuery({
     queryKey: ["gold-standard-report-normalized", studentId],
