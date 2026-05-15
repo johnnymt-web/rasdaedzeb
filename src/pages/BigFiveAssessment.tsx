@@ -79,6 +79,20 @@ export default function BigFiveAssessment() {
   const [currentPage, setCurrentPage] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [startTime] = useState(Date.now());
+  const { profile } = useAuth();
+  const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
+  const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+
+  useEffect(() => {
+    if (numericGrade < 9) {
+      toast({
+        title: "Access Restricted",
+        description: "This assessment is recommended for grades 9 and above.",
+        variant: "destructive",
+      });
+      navigate("/student/assessment");
+    }
+  }, [numericGrade, navigate, toast]);
 
   const LIKERT_OPTIONS = [
     { value: 1, label: t("common.likert.very_inaccurate") },

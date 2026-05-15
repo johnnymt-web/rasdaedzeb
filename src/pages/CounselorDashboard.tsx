@@ -132,8 +132,8 @@ const CounselorDashboard = () => {
         // Fetch all assessments to normalize
         const [stdAss, bigFiveAss, caasAss, workValuesAss, parentLinks] = await Promise.all([
           supabase.from("assessments").select("*").in("user_id", scopedIds).order("created_at", { ascending: false }),
-          supabase.from("big_five_assessments" as any).select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
-          supabase.from("caas_assessments" as any).select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
+          supabase.from("big_five_assessments").select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
+          supabase.from("caas_assessments").select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
           supabase.from("work_values_assessments").select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
           supabase.from("parent_students").select("parent_id, student_id").in("student_id", scopedIds)
         ]);

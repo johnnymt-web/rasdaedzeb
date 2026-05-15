@@ -1,10 +1,24 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ExternalLink } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function OnetAssessment() {
+  const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  
+  const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
+  const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+
+  useEffect(() => {
+    if (numericGrade < 11) {
+      toast.error("This assessment is recommended for grades 11 and above.");
+      navigate("/student/assessment");
+    }
+  }, [numericGrade, navigate]);
   useEffect(() => {
     // Dynamically load the O*NET script
     const script = document.createElement("script");

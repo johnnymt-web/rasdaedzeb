@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, ChevronLeft, Sparkles, Briefcase, Loader2 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -71,10 +71,19 @@ export default function AssessmentPage() {
   const [showResults, setShowResults] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const questions = useMemo(() => 
-    type === "riasec" ? getRiasecQuestions(t) : getSkillsQuestions(t)
-  , [type, t]);
+  useEffect(() => {
+    if (type !== "riasec" && type !== "skills") {
+      navigate("/student/assessment");
+    }
+  }, [type, navigate]);
+
+  const questions = useMemo(() => {
+    if (type === "riasec") return getRiasecQuestions(t);
+    if (type === "skills") return getSkillsQuestions(t);
+    return [];
+  }, [type, t]);
 
   const options = useMemo(() => getOptions(t), [t]);
 

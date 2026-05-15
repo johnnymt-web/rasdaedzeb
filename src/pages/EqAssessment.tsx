@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, BrainCircuit, CheckCircle2, Loader2 } from "lucide-react";
@@ -40,8 +40,18 @@ export default function EqAssessment() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
+
+  const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
+  const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+
+  useEffect(() => {
+    if (numericGrade < 11) {
+      toast.error("This assessment is recommended for grades 11 and above.");
+      navigate("/student/assessment");
+    }
+  }, [numericGrade, navigate]);
 
   const handleAnswer = (questionId: string, value: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));

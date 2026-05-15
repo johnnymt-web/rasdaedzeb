@@ -20,7 +20,22 @@ interface Assessment {
 }
 
 export default function AssessmentHistory() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
+  const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+
+  const isVisible = (id: string) => {
+    if (numericGrade >= 7 && numericGrade <= 8) {
+      return ["riasec", "skills"].includes(id);
+    }
+    if (numericGrade >= 9 && numericGrade <= 10) {
+      return ["riasec", "skills", "bigfive", "workvalues"].includes(id);
+    }
+    if (numericGrade >= 11) {
+      return true;
+    }
+    return ["riasec", "skills"].includes(id);
+  };
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -144,7 +159,7 @@ export default function AssessmentHistory() {
           </div>
         ) : (
           <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-8" : "flex flex-col gap-8 max-w-3xl mx-auto"}>
-            {config.map(item => {
+            {config.filter(c => isVisible(c.type)).map(item => {
               const data = grouped[item.type];
               if (!data || data.length === 0) return null;
               return (

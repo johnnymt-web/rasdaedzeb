@@ -75,6 +75,108 @@ export type Database = {
         }
         Relationships: []
       }
+      big_five_assessments: {
+        Row: {
+          id: string
+          student_id: string
+          item_responses: Json
+          openness: number | null
+          conscientiousness: number | null
+          extraversion: number | null
+          agreeableness: number | null
+          neuroticism: number | null
+          facet_scores: Json
+          version: string
+          completed_at: string
+          time_taken_secs: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          item_responses?: Json
+          openness?: number | null
+          conscientiousness?: number | null
+          extraversion?: number | null
+          agreeableness?: number | null
+          neuroticism?: number | null
+          facet_scores?: Json
+          version?: string
+          completed_at?: string
+          time_taken_secs?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          item_responses?: Json
+          openness?: number | null
+          conscientiousness?: number | null
+          extraversion?: number | null
+          agreeableness?: number | null
+          neuroticism?: number | null
+          facet_scores?: Json
+          version?: string
+          completed_at?: string
+          time_taken_secs?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      caas_assessments: {
+        Row: {
+          id: string
+          student_id: string
+          item_responses: Json
+          concern: number | null
+          control: number | null
+          curiosity: number | null
+          confidence: number | null
+          total_score: number | null
+          percentile: number | null
+          version: string
+          completed_at: string
+          time_taken_secs: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          item_responses?: Json
+          concern?: number | null
+          control?: number | null
+          curiosity?: number | null
+          confidence?: number | null
+          total_score?: number | null
+          percentile?: number | null
+          version?: string
+          completed_at?: string
+          time_taken_secs?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          item_responses?: Json
+          concern?: number | null
+          control?: number | null
+          curiosity?: number | null
+          confidence?: number | null
+          total_score?: number | null
+          percentile?: number | null
+          version?: string
+          completed_at?: string
+          time_taken_secs?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       counselor_follow_ups: {
         Row: {
           id: string

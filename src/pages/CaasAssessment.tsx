@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Compass, ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react";
@@ -58,8 +58,23 @@ const ITEMS_PER_PAGE = 6;
 
 export default function CaasAssessment() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
+
+  const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
+  const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+
+  useEffect(() => {
+    if (numericGrade < 11) {
+      toast({
+        title: "Access Restricted",
+        description: "This assessment is recommended for grades 11 and above.",
+        variant: "destructive",
+      });
+      navigate("/student/assessment");
+    }
+  }, [numericGrade, navigate, toast]);
+
   const [responses, setResponses] = useState<Record<string, number>>({});
   const [currentPage, setCurrentPage] = useState(0);
   const [submitting, setSubmitting] = useState(false);

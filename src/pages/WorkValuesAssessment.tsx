@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,8 +44,18 @@ const CATEGORIES = [
 ];
 
 export default function WorkValuesAssessment() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
+
+  const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
+  const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+
+  useEffect(() => {
+    if (numericGrade < 9) {
+      toast.error("This assessment is recommended for grades 9 and above.");
+      navigate("/student/assessment");
+    }
+  }, [numericGrade, navigate]);
   const [currentStep, setCurrentStep] = useState(0); // -1: intro, 0-19: questions, 20: results
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);

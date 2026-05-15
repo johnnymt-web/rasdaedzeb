@@ -83,8 +83,8 @@ const ASSESSMENTS = [
 export default function AssessmentSelection() {
   const { profile, user } = useAuth();
   const { t } = useTranslation();
-  const rawGrade = profile?.grade || user?.user_metadata?.grade || "12";
-  const grade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 12;
+  const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
+  const grade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
 
   const assessments = [
     {

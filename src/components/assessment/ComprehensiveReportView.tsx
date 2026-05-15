@@ -19,7 +19,15 @@ interface Props {
 const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView }: Props) => {
   const { t } = useTranslation();
   const { user, profile: authProfile } = useAuth();
-  const grade = propGrade || authProfile?.grade || user?.user_metadata?.grade;
+  const rawGrade = propGrade || authProfile?.grade || user?.user_metadata?.grade || "7";
+  const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+
+  const isVisible = (id: string) => {
+    const g = numericGrade;
+    if (g >= 11) return true;
+    if (g >= 9) return ["riasec", "skills", "bigfive", "workvalues"].includes(id);
+    return ["riasec", "skills"].includes(id);
+  };
 
   const { data: normData, isLoading } = useQuery({
     queryKey: ["gold-standard-report-normalized", studentId],
@@ -76,6 +84,9 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
 
   return (
     <div className="space-y-12 pb-20">
+      <div className="text-[10px] text-muted-foreground opacity-30 text-right">
+        Diagnostic Context: Grade {numericGrade}
+      </div>
       {/* SECTION 1: Report purpose and disclaimer */}
       <section className="bg-primary/5 border border-primary/20 rounded-2xl p-6 flex gap-4 items-start">
         <Info className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
@@ -92,13 +103,13 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
         <h3 className="text-xl font-heading font-bold mb-6">Your Exploration Progress</h3>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { a: riasec, icon: <Sparkles className="w-5 h-5"/>, link: "/student/assessment" },
-            { a: skills, icon: <Target className="w-5 h-5"/>, link: "/student/assessment" },
-            { a: bigFive, icon: <Users className="w-5 h-5"/>, link: "/student/assessment/big-five" },
-            { a: caas, icon: <ShieldCheck className="w-5 h-5"/>, link: "/student/assessment/caas" },
-            { a: workValues, icon: <BookOpen className="w-5 h-5"/>, link: "/student/assessment/work-values" },
-            { a: eq, icon: <Heart className="w-5 h-5"/>, link: "/student/assessment/eq" },
-          ].map((item, idx) => (
+            { id: "riasec", a: riasec, icon: <Sparkles className="w-5 h-5"/>, link: "/student/assessment" },
+            { id: "skills", a: skills, icon: <Target className="w-5 h-5"/>, link: "/student/assessment" },
+            { id: "bigfive", a: bigFive, icon: <Users className="w-5 h-5"/>, link: "/student/assessment/bigfive" },
+            { id: "caas", a: caas, icon: <ShieldCheck className="w-5 h-5"/>, link: "/student/assessment/caas" },
+            { id: "workvalues", a: workValues, icon: <BookOpen className="w-5 h-5"/>, link: "/student/assessment/workvalues" },
+            { id: "eq", a: eq, icon: <Heart className="w-5 h-5"/>, link: "/student/assessment/eq" },
+          ].filter(item => isVisible(item.id)).map((item, idx) => (
             <div key={idx} className={`p-4 rounded-xl border flex items-center justify-between ${item.a.isComplete ? 'bg-white border-green-200' : 'bg-muted/30 border-dashed border-muted-foreground/30'}`}>
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${item.a.isComplete ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
@@ -160,7 +171,7 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
           </section>
 
           {/* SECTION 4: Learning and working style */}
-          {bigFive.isComplete && (
+          {isVisible("bigfive") && bigFive.isComplete && (
             <section className="card-warm p-8 shadow-sm">
               <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
                 <Users className="w-5 h-5 text-violet-500" />
@@ -184,8 +195,9 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
           )}
 
           {/* SECTION 5: Career readiness (CAAS) */}
-          <section className="card-warm p-8 shadow-sm">
-            <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
+          {isVisible("caas") && (
+            <section className="card-warm p-8 shadow-sm">
+              <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-500" />
               Career Readiness
             </h3>
@@ -216,9 +228,10 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
               <p className="text-muted-foreground italic">Career Adaptability reflection has not been completed yet.</p>
             )}
           </section>
+        )}
 
           {/* SECTION 6: Work Values */}
-          {workValues.isComplete && (
+          {isVisible("workvalues") && workValues.isComplete && (
             <section className="card-warm p-8 shadow-sm">
               <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-rose-500" />
@@ -236,7 +249,7 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
           )}
 
           {/* SECTION 7: Emotional and social reflection (EQ) */}
-          {eq.isComplete && (
+          {isVisible("eq") && eq.isComplete && (
             <section className="card-warm p-8 shadow-sm">
               <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
                 <Heart className="w-5 h-5 text-blue-500" />
