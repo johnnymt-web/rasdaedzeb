@@ -2,44 +2,60 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   AlertTriangle, ChevronRight, Users, Calendar, FileText,
-  TrendingUp, Clock, CheckCircle2, Loader2
+  TrendingUp, Clock, CheckCircle2, Loader2, Info
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { normalizeAllAssessments } from "@/utils/assessmentNormalization";
 
-interface StudentWithAssessment {
+interface StudentData {
   id: string;
   full_name: string | null;
   grade: string | null;
   school_name?: string | null;
   parents?: string[];
-  latestAssessment: {
-    completed_at: string | null;
-    created_at: string;
-    results: unknown;
-  } | null;
+  normData: ReturnType<typeof normalizeAllAssessments>;
+  latestActivityDate: string | null;
 }
 
-function deriveAttentionItems(students: StudentWithAssessment[], t: any) {
+function deriveSupportNeeds(students: StudentData[], t: any) {
   const items: { id: string; name: string; grade: string; reason: string; urgency: "high" | "medium" | "low" }[] = [];
-  const now = Date.now();
 
   for (const s of students) {
     const name = s.full_name || t("counselor.unnamed_student");
     const grade = s.grade || "—";
+    const { riasec, caas, skills, eq } = s.normData;
 
-    if (!s.latestAssessment) {
-      items.push({ id: s.id, name, grade, reason: t("counselor.no_assessment"), urgency: "high" });
-    } else if (!s.latestAssessment.completed_at) {
-      const started = new Date(s.latestAssessment.created_at).getTime();
-      const daysSince = Math.floor((now - started) / (1000 * 60 * 60 * 24));
-      if (daysSince > 14) {
-        items.push({ id: s.id, name, grade, reason: t("counselor.incomplete_days", { count: daysSince }), urgency: "high" });
-      } else if (daysSince > 3) {
-        items.push({ id: s.id, name, grade, reason: t("counselor.in_progress_days", { count: daysSince }), urgency: "medium" });
+    // 1. Missing basic assessments
+    if (!riasec.isComplete) {
+      items.push({ id: s.id, name, grade, reason: "Career Interests assessment not started", urgency: "high" });
+    }
+
+    // 2. Low CAAS confidence/curiosity (score < 3)
+    if (caas.isComplete && caas.results.length > 0) {
+      const lowCaas = caas.results.filter(r => (r.score ?? 0) < 3.0);
+      if (lowCaas.length > 0) {
+        items.push({ 
+          id: s.id, 
+          name, 
+          grade, 
+          reason: `Exploration support recommended (${lowCaas.map(c => c.label).join(', ')})`, 
+          urgency: "medium" 
+        });
+      }
+    } else if (!caas.isComplete && riasec.isComplete) {
+      items.push({ id: s.id, name, grade, reason: "Career Adaptability reflection pending", urgency: "low" });
+    }
+
+    // 3. Very narrow exploration profile / Subject-choice support
+    if (riasec.isComplete) {
+      const topPct = riasec.results[0]?.pct || 0;
+      // If top interest is very low, they might be unengaged or unsure
+      if (topPct < 40) {
+        items.push({ id: s.id, name, grade, reason: "Subject-choice/exploration support recommended", urgency: "medium" });
       }
     }
   }
@@ -47,7 +63,17 @@ function deriveAttentionItems(students: StudentWithAssessment[], t: any) {
   // Sort by urgency
   const order = { high: 0, medium: 1, low: 2 };
   items.sort((a, b) => order[a.urgency] - order[b.urgency]);
-  return items;
+  // deduplicate by student id taking the highest urgency
+  const uniqueItems = [];
+  const seenIds = new Set();
+  for (const item of items) {
+    if (!seenIds.has(item.id)) {
+      seenIds.add(item.id);
+      uniqueItems.push(item);
+    }
+  }
+
+  return uniqueItems;
 }
 
 const CounselorDashboard = () => {
@@ -55,7 +81,7 @@ const CounselorDashboard = () => {
   const { t } = useTranslation();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["counselor-dashboard", user?.id],
+    queryKey: ["counselor-dashboard-enhanced", user?.id],
     queryFn: async () => {
       try {
         // 1. Get all student IDs from user_roles
@@ -72,13 +98,10 @@ const CounselorDashboard = () => {
         }
 
         // 2. Determine Counselor Scope
-        const [{ data: counselorProfile, error: cpErr }, { data: assignments, error: asErr }] = await Promise.all([
+        const [{ data: counselorProfile }, { data: assignments }] = await Promise.all([
           supabase.from("profiles").select("school_id").eq("id", user!.id).single(),
           supabase.from("counselor_students").select("student_id").eq("counselor_id", user!.id)
         ]);
-
-        if (cpErr) throw cpErr;
-        if (asErr) throw asErr;
 
         const assignedIds = (assignments || []).map(a => a.student_id);
         
@@ -90,8 +113,7 @@ const CounselorDashboard = () => {
 
         if (profErr) throw profErr;
 
-        const { data: allSchools, error: schErr } = await supabase.from("schools").select("id, name");
-        if (schErr) throw schErr;
+        const { data: allSchools } = await supabase.from("schools").select("id, name");
         const schoolMap = new Map((allSchools || []).map(s => [s.id, s.name]));
 
         const scopedProfiles = (profiles || []).filter(p => {
@@ -107,26 +129,22 @@ const CounselorDashboard = () => {
 
         if (scopedIds.length === 0) return { students: [], totalStudents: 0, counselorSchoolName };
 
-        const { data: assessments, error: assErr } = await supabase
-          .from("assessments")
-          .select("user_id, completed_at, created_at, results")
-          .in("user_id", scopedIds)
-          .order("created_at", { ascending: false });
-
-        if (assErr) throw assErr;
-
-        const { data: parentLinks, error: plErr } = await supabase.from("parent_students").select("parent_id, student_id").in("student_id", scopedIds);
-        if (plErr) throw plErr;
+        // Fetch all assessments to normalize
+        const [stdAss, bigFiveAss, caasAss, workValuesAss, parentLinks] = await Promise.all([
+          supabase.from("assessments").select("*").in("user_id", scopedIds).order("created_at", { ascending: false }),
+          supabase.from("big_five_assessments" as any).select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
+          supabase.from("caas_assessments" as any).select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
+          supabase.from("work_values_assessments").select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
+          supabase.from("parent_students").select("parent_id, student_id").in("student_id", scopedIds)
+        ]);
 
         let parentMap = new Map<string, string[]>();
-        
-        if (parentLinks && parentLinks.length > 0) {
-          const parentIds = [...new Set(parentLinks.map(l => l.parent_id))];
-          const { data: parentProfiles, error: ppErr } = await supabase.from("profiles").select("id, full_name").in("id", parentIds);
-          if (ppErr) throw ppErr;
+        if (parentLinks.data && parentLinks.data.length > 0) {
+          const parentIds = [...new Set(parentLinks.data.map(l => l.parent_id))];
+          const { data: parentProfiles } = await supabase.from("profiles").select("id, full_name").in("id", parentIds);
           const parentProfileMap = new Map((parentProfiles || []).map(p => [p.id, p.full_name || "Unnamed Parent"]));
           
-          for (const link of parentLinks) {
+          for (const link of parentLinks.data) {
             const parentName = parentProfileMap.get(link.parent_id);
             if (parentName) {
               const existing = parentMap.get(link.student_id) || [];
@@ -135,21 +153,28 @@ const CounselorDashboard = () => {
           }
         }
 
-        const latestByUser = new Map<string, typeof assessments[0]>();
-        for (const a of assessments || []) {
-          if (!latestByUser.has(a.user_id)) {
-            latestByUser.set(a.user_id, a);
-          }
-        }
-
-        const students: StudentWithAssessment[] = scopedProfiles.map((p) => ({
-          id: p.id,
-          full_name: p.full_name,
-          grade: p.grade,
-          school_name: p.school_id ? schoolMap.get(p.school_id) : t("users.unassigned"),
-          parents: parentMap.get(p.id) || [],
-          latestAssessment: latestByUser.get(p.id) || null,
-        }));
+        const students: StudentData[] = scopedProfiles.map((p) => {
+          const sStd = stdAss.data?.filter(a => a.user_id === p.id) || [];
+          const sB5 = bigFiveAss.data?.filter(a => a.student_id === p.id) || [];
+          const sCaas = caasAss.data?.filter(a => a.student_id === p.id) || [];
+          const sWv = workValuesAss.data?.filter(a => a.student_id === p.id) || [];
+          
+          const normData = normalizeAllAssessments({ std: sStd, bigFive: sB5, caas: sCaas, workValues: sWv });
+          
+          // Get latest activity
+          let latest = null;
+          if (sStd.length > 0) latest = sStd[0].created_at;
+          
+          return {
+            id: p.id,
+            full_name: p.full_name,
+            grade: p.grade,
+            school_name: p.school_id ? schoolMap.get(p.school_id) : t("users.unassigned"),
+            parents: parentMap.get(p.id) || [],
+            normData,
+            latestActivityDate: latest
+          };
+        });
 
         return { students, totalStudents: students.length, counselorSchoolName };
       } catch (err) {
@@ -161,15 +186,15 @@ const CounselorDashboard = () => {
 
   const students = data?.students || [];
   const totalStudents = data?.totalStudents || 0;
-  const completedCount = students.filter((s) => s.latestAssessment?.completed_at).length;
+  const completedCount = students.filter((s) => s.normData.riasec.isComplete).length;
   const completionRate = totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0;
-  const attentionItems = deriveAttentionItems(students, t);
+  const attentionItems = deriveSupportNeeds(students, t);
 
   const stats = [
     { label: t("counselor.stat_students"), value: String(totalStudents), icon: Users },
-    { label: t("counselor.stat_assessments"), value: `${completionRate}%`, icon: CheckCircle2 },
-    { label: t("counselor.stat_attention"), value: String(attentionItems.length), icon: AlertTriangle },
-    { label: t("counselor.stat_completed"), value: String(completedCount), icon: Calendar },
+    { label: "Interests Mapped", value: `${completionRate}%`, icon: CheckCircle2 },
+    { label: "Needs Support", value: String(attentionItems.length), icon: AlertTriangle },
+    { label: "Recent Activity", value: String(students.filter(s => s.latestActivityDate).length), icon: Calendar },
   ];
 
   const hour = new Date().getHours();
@@ -193,7 +218,6 @@ const CounselorDashboard = () => {
               </p>
             </div>
             
-            {/* Counselor Status */}
             <div className="flex flex-col gap-2 items-start md:items-end p-4 bg-muted/30 rounded-xl border border-border/50">
               <span className="text-sm font-medium text-muted-foreground">{t("counselor.tracking")}</span>
               <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -230,10 +254,10 @@ const CounselorDashboard = () => {
                   <div className="card-warm p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="font-heading font-semibold text-lg text-foreground flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-secondary" />
-                        {t("counselor.attention_title")}
+                        <Info className="w-5 h-5 text-blue-500" />
+                        Students Needing Support
                       </h2>
-                      <span className="text-sm text-muted-foreground">{t("counselor.students_count_label", { count: attentionItems.length })}</span>
+                      <span className="text-sm text-muted-foreground">{attentionItems.length} students</span>
                     </div>
                     {attentionItems.length === 0 ? (
                       <div className="text-center py-8">
@@ -242,9 +266,9 @@ const CounselorDashboard = () => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {attentionItems.slice(0, 6).map((student, i) => (
+                        {attentionItems.slice(0, 10).map((student, i) => (
                           <Link key={i} to={`/counselor/student/${student.id}`} className={`flex items-center gap-4 p-3 rounded-lg transition-colors hover:ring-1 hover:ring-border ${
-                            student.urgency === "high" ? "surface-rose" : student.urgency === "medium" ? "surface-amber" : "bg-muted/50"
+                            student.urgency === "high" ? "bg-rose-50/50" : student.urgency === "medium" ? "bg-amber-50/50" : "bg-muted/50"
                           }`}>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
@@ -252,23 +276,13 @@ const CounselorDashboard = () => {
                                 <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                                   {student.grade}
                                 </span>
-                                {students.find(s => s.id === student.id)?.school_name && (
-                                  <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium">
-                                    {students.find(s => s.id === student.id)?.school_name}
-                                  </span>
-                                )}
                               </div>
                               <div className="flex items-center gap-2 mt-1">
                                 <p className="text-xs text-muted-foreground truncate">{student.reason}</p>
-                                {students.find(s => s.id === student.id)?.parents && students.find(s => s.id === student.id)!.parents!.length > 0 && (
-                                  <span className="text-[10px] text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded font-medium truncate max-w-[150px]">
-                                    {t("counselor.parents_label", { names: students.find(s => s.id === student.id)?.parents?.join(", ") })}
-                                  </span>
-                                )}
                               </div>
                             </div>
                             <div className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                              student.urgency === "high" ? "badge-rose" : student.urgency === "medium" ? "badge-amber" : "badge-sage"
+                              student.urgency === "high" ? "bg-rose-100 text-rose-700" : student.urgency === "medium" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-700"
                             }`}>
                               {t(`common.${student.urgency}`)}
                             </div>
@@ -290,10 +304,10 @@ const CounselorDashboard = () => {
                     </h2>
                     {(() => {
                       const completed = students
-                        .filter((s) => s.latestAssessment?.completed_at)
+                        .filter((s) => s.latestActivityDate)
                         .sort((a, b) =>
-                          new Date(b.latestAssessment!.completed_at!).getTime() -
-                          new Date(a.latestAssessment!.completed_at!).getTime()
+                          new Date(b.latestActivityDate!).getTime() -
+                          new Date(a.latestActivityDate!).getTime()
                         )
                         .slice(0, 5);
 
@@ -309,18 +323,10 @@ const CounselorDashboard = () => {
                                 <div className="text-sm font-medium text-foreground">{s.full_name || t("counselor.unnamed")}</div>
                                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                                   <span>{s.grade || "—"}</span>
-                                  {s.school_name && (
-                                    <span className="bg-muted px-1.5 py-0.5 rounded">{s.school_name}</span>
-                                  )}
-                                  {s.parents && s.parents.length > 0 && (
-                                    <span className="bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded truncate max-w-[120px]">
-                                      {t("counselor.parents_label", { names: s.parents.join(", ") })}
-                                    </span>
-                                  )}
                                 </div>
                               </div>
                               <span className="text-xs text-muted-foreground">
-                                {new Date(s.latestAssessment!.completed_at!).toLocaleDateString()}
+                                {new Date(s.latestActivityDate!).toLocaleDateString()}
                               </span>
                             </Link>
                           ))}

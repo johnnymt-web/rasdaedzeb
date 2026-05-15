@@ -85,11 +85,10 @@ export default function EqAssessment() {
       });
 
       if (error) throw error;
-      
       setIsComplete(true);
-      toast.success("Emotional Intelligence profile saved!");
+      toast.success("Emotional Skills profile saved!");
     } catch (error) {
-      console.error("Error saving EQ assessment:", error);
+      console.error("Error saving EQ reflection:", error);
       toast.error("Failed to save results. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -106,9 +105,9 @@ export default function EqAssessment() {
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6">
               <CheckCircle2 className="w-8 h-8 text-blue-600" />
             </div>
-            <h1 className="text-3xl font-heading font-bold mb-4">Assessment Complete!</h1>
+            <h1 className="text-3xl font-heading font-bold mb-4">Reflection Complete!</h1>
             <p className="text-muted-foreground mb-8 text-lg">
-              Your Emotional Intelligence profile has been mapped and saved.
+              Your Emotional Skills profile has been mapped and saved.
             </p>
             <div className="flex gap-4">
               <Button onClick={() => navigate("/student/report")}>View My Report</Button>
@@ -130,7 +129,7 @@ export default function EqAssessment() {
               <BrainCircuit className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-heading font-bold">Emotional Intelligence</h1>
+              <h1 className="text-2xl font-heading font-bold">Emotional Skills Reflection</h1>
               <p className="text-sm text-muted-foreground">Self & Social Awareness</p>
             </div>
           </div>
@@ -196,7 +195,7 @@ export default function EqAssessment() {
               {isSubmitting ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
               ) : (
-                <><CheckCircle2 className="w-4 h-4 mr-2" /> Complete Assessment</>
+                <><CheckCircle2 className="w-4 h-4 mr-2" /> Complete Reflection</>
               )}
             </Button>
           ) : (

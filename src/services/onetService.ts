@@ -16,12 +16,15 @@ export interface OnetCareer {
 }
 
 export const fetchOnetData = async (endpoint: string, params: Record<string, string> = {}) => {
-  const { data, error } = await supabase.functions.invoke('smart-action', {
+  const { data, error } = await supabase.functions.invoke('onet-proxy', {
     body: { endpoint, params }
   });
 
   if (error || data?.error) {
-    throw new Error(`O*NET API error: ${error?.message || data?.error}`);
+    if (data?.error === "O*NET credentials not configured") {
+      throw new Error("Career exploration data is temporarily unavailable because the service is missing credentials. Please contact your school administrator.");
+    }
+    throw new Error(`O*NET API error: ${error?.message || data?.error || 'Unknown error'}`);
   }
 
   return data;

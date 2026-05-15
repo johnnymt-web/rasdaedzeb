@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { useTranslation } from "react-i18next";
 import { useMemo, useState } from "react";
+import { normalizeAllAssessments } from "@/utils/assessmentNormalization";
 
 interface Assessment {
   id: string;
@@ -35,44 +36,54 @@ export default function AssessmentHistory() {
         supabase.from("work_values_assessments").select("*").eq("student_id", user.id)
       ]);
 
-      const normalizedBigFive = ((bigFive.data as any[]) || []).map(a => ({
-        id: a.id, assessment_type: 'bigfive', completed_at: a.completed_at, created_at: a.completed_at,
-        results: [
-          { category: 'Openness', pct: Math.round(a.openness || 0) },
-          { category: 'Conscientiousness', pct: Math.round(a.conscientiousness || 0) },
-          { category: 'Extraversion', pct: Math.round(a.extraversion || 0) },
-          { category: 'Agreeableness', pct: Math.round(a.agreeableness || 0) },
-          { category: 'Neuroticism', pct: Math.round(a.neuroticism || 0) }
-        ]
-      }));
+      const normalized = normalizeAllAssessments({
+        std: std.data || [],
+        bigFive: bigFive.data || [],
+        caas: caas.data || [],
+        workValues: workValues.data || [],
+        eq: [] // We don't have eq history fetched here yet, but we can add it if needed
+      });
 
-      const normalizedCaas = ((caas.data as any[]) || []).map(a => ({
-        id: a.id, assessment_type: 'caas', completed_at: a.completed_at, created_at: a.completed_at,
-        results: [
-          { category: 'Concern', pct: Math.round((a.concern || 0) * 20) },
-          { category: 'Control', pct: Math.round((a.control || 0) * 20) },
-          { category: 'Curiosity', pct: Math.round((a.curiosity || 0) * 20) },
-          { category: 'Confidence', pct: Math.round((a.confidence || 0) * 20) }
-        ]
-      }));
+      const formattedHistory: any[] = [];
 
-      const normalizedWorkValues = ((workValues.data as any[]) || []).map(a => ({
-        id: a.id, assessment_type: 'workvalues', completed_at: a.completed_at, created_at: a.completed_at,
-        results: [
-          { category: 'Achievement', pct: Math.round((a.achievement || 0) * 20) },
-          { category: 'Independence', pct: Math.round((a.independence || 0) * 20) },
-          { category: 'Recognition', pct: Math.round((a.recognition || 0) * 20) },
-          { category: 'Relationships', pct: Math.round((a.relationships || 0) * 20) },
-          { category: 'Support', pct: Math.round((a.support || 0) * 20) },
-          { category: 'Working Conditions', pct: Math.round((a.working_conditions || 0) * 20) }
-        ]
-      }));
+      // We need to map all historic entries, not just the latest
+      // The normalizeAllAssessments only returns the latest.
+      // Wait, normalizeAllAssessments as I wrote it only grabs the latest one (index 0).
+      // For history, we need all of them. I'll need to map them individually.
+
+      const processHistory = (data: any[], type: string, normalizeFn: (a: any) => any) => {
+        return data.map(a => {
+          const norm = normalizeFn(a);
+          return {
+            id: a.id,
+            assessment_type: type,
+            completed_at: a.completed_at || a.created_at,
+            created_at: a.created_at,
+            results: norm.results?.map((r: any) => ({ category: r.label, pct: r.pct || 0 })) || []
+          };
+        });
+      };
+
+      const { 
+        normalizeBigFiveAssessment, 
+        normalizeCaasAssessment, 
+        normalizeWorkValuesAssessment,
+        normalizeRiasecAssessment,
+        normalizeSkillsAssessment
+      } = await import("@/utils/assessmentNormalization");
+
+      const riasecHistory = processHistory((std.data || []).filter(a => a.assessment_type === 'riasec' || a.assessment_type === 'std' || !a.assessment_type), 'riasec', normalizeRiasecAssessment);
+      const skillsHistory = processHistory((std.data || []).filter(a => a.assessment_type === 'skills'), 'skills', normalizeSkillsAssessment);
+      const bigFiveHistory = processHistory(bigFive.data || [], 'bigfive', normalizeBigFiveAssessment);
+      const caasHistory = processHistory(caas.data || [], 'caas', normalizeCaasAssessment);
+      const workValuesHistory = processHistory(workValues.data || [], 'workvalues', normalizeWorkValuesAssessment);
 
       return [
-        ...(std.data || []), 
-        ...normalizedBigFive, 
-        ...normalizedCaas,
-        ...normalizedWorkValues
+        ...riasecHistory,
+        ...skillsHistory,
+        ...bigFiveHistory, 
+        ...caasHistory,
+        ...workValuesHistory
       ].sort((a, b) => 
         new Date(b.completed_at || b.created_at).getTime() - new Date(a.completed_at || a.created_at).getTime()
       );
@@ -93,8 +104,8 @@ export default function AssessmentHistory() {
   const config = [
     { type: 'riasec', label: 'Discovery (RIASEC)', color: 'border-primary/20', cats: ["Realistic", "Investigative", "Artistic", "Social", "Enterprising", "Conventional"] },
     { type: 'skills', label: 'Employability Skills', color: 'border-amber-500/20', cats: ["Communication", "Problem Solving", "Digital Literacy", "Teamwork", "Adaptability"] },
-    { type: 'bigfive', label: 'Personality (Big Five)', color: 'border-violet-500/20', cats: ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'] },
-    { type: 'eq', label: 'Emotional Intelligence', color: 'border-blue-500/20', cats: ["Self-Awareness", "Self-Management", "Social Awareness", "Relationship Management"] },
+    { type: 'bigfive', label: 'Learning and Working Style', color: 'border-violet-500/20', cats: ['Curiosity and imagination', 'Organization and follow-through', 'Social energy', 'Cooperation and empathy', 'Emotional sensitivity / stress response'] },
+    { type: 'eq', label: 'Emotional Skills Reflection', color: 'border-blue-500/20', cats: ["Self-Awareness", "Self-Management", "Social Awareness", "Relationship Management"] },
     { type: 'workvalues', label: 'Work Values', color: 'border-indigo-500/20', cats: ["Achievement", "Independence", "Recognition", "Relationships", "Support", "Working Conditions"] },
     { type: 'caas', label: 'Career Adaptability', color: 'border-emerald-500/20', cats: ['Concern', 'Control', 'Curiosity', 'Confidence'] },
   ];
@@ -103,8 +114,8 @@ export default function AssessmentHistory() {
     <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground">Diagnostic History</h1>
-            <p className="text-muted-foreground">Multi-dimensional analysis of your progress</p>
+            <h1 className="text-3xl font-heading font-bold text-foreground">Assessment History</h1>
+            <p className="text-muted-foreground">Review your past explorations</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex bg-muted rounded-lg p-1">
