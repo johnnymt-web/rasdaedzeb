@@ -14,6 +14,7 @@ import { getSubjectsByInterests, schoolSubjects } from "@/data/subjectConnection
 import { toast } from "sonner";
 import { getGradeBand } from "@/utils/gradeBands";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
 } from "@/components/ui/dialog";
@@ -51,8 +52,7 @@ const SubjectChoices = () => {
   const { data: currentPlan, isLoading: loadingPlan } = useQuery({
     queryKey: ["subject-plan", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("student_subject_plans")
+      const { data, error } = await (supabase.from("student_subject_plans" as any) as any)
         .select("*")
         .eq("student_id", user!.id)
         .maybeSingle();
@@ -67,15 +67,15 @@ const SubjectChoices = () => {
 
   useEffect(() => {
     if (currentPlan) {
-      setPlannedSubjects(currentPlan.subjects as SubjectPlanItem[] || []);
-      setRationale(currentPlan.rationale || "");
+      const plan = currentPlan as any;
+      setPlannedSubjects(plan.subjects as SubjectPlanItem[] || []);
+      setRationale(plan.rationale || "");
     }
   }, [currentPlan]);
 
   const saveMutation = useMutation({
     mutationFn: async (status: string = "draft") => {
-      const { error } = await supabase
-        .from("student_subject_plans")
+      const { error } = await (supabase.from("student_subject_plans" as any) as any)
         .upsert({
           student_id: user!.id,
           academic_year: "2024-2025",
@@ -389,7 +389,7 @@ const SubjectChoices = () => {
                             placeholder="Brief note on why this subject... (optional)" 
                             className="text-xs h-8 border-transparent bg-muted/30 focus:bg-white focus:border-border transition-all"
                             value={item.notes || ""}
-                            onChange={(e) => updatePlanItem(item.name, "notes", e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updatePlanItem(item.name, "notes", e.target.value)}
                           />
                         </div>
                       </motion.div>
@@ -414,14 +414,14 @@ const SubjectChoices = () => {
                     />
                   </div>
 
-                  {currentPlan?.counselor_feedback && (
+                  {currentPlan && (currentPlan as any).counselor_feedback && (
                     <div className="card-warm p-6 surface-sage">
                       <h3 className="font-heading font-bold text-foreground mb-3 flex items-center gap-2">
                         <MessageSquare className="w-5 h-5 text-primary" />
                         Counselor Feedback
                       </h3>
                       <p className="text-sm text-primary-900 bg-white/40 p-3 rounded-xl border border-primary/10">
-                        {currentPlan.counselor_feedback}
+                        {(currentPlan as any).counselor_feedback}
                       </p>
                     </div>
                   )}

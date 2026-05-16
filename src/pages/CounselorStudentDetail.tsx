@@ -278,8 +278,7 @@ const CounselorStudentDetail = () => {
   const { data: subjectPlan, isLoading: subjectPlanLoading } = useQuery({
     queryKey: ["counselor-student-subject-plan", studentId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("student_subject_plans")
+      const { data, error } = await (supabase.from("student_subject_plans" as any) as any)
         .select("*")
         .eq("student_id", studentId!)
         .maybeSingle();
@@ -291,8 +290,7 @@ const CounselorStudentDetail = () => {
 
   const subjectFeedbackMutation = useMutation({
     mutationFn: async (feedback: string) => {
-      const { error } = await supabase
-        .from("student_subject_plans")
+      const { error } = await (supabase.from("student_subject_plans" as any) as any)
         .update({ counselor_feedback: feedback, status: 'reviewed' })
         .eq("student_id", studentId!);
       if (error) throw error;
@@ -826,11 +824,11 @@ const CounselorStudentDetail = () => {
                       </h2>
                       {subjectPlan && (
                         <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                          subjectPlan.status === 'submitted' ? 'bg-amber-100 text-amber-700' : 
-                          subjectPlan.status === 'reviewed' ? 'bg-emerald-100 text-emerald-700' : 
+                          (subjectPlan as any).status === 'submitted' ? 'bg-amber-100 text-amber-700' : 
+                          (subjectPlan as any).status === 'reviewed' ? 'bg-emerald-100 text-emerald-700' : 
                           'bg-muted text-muted-foreground'
                         }`}>
-                          {subjectPlan.status}
+                          {(subjectPlan as any).status}
                         </div>
                       )}
                     </div>
@@ -846,7 +844,7 @@ const CounselorStudentDetail = () => {
                         <div className="lg:col-span-2 space-y-4">
                           <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Proposed Subjects</h3>
                           <div className="space-y-3">
-                            {(subjectPlan.subjects as any[]).map((subject, idx) => (
+                            {((subjectPlan as any).subjects as any[]).map((subject, idx) => (
                               <div key={idx} className="p-4 bg-white border rounded-xl shadow-sm">
                                 <div className="flex justify-between items-start mb-3">
                                   <h4 className="font-bold text-foreground">{subject.name}</h4>
@@ -860,11 +858,11 @@ const CounselorStudentDetail = () => {
                             ))}
                           </div>
 
-                          {subjectPlan.rationale && (
+                          {(subjectPlan as any).rationale && (
                             <div className="mt-6">
                               <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Choice Rationale</h3>
                               <div className="p-4 bg-muted/30 rounded-xl text-sm leading-relaxed whitespace-pre-wrap">
-                                {subjectPlan.rationale}
+                                {(subjectPlan as any).rationale}
                               </div>
                             </div>
                           )}
@@ -882,7 +880,7 @@ const CounselorStudentDetail = () => {
                                 name="feedback"
                                 placeholder="Provide guidance or approval for these choices..."
                                 className="min-h-[150px] text-sm bg-white/50"
-                                defaultValue={subjectPlan.counselor_feedback || ""}
+                                defaultValue={(subjectPlan as any).counselor_feedback || ""}
                               />
                               <Button type="submit" className="w-full" disabled={subjectFeedbackMutation.isPending}>
                                 Save & Mark as Reviewed
