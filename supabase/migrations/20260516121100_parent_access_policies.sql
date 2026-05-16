@@ -1,7 +1,13 @@
--- ============================================================
--- Phase 10: Parent Access Policies
--- Grants read-only access to parents for their linked students
--- ============================================================
+-- 0. Ensure mapping table exists
+CREATE TABLE IF NOT EXISTS public.parent_students (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  parent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(parent_id, student_id)
+);
+
+ALTER TABLE public.parent_students ENABLE ROW LEVEL SECURITY;
 
 -- 1. Career Exposure Activities
 CREATE POLICY "Parents can view linked student activities"
