@@ -47,6 +47,9 @@ import GatsbyDashboard from "./pages/GatsbyDashboard";
 import OnetAssessment from "./pages/OnetAssessment";
 import WorkValuesAssessment from "./pages/WorkValuesAssessment";
 import EqAssessment from "./pages/EqAssessment";
+import KnowledgeHub from "./pages/KnowledgeHub";
+import AssessmentHistory from "./pages/AssessmentHistory";
+import CounselorStudentDetail from "./pages/CounselorStudentDetail";
 
 
 function AuthRedirect() {

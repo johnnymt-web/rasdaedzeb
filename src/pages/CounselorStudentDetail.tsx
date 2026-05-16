@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import RiasecRadarChart from "@/components/assessment/RiasecRadarChart";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User, GraduationCap, Calendar, CheckCircle2, Circle, Clock, Loader2, Compass, Brain, Target, BrainCircuit, Sparkles } from "lucide-react";
+import { ArrowLeft, User, GraduationCap, Calendar, CheckCircle2, Circle, Clock, Loader2, Compass, Brain, Target, BrainCircuit, Sparkles, MessageSquare, Plus, Star, Map as MapIcon } from "lucide-react";
 import { format } from "date-fns";
 import StudentNotes from "@/components/counselor/StudentNotes";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -14,6 +14,11 @@ import { useTranslation } from "react-i18next";
 import { generateAiSynthesis, SynthesisResponse } from "@/services/aiService";
 import { useEffect, useState } from "react";
 import ComprehensiveReportView from "@/components/assessment/ComprehensiveReportView";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 interface AssessmentResult {
   category: string;
@@ -218,8 +223,7 @@ const CounselorStudentDetail = () => {
   const { data: activities, isLoading: activitiesLoading } = useQuery({
     queryKey: ["counselor-student-activities", studentId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("career_exposure_activities")
+      const { data, error } = await (supabase.from("career_exposure_activities" as any) as any)
         .select("*")
         .eq("student_id", studentId!)
         .order("activity_date", { ascending: false });
@@ -232,8 +236,7 @@ const CounselorStudentDetail = () => {
   const { data: actionPlans, isLoading: actionPlansLoading } = useQuery({
     queryKey: ["counselor-student-action-plans", studentId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("student_action_plans")
+      const { data, error } = await (supabase.from("student_action_plans" as any) as any)
         .select("*")
         .eq("student_id", studentId!)
         .order("due_date", { ascending: true });
@@ -245,8 +248,7 @@ const CounselorStudentDetail = () => {
 
   const commentMutation = useMutation({
     mutationFn: async ({ id, comment }: { id: string; comment: string }) => {
-      const { error } = await supabase
-        .from("career_exposure_activities")
+      const { error } = await (supabase.from("career_exposure_activities" as any) as any)
         .update({ counselor_comment: comment })
         .eq("id", id);
       if (error) throw error;
@@ -259,8 +261,7 @@ const CounselorStudentDetail = () => {
 
   const addActionMutation = useMutation({
     mutationFn: async (newData: any) => {
-      const { error } = await supabase
-        .from("student_action_plans")
+      const { error } = await (supabase.from("student_action_plans" as any) as any)
         .insert([{ 
           ...newData, 
           student_id: studentId, 
@@ -272,6 +273,19 @@ const CounselorStudentDetail = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["counselor-student-action-plans"] });
       toast.success("Action plan item added");
+    },
+  });
+
+  const updateActionStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await (supabase.from("student_action_plans" as any) as any)
+        .update({ status })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["counselor-student-action-plans"] });
+      toast.success("Status updated");
     },
   });
 
@@ -362,7 +376,7 @@ const CounselorStudentDetail = () => {
               <p className="text-muted-foreground">{t("counselor.student_detail.not_found")}</p>
             </div>
           ) : (
-            <>
+            <div>
               {/* Student header */}
               <div className="card-warm p-6 mb-6">
                 <div className="flex flex-col md:flex-row md:items-start gap-6">
@@ -395,7 +409,9 @@ const CounselorStudentDetail = () => {
                         </span>
                       </div>
                     </div>
+                    </div>
                   </div>
+                </div>
 
               {/* Tab Switcher */}
               <div className="flex gap-2 p-1 bg-muted/30 rounded-xl w-fit mb-6">
@@ -404,7 +420,7 @@ const CounselorStudentDetail = () => {
                   { id: "exposure", label: "Career Exposure", icon: Compass },
                   { id: "plan", label: "Action Plan", icon: Target },
                   { id: "subjects", label: "Subjects", icon: GraduationCap },
-                  { id: "pathways", label: "Pathways", icon: Map },
+                  { id: "pathways", label: "Pathways", icon: MapIcon },
                   { id: "report", label: "Discovery Profile", icon: Sparkles },
                   { id: "notes", label: "Counselor Notes", icon: MessageSquare }
                 ].map((tab) => (
@@ -457,20 +473,20 @@ const CounselorStudentDetail = () => {
                             <span className="text-xs text-amber-700">Generating insights...</span>
                           </div>
                         ) : synthesis ? (
-                          <>
-                            <p className="text-xs text-amber-900/80 leading-relaxed mb-4">
-                              {synthesis.summary || "Complete more assessments to generate a guidance summary."}
-                            </p>
-                            {synthesis.recommendations.length > 0 && (
-                              <div className="space-y-2">
-                                {synthesis.recommendations.map((r, i) => (
-                                  <div key={i} className="text-[11px] bg-amber-200/40 text-amber-900 px-3 py-2 rounded-lg border border-amber-200/60 leading-relaxed">
-                                    • {r}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </>
+                            <div className="space-y-4">
+                              <p className="text-xs text-amber-900/80 leading-relaxed mb-4">
+                                {synthesis.summary || "Complete more assessments to generate a guidance summary."}
+                              </p>
+                              {synthesis.recommendations.length > 0 && (
+                                <div className="space-y-2">
+                                  {synthesis.recommendations.map((r, i) => (
+                                    <div key={i} className="text-[11px] bg-amber-200/40 text-amber-900 px-3 py-2 rounded-lg border border-amber-200/60 leading-relaxed">
+                                      • {r}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                         ) : (
                           <p className="text-xs text-amber-900/80 leading-relaxed mb-3">
                             Waiting for assessment data...
@@ -480,7 +496,7 @@ const CounselorStudentDetail = () => {
                     </div>
                   </div>
 
-                  <div className="grid lg:grid-cols-3 gap-6">
+              <div className="grid lg:grid-cols-3 gap-6">
 
 
                 {/* Top interests sidebar */}
@@ -656,10 +672,8 @@ const CounselorStudentDetail = () => {
                   </div>
                 </div>
               </div>
-
-                  </div>
-                </div>
-              )}
+            </div>
+          )}
 
               {activeTab === "exposure" && (
                 <div className="space-y-6">
@@ -677,7 +691,7 @@ const CounselorStudentDetail = () => {
                       </div>
                     ) : (
                       <div className="grid md:grid-cols-2 gap-6">
-                        {activities?.map((activity) => (
+                        {(activities as any[])?.map((activity) => (
                           <div key={activity.id} className="border rounded-2xl p-5 bg-white shadow-sm flex flex-col h-full">
                             <div className="flex justify-between items-start mb-4">
                               <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase">
@@ -791,7 +805,7 @@ const CounselorStudentDetail = () => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {actionPlans?.map((action) => (
+                        {(actionPlans as any[])?.map((action) => (
                           <div key={action.id} className="flex items-center gap-4 p-4 rounded-xl border bg-white shadow-sm">
                             <div className={`w-3 h-3 rounded-full flex-shrink-0 ${action.status === 'completed' ? 'bg-green-500' : 'bg-amber-400'}`} />
                             <div className="flex-1">
@@ -810,7 +824,7 @@ const CounselorStudentDetail = () => {
                             </div>
                             <Select 
                               defaultValue={action.status} 
-                              onValueChange={(v) => updateActionStatusMutation.mutate({ id: action.id, status: v })}
+                              onValueChange={(v: string) => updateActionStatusMutation.mutate({ id: action.id, status: v })}
                             >
                               <SelectTrigger className="w-32 h-8 text-xs">
                                 <SelectValue />
@@ -913,7 +927,7 @@ const CounselorStudentDetail = () => {
                 <div className="space-y-6">
                   <div className="card-warm p-6">
                     <h2 className="text-xl font-heading font-bold text-foreground mb-6 flex items-center gap-2">
-                      <Map className="w-6 h-6 text-primary" />
+                      <MapIcon className="w-6 h-6 text-primary" />
                       Career Pathway Architecture
                     </h2>
                     
@@ -986,11 +1000,11 @@ const CounselorStudentDetail = () => {
                   {studentId && <StudentNotes studentId={studentId} />}
                 </div>
               )}
-            </>
+            </div>
           )}
         </motion.div>
-    </div>
-  );
+      </div>
+    );
 };
 
 export default CounselorStudentDetail;

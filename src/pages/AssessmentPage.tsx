@@ -100,29 +100,43 @@ export default function AssessmentPage() {
   }, [questions, answers]);
 
   const handleFinish = async () => {
-    console.log("Finishing assessment...");
+    if (isSaving) return;
+    
+    console.log("Finishing assessment. Current answers:", answers);
     setIsSaving(true);
     
     try {
       if (user) {
+        // Explicitly convert numeric keys to strings for JSONB stability
+        const sanitizedAnswers = Object.entries(answers).reduce((acc, [key, val]) => {
+          acc[key] = val;
+          return acc;
+        }, {} as Record<string, number>);
+
+        console.log("Attempting to sync assessment to cloud...");
         const { error } = await supabase.from("assessments").insert({
           user_id: user.id,
           assessment_type: type || "riasec",
-          answers: answers as any,
+          answers: sanitizedAnswers as any,
           results: results as any,
           completed_at: new Date().toISOString(),
         });
 
         if (error) {
-          console.error("Save error:", error);
-          toast.error("Could not sync to cloud, but showing results locally.");
+          console.error("Supabase sync error:", error);
+          toast.error("Cloud sync failed, but showing results locally.");
         } else {
+          console.log("Assessment synced successfully");
           toast.success("Assessment saved successfully!");
         }
+      } else {
+        console.warn("No user found during save, showing local results only.");
       }
+      
+      // Always show results, even if sync failed or was skipped
       setShowResults(true);
     } catch (err) {
-      console.error("Critical save failure:", err);
+      console.error("Critical assessment save failure:", err);
       toast.error("An unexpected error occurred. Showing results locally.");
       setShowResults(true);
     } finally {

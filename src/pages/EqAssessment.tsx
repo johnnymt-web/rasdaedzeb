@@ -85,46 +85,38 @@ export default function EqAssessment() {
     console.log("Starting EQ submission for user:", user.id);
 
     try {
-      // Validate session again just in case
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("No active session found during submission.");
-      }
-
       const calculatedResults = calculateResults();
       const resultsArray = Object.keys(calculatedResults).map(key => ({
         category: key,
         score: calculatedResults[key],
-        pct: (calculatedResults[key] / 5) * 100
+        pct: Math.round((calculatedResults[key] / 5) * 100)
       }));
 
-      console.log("Calculated results:", resultsArray);
+      console.log("Calculated EQ results:", resultsArray);
 
       const { error } = await supabase.from("assessments").insert({
         user_id: user.id,
         assessment_type: "eq",
-        answers: answers,
-        results: resultsArray,
+        answers: answers as any,
+        results: resultsArray as any,
         completed_at: new Date().toISOString(),
       });
 
       if (error) {
         console.error("Supabase insert error:", error);
-        throw error;
+        toast.error("Cloud sync failed, but showing results locally.");
+      } else {
+        toast.success("Emotional Skills profile saved!");
       }
 
-      console.log("EQ submission successful");
-      toast.success("Emotional Skills profile saved!");
-      
-      // Give the UI a moment to show the success state before switching views
-      setTimeout(() => {
-        setIsComplete(true);
-        setIsSubmitting(false);
-      }, 500);
+      // Move to complete state regardless of sync success to avoid "stuck" UI
+      setIsComplete(true);
 
     } catch (error: any) {
       console.error("Critical error saving EQ reflection:", error);
-      toast.error(error.message || "Failed to save results. Please check your connection.");
+      toast.error(error.message || "Failed to process results. Showing locally.");
+      setIsComplete(true);
+    } finally {
       setIsSubmitting(false);
     }
   };

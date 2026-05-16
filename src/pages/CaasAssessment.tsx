@@ -104,7 +104,9 @@ export default function CaasAssessment() {
       toast({ title: "Assessment Complete!", description: "Your Career Adaptability profile has been saved." });
       navigate("/student/report");
     } catch (err) {
-      toast({ title: "Error", description: "Failed to save assessment. Please try again.", variant: "destructive" });
+      console.error("CAAS save failed:", err);
+      toast({ title: "Sync Failed", description: "Could not save to cloud, but navigating to report locally.", variant: "destructive" });
+      navigate("/student/report");
     } finally {
       setSubmitting(false);
     }

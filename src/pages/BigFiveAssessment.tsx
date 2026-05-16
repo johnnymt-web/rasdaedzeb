@@ -127,11 +127,13 @@ export default function BigFiveAssessment() {
       });
       navigate("/student/report");
     } catch (err) {
+      console.error("Big Five save failed:", err);
       toast({ 
         title: t("assessment.big_five.toast_error"), 
-        description: t("assessment.big_five.toast_error_desc"), 
+        description: "Cloud sync failed, but navigating to report with local data.", 
         variant: "destructive" 
       });
+      navigate("/student/report");
     } finally {
       setSubmitting(false);
     }

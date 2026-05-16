@@ -100,7 +100,9 @@ export default function WorkValuesAssessment() {
       setCurrentStep(QUESTIONS.length); // Show results
       toast.success("Assessment completed!");
     } catch (err: any) {
-      toast.error("Failed to save results: " + err.message);
+      console.error("Work values save failed:", err);
+      toast.error("Cloud sync failed, but showing results locally.");
+      setCurrentStep(QUESTIONS.length); // Show results anyway
     } finally {
       setIsSubmitting(false);
     }
