@@ -28,11 +28,13 @@ CREATE POLICY "Students can manage own pathways"
   USING (auth.uid() = student_id);
 
 CREATE POLICY "Counselors and Admins can view pathways"
-  ON public.student_career_pathways
-  FOR SELECT
+  ON public.student_career_pathways FOR SELECT
   USING (
-    public.has_role(auth.uid(), 'counselor') OR 
-    public.has_role(auth.uid(), 'admin')
+    EXISTS (
+      SELECT 1 FROM public.user_roles 
+      WHERE user_roles.user_id = auth.uid() 
+      AND user_roles.role::text IN ('counselor', 'admin')
+    )
   );
 
 -- 4. Unique primary pathway per student (functional constraint)

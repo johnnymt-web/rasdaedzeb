@@ -27,11 +27,13 @@ CREATE POLICY "Students can manage their own subject plans"
   FOR ALL
   USING (auth.uid() = student_id);
 
--- Counselors and Admins can view and update plans
 CREATE POLICY "Counselors and Admins can manage student subject plans"
   ON public.student_subject_plans
   FOR ALL
   USING (
-    public.has_role(auth.uid(), 'counselor') OR 
-    public.has_role(auth.uid(), 'admin')
+    EXISTS (
+      SELECT 1 FROM public.user_roles 
+      WHERE user_roles.user_id = auth.uid() 
+      AND user_roles.role::text IN ('counselor', 'admin')
+    )
   );
