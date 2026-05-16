@@ -5,7 +5,7 @@ export interface StudentProfileData {
   traits: any;
   adapt: any;
   values: any;
-  eqResults: Record<string, number>;
+  eqResults: Record<string, number> | null;
 }
 
 export interface SynthesisResponse {
