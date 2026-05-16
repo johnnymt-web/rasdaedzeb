@@ -36,11 +36,10 @@ import StudentPortfolio from "./pages/StudentPortfolio";
 import CounselorFollowUps from "./pages/CounselorFollowUps";
 import ParentResources from "./pages/ParentResources";
 import Opportunities from "./pages/Opportunities";
-import KnowledgeHub from "./pages/KnowledgeHub";
-import AssessmentHistory from "./pages/AssessmentHistory";
-import CounselorStudentDetail from "./pages/CounselorStudentDetail";
 import StudentSkills from "./pages/StudentSkills";
 import Profile from "./pages/Profile";
+import CareerExposure from "./pages/CareerExposure";
+import ActionPlan from "./pages/ActionPlan";
 import BigFiveAssessment from "./pages/BigFiveAssessment";
 import CaasAssessment from "./pages/CaasAssessment";
 import GatsbyDashboard from "./pages/GatsbyDashboard";
@@ -100,9 +99,11 @@ const App = () => {
               <Route path="/student/subjects" element={<SubjectChoices />} />
               <Route path="/student/plan" element={<PathwayPlanner />} />
               <Route path="/student/explore/pathways" element={<PathwayExplorer />} />
-              <Route path="/student/opportunities" element={<Opportunities />} />
-              <Route path="/student/portfolio" element={<StudentPortfolio />} />
               <Route path="/student/skills" element={<StudentSkills />} />
+              <Route path="/student/exposure" element={<CareerExposure />} />
+              <Route path="/student/actions" element={<ActionPlan />} />
+              <Route path="/student/portfolio" element={<StudentPortfolio />} />
+              <Route path="/student/opportunities" element={<Opportunities />} />
               <Route path="/student/coach" element={<StudentCoach />} />
               <Route path="/student/assessment/bigfive" element={<BigFiveAssessment />} />
               <Route path="/student/assessment/caas" element={<CaasAssessment />} />

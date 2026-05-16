@@ -144,16 +144,28 @@ const StudentDashboard = () => {
       to: "/student/report",
     },
     {
-      title: t("dashboard.student.journey_steps.skills"),
+      title: "Career Exposure",
       status: hasCompleted ? "current" : "locked",
-      label: hasCompleted ? t("dashboard.student.journey_steps.mark_skills") : t("dashboard.student.journey_steps.locked"),
-      to: "/student/skills",
+      label: hasCompleted ? "Log Activities" : t("dashboard.student.journey_steps.locked"),
+      to: "/student/exposure",
+    },
+    {
+      title: "Action Plan",
+      status: hasCompleted ? "current" : "locked",
+      label: hasCompleted ? "Manage Tasks" : t("dashboard.student.journey_steps.locked"),
+      to: "/student/actions",
     },
     {
       title: t("dashboard.student.journey_steps.portfolio"),
       status: hasCompleted ? "current" : "locked",
       label: hasCompleted ? t("dashboard.student.journey_steps.open_portfolio") : t("dashboard.student.journey_steps.locked"),
       to: "/student/portfolio",
+    },
+    {
+      title: t("dashboard.student.journey_steps.skills"),
+      status: hasCompleted ? "current" : "locked",
+      label: hasCompleted ? t("dashboard.student.journey_steps.mark_skills") : t("dashboard.student.journey_steps.locked"),
+      to: "/student/skills",
     },
   ];
 
@@ -382,9 +394,9 @@ const StudentDashboard = () => {
                 <h3 className="font-heading font-semibold text-foreground mb-3">{t("dashboard.student.quick_explore.title")}</h3>
                 <div className="space-y-2">
                   {[
+                    { icon: Compass, label: "Career Exposure", desc: "Log your exploration", to: "/student/exposure" },
+                    { icon: Target, label: "Action Plan", desc: "Manage your goals", to: "/student/actions" },
                     { icon: BookOpen, label: t("dashboard.student.quick_explore.careers.label"), desc: t("dashboard.student.quick_explore.careers.desc"), to: "/student/explore" },
-                    { icon: Compass, label: t("dashboard.student.quick_explore.pathways.label"), desc: t("dashboard.student.quick_explore.pathways.desc"), to: "/student/explore/pathways" },
-                    { icon: Target, label: t("dashboard.student.quick_explore.history.label"), desc: t("dashboard.student.quick_explore.history.desc"), to: "/student/assessment/history" },
                     { icon: Briefcase, label: t("dashboard.student.quick_explore.opportunities.label"), desc: t("dashboard.student.quick_explore.opportunities.desc"), to: "/student/opportunities" }
                   ].map((item) => (
                     <Link key={item.label} to={item.to} className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left">

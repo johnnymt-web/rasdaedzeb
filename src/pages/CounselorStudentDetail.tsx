@@ -215,6 +215,82 @@ const CounselorStudentDetail = () => {
     });
   }
 
+  const { data: activities, isLoading: activitiesLoading } = useQuery({
+    queryKey: ["counselor-student-activities", studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("career_exposure_activities")
+        .select("*")
+        .eq("student_id", studentId!)
+        .order("activity_date", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!studentId,
+  });
+
+  const { data: actionPlans, isLoading: actionPlansLoading } = useQuery({
+    queryKey: ["counselor-student-action-plans", studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("student_action_plans")
+        .select("*")
+        .eq("student_id", studentId!)
+        .order("due_date", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!studentId,
+  });
+
+  const commentMutation = useMutation({
+    mutationFn: async ({ id, comment }: { id: string; comment: string }) => {
+      const { error } = await supabase
+        .from("career_exposure_activities")
+        .update({ counselor_comment: comment })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["counselor-student-activities"] });
+      toast.success("Comment saved");
+    },
+  });
+
+  const addActionMutation = useMutation({
+    mutationFn: async (newData: any) => {
+      const { error } = await supabase
+        .from("student_action_plans")
+        .insert([{ 
+          ...newData, 
+          student_id: studentId, 
+          assigned_by: (await supabase.auth.getUser()).data.user?.id,
+          assigned_by_role: "counselor"
+        }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["counselor-student-action-plans"] });
+      toast.success("Action plan item added");
+    },
+  });
+
+  const updateActionStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase
+        .from("student_action_plans")
+        .update({ status })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["counselor-student-action-plans"] });
+      toast.success("Status updated");
+    },
+  });
+
+  const [activeTab, setActiveTab] = useState<"overview" | "report" | "exposure" | "plan" | "notes">("overview");
+
   const [synthesis, setSynthesis] = useState<SynthesisResponse | null>(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
 
@@ -295,61 +371,89 @@ const CounselorStudentDetail = () => {
                     </div>
                   </div>
 
-                  {/* Quick Brief Section */}
-                  <div className="card-warm p-5 border-amber-200 bg-amber-50/30 md:w-96 relative">
-                    <h2 className="font-heading font-bold text-sm text-amber-800 mb-2 flex items-center gap-2">
-                      <Brain className="w-4 h-4" />
-                      Guidance Brief
-                    </h2>
-                    
-                    {isSynthesizing ? (
-                      <div className="flex flex-col items-center justify-center py-6">
-                        <Loader2 className="w-5 h-5 animate-spin text-amber-500 mb-2" />
-                        <span className="text-xs text-amber-700">Generating insights...</span>
-                      </div>
-                    ) : synthesis ? (
-                      <>
-                        <p className="text-xs text-amber-900/80 leading-relaxed mb-3">
-                          {synthesis.summary || "Complete more assessments to generate a guidance summary."}
-                        </p>
-                        {synthesis.recommendations.length > 0 && (
-                          <div className="space-y-1.5">
-                            {synthesis.recommendations.map((r, i) => (
-                              <div key={i} className="text-[10px] bg-amber-200/40 text-amber-900 px-2 py-1 rounded border border-amber-200/60">
-                                • {r}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-xs text-amber-900/80 leading-relaxed mb-3">
-                        Waiting for assessment data...
-                      </p>
-                    )}
-                  </div>
-                </div>
+              {/* Tab Switcher */}
+              <div className="flex gap-2 p-1 bg-muted/30 rounded-xl w-fit mb-6">
+                {[
+                  { id: "overview", label: "Overview", icon: Brain },
+                  { id: "exposure", label: "Career Exposure", icon: Compass },
+                  { id: "plan", label: "Action Plan", icon: Target },
+                  { id: "report", label: "Discovery Profile", icon: Sparkles },
+                  { id: "notes", label: "Counselor Notes", icon: MessageSquare }
+                ].map((tab) => (
+                  <Button
+                    key={tab.id}
+                    variant={activeTab === tab.id ? "warm" : "ghost"}
+                    size="sm"
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className="gap-2 rounded-lg"
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    {tab.label}
+                  </Button>
+                ))}
               </div>
 
-              <div className="grid lg:grid-cols-5 gap-6">
-                {/* RIASEC chart */}
-                <div className="lg:col-span-3">
-                  <div className="card-warm p-6">
-                    <h2 className="font-heading font-semibold text-lg text-foreground mb-4">
-                      {t("counselor.student_detail.radar_title")}
-                    </h2>
-                    {chartAssessments.length > 0 ? (
-                      <RiasecRadarChart assessments={chartAssessments} maxOverlays={3} />
-                    ) : (
-                      <div className="text-center py-12">
-                        <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          {t("counselor.no_recent")}
-                        </p>
+              {activeTab === "overview" && (
+                <div className="space-y-6">
+                  <div className="grid lg:grid-cols-5 gap-6">
+                    {/* RIASEC chart */}
+                    <div className="lg:col-span-3">
+                      <div className="card-warm p-6 h-full">
+                        <h2 className="font-heading font-semibold text-lg text-foreground mb-4">
+                          {t("counselor.student_detail.radar_title")}
+                        </h2>
+                        {chartAssessments.length > 0 ? (
+                          <RiasecRadarChart assessments={chartAssessments} maxOverlays={3} />
+                        ) : (
+                          <div className="text-center py-12">
+                            <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">
+                              {t("counselor.no_recent")}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
+
+                    {/* Quick Brief Section */}
+                    <div className="lg:col-span-2">
+                      <div className="card-warm p-6 border-amber-200 bg-amber-50/30 h-full relative">
+                        <h2 className="font-heading font-bold text-sm text-amber-800 mb-4 flex items-center gap-2">
+                          <Brain className="w-4 h-4" />
+                          Guidance Brief
+                        </h2>
+                        
+                        {isSynthesizing ? (
+                          <div className="flex flex-col items-center justify-center py-6">
+                            <Loader2 className="w-5 h-5 animate-spin text-amber-500 mb-2" />
+                            <span className="text-xs text-amber-700">Generating insights...</span>
+                          </div>
+                        ) : synthesis ? (
+                          <>
+                            <p className="text-xs text-amber-900/80 leading-relaxed mb-4">
+                              {synthesis.summary || "Complete more assessments to generate a guidance summary."}
+                            </p>
+                            {synthesis.recommendations.length > 0 && (
+                              <div className="space-y-2">
+                                {synthesis.recommendations.map((r, i) => (
+                                  <div key={i} className="text-[11px] bg-amber-200/40 text-amber-900 px-3 py-2 rounded-lg border border-amber-200/60 leading-relaxed">
+                                    • {r}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-xs text-amber-900/80 leading-relaxed mb-3">
+                            Waiting for assessment data...
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+
+                  <div className="grid lg:grid-cols-3 gap-6">
+
 
                 {/* Top interests sidebar */}
                 <div className="lg:col-span-2 space-y-6">
@@ -525,73 +629,201 @@ const CounselorStudentDetail = () => {
                 </div>
               </div>
 
-              <div className="mt-8 grid lg:grid-cols-3 gap-6">
-                {/* Assessment history - Moved to its own section below */}
-                <div className="lg:col-span-2">
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "exposure" && (
+                <div className="space-y-6">
                   <div className="card-warm p-6">
-                    <h2 className="font-heading font-semibold text-lg text-foreground mb-4">
-                      {t("counselor.student_detail.history_title")}
+                    <h2 className="text-xl font-heading font-bold text-foreground mb-6 flex items-center gap-2">
+                      <Compass className="w-6 h-6 text-primary" />
+                      Career Exposure Activities
                     </h2>
-                    {(assessments || []).length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        {t("counselor.no_recent")}
-                      </p>
+                    
+                    {activitiesLoading ? (
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto my-8 text-muted-foreground" />
+                    ) : activities?.length === 0 ? (
+                      <div className="text-center py-12 border border-dashed rounded-2xl">
+                        <p className="text-muted-foreground">No activities logged by this student yet.</p>
+                      </div>
                     ) : (
-                      <div className="space-y-3">
-                        {(assessments || []).map((a) => (
-                          <div
-                            key={a.id}
-                            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-                          >
-                            {a.completed_at ? (
-                              <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                            ) : (
-                              <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-foreground">
-                                {a.completed_at ? t("counselor.student_detail.status_completed") : t("counselor.student_detail.status_in_progress")}
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {activities?.map((activity) => (
+                          <div key={activity.id} className="border rounded-2xl p-5 bg-white shadow-sm flex flex-col h-full">
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase">
+                                {activity.activity_type.replace('_', ' ')}
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                {format(new Date(a.created_at), `MMM d, yyyy '${t("counselor.student_detail.at")}' h:mm a`)}
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {format(new Date(activity.activity_date), "MMM d, yyyy")}
                               </div>
                             </div>
-                            {a.completed_at && a.results && (
-                              <div className="text-xs text-muted-foreground">
-                                {t("assessment.riasec.top_areas")}:{" "}
-                                {(a.results as unknown as AssessmentResult[])
-                                  .sort((x, y) => y.pct - x.pct)
-                                  .slice(0, 2)
-                                  .map((r) => r.category.charAt(0))
-                                  .join("")}
+                            <h3 className="font-bold text-foreground mb-2">{activity.title}</h3>
+                            <p className="text-sm text-muted-foreground mb-4 flex-1">{activity.description}</p>
+                            
+                            {activity.reflection && (
+                              <div className="bg-muted/30 p-3 rounded-xl mb-4 italic text-sm">
+                                "{activity.reflection}"
                               </div>
                             )}
+
+                            <div className="pt-4 border-t mt-auto">
+                              <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-2">Counselor Feedback</label>
+                              <div className="flex gap-2">
+                                <input 
+                                  className="flex-1 bg-muted/50 border-none rounded-lg text-sm p-2 h-9 focus:ring-1 focus:ring-primary"
+                                  placeholder="Leave a comment..."
+                                  defaultValue={activity.counselor_comment || ""}
+                                  onBlur={(e) => {
+                                    if (e.target.value !== (activity.counselor_comment || "")) {
+                                      commentMutation.mutate({ id: activity.id, comment: e.target.value });
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="mt-8 space-y-8">
-                <div className="card-warm p-8">
-                  <h2 className="text-xl font-heading font-bold text-foreground mb-6 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    Student Discovery Profile
-                  </h2>
-                  <div className="border-t pt-6">
-                    <ComprehensiveReportView 
-                      studentId={studentId!} 
-                      grade={profile?.grade || undefined}
-                      isCounselorView={true}
-                    />
+              {activeTab === "plan" && (
+                <div className="space-y-6">
+                  <div className="card-warm p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
+                        <Target className="w-6 h-6 text-primary" />
+                        Student Action Plan
+                      </h2>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button size="sm" className="gap-2">
+                            <Plus className="w-4 h-4" />
+                            Assign Task
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Assign Action Item</DialogTitle>
+                          </DialogHeader>
+                          <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const form = e.target as HTMLFormElement;
+                            const formData = new FormData(form);
+                            addActionMutation.mutate({
+                              title: formData.get("title"),
+                              category: formData.get("category"),
+                              due_date: formData.get("due_date") || null,
+                              status: "pending"
+                            });
+                            form.reset();
+                          }} className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Task Title</label>
+                              <Input name="title" required placeholder="e.g., Research engineering majors" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Category</label>
+                                <Select name="category" defaultValue="exploration">
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="exploration">Exploration</SelectItem>
+                                    <SelectItem value="subject_choice">Subject Choice</SelectItem>
+                                    <SelectItem value="skill_building">Skill Building</SelectItem>
+                                    <SelectItem value="application">Application</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Due Date</label>
+                                <Input name="due_date" type="date" />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button type="submit">Assign Item</Button>
+                            </DialogFooter>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+
+                    {actionPlansLoading ? (
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto my-8 text-muted-foreground" />
+                    ) : actionPlans?.length === 0 ? (
+                      <div className="text-center py-12 border border-dashed rounded-2xl">
+                        <p className="text-muted-foreground">No action items assigned.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {actionPlans?.map((action) => (
+                          <div key={action.id} className="flex items-center gap-4 p-4 rounded-xl border bg-white shadow-sm">
+                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${action.status === 'completed' ? 'bg-green-500' : 'bg-amber-400'}`} />
+                            <div className="flex-1">
+                              <h4 className={`text-sm font-bold ${action.status === 'completed' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                                {action.title}
+                              </h4>
+                              <div className="flex items-center gap-3 mt-1">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground/60">{action.category}</span>
+                                {action.due_date && (
+                                  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    Due: {format(new Date(action.due_date), "MMM d")}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <Select 
+                              defaultValue={action.status} 
+                              onValueChange={(v) => updateActionStatusMutation.mutate({ id: action.id, status: v })}
+                            >
+                              <SelectTrigger className="w-32 h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="in_progress">In Progress</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
+              )}
 
-                {/* Notes section */}
-                {studentId && <StudentNotes studentId={studentId} />}
-              </div>
+              {activeTab === "report" && (
+                <div className="space-y-8">
+                  <div className="card-warm p-8">
+                    <h2 className="text-xl font-heading font-bold text-foreground mb-6 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                      Student Discovery Profile
+                    </h2>
+                    <div className="border-t pt-6">
+                      <ComprehensiveReportView 
+                        studentId={studentId!} 
+                        grade={profile?.grade || undefined}
+                        isCounselorView={true}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "notes" && (
+                <div className="mt-8">
+                  {studentId && <StudentNotes studentId={studentId} />}
+                </div>
+              )}
             </>
           )}
         </motion.div>
