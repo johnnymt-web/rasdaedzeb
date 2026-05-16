@@ -21,6 +21,7 @@ import CounselorNotes from "./pages/CounselorNotes";
 import ParentDashboard from "./pages/ParentDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminInsights from "./pages/AdminInsights";
+import SchoolAnalytics from "./pages/SchoolAnalytics";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import AssessmentSelection from "./pages/AssessmentSelection";
 import AssessmentPage from "./pages/AssessmentPage";
@@ -142,6 +143,7 @@ const App = () => {
               <Route path="/admin/content" element={<AdminDashboard />} />
               <Route path="/admin/bulk" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminDashboard />} />
+              <Route path="/admin/analytics" element={<SchoolAnalytics />} />
               <Route path="/admin/settings" element={<AdminDashboard />} />
             </Route>
 

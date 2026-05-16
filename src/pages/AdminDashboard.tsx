@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, CheckCircle2, TrendingUp, AlertTriangle,
   BarChart3, ArrowUpRight, ArrowDownRight, Loader2,
-  Calendar, UserPlus, Sparkles, ArrowLeft
+  Calendar, UserPlus, Sparkles, ArrowLeft, ArrowRight
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -411,6 +411,33 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   <>
+                    <div className="grid md:grid-cols-2 gap-4 mb-8">
+                      <Link to="/admin/analytics" className="card-warm p-6 surface-indigo flex items-center justify-between group">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-white/50 flex items-center justify-center text-indigo-600">
+                            <TrendingUp className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-indigo-900">Strategic Analytics</h3>
+                            <p className="text-xs text-indigo-800/60">Subject demand & career trends</p>
+                          </div>
+                        </div>
+                        <ArrowUpRight className="w-5 h-5 text-indigo-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                      </Link>
+                      <Link to="/admin/users" className="card-warm p-6 bg-white border flex items-center justify-between group">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
+                            <Users className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-foreground">User Management</h3>
+                            <p className="text-xs text-muted-foreground">Students, Counselors, Parents</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </div>
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                       {stats.map((stat) => (
                         <div key={stat.label} className="card-warm p-5">
