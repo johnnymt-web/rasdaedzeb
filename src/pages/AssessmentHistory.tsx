@@ -9,7 +9,13 @@ import { useQuery } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { useTranslation } from "react-i18next";
 import { useMemo, useState } from "react";
-// Individual normalize functions are dynamically imported inside the query
+import { 
+  normalizeBigFiveAssessment, 
+  normalizeCaasAssessment, 
+  normalizeWorkValuesAssessment,
+  normalizeRiasecAssessment,
+  normalizeSkillsAssessment
+} from "@/utils/assessmentNormalization";
 
 interface Assessment {
   id: string;
@@ -83,14 +89,6 @@ export default function AssessmentHistory() {
           }
         }).filter((x): x is NonNullable<typeof x> => x != null);
       };
-
-      const { 
-        normalizeBigFiveAssessment, 
-        normalizeCaasAssessment, 
-        normalizeWorkValuesAssessment,
-        normalizeRiasecAssessment,
-        normalizeSkillsAssessment
-      } = await import("@/utils/assessmentNormalization");
 
       const riasecHistory = processHistory(stdData.filter((a: any) => a.assessment_type === 'riasec' || a.assessment_type === 'std' || !a.assessment_type), 'riasec', normalizeRiasecAssessment);
       const skillsHistory = processHistory(stdData.filter((a: any) => a.assessment_type === 'skills'), 'skills', normalizeSkillsAssessment);
