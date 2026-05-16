@@ -301,7 +301,21 @@ const CounselorStudentDetail = () => {
     },
   });
 
-  const [activeTab, setActiveTab] = useState<"overview" | "report" | "exposure" | "plan" | "subjects" | "notes">("overview");
+  const { data: pathways = [], isLoading: pathwaysLoading } = useQuery({
+    queryKey: ["counselor-student-pathways", studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("student_career_pathways" as any)
+        .select("*")
+        .eq("student_id", studentId!)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!studentId,
+  });
+
+  const [activeTab, setActiveTab] = useState<"overview" | "report" | "exposure" | "plan" | "subjects" | "pathways" | "notes">("overview");
 
   const [synthesis, setSynthesis] = useState<SynthesisResponse | null>(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -390,6 +404,7 @@ const CounselorStudentDetail = () => {
                   { id: "exposure", label: "Career Exposure", icon: Compass },
                   { id: "plan", label: "Action Plan", icon: Target },
                   { id: "subjects", label: "Subjects", icon: GraduationCap },
+                  { id: "pathways", label: "Pathways", icon: Map },
                   { id: "report", label: "Discovery Profile", icon: Sparkles },
                   { id: "notes", label: "Counselor Notes", icon: MessageSquare }
                 ].map((tab) => (
@@ -888,6 +903,60 @@ const CounselorStudentDetail = () => {
                             </form>
                           </div>
                         </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "pathways" && (
+                <div className="space-y-6">
+                  <div className="card-warm p-6">
+                    <h2 className="text-xl font-heading font-bold text-foreground mb-6 flex items-center gap-2">
+                      <Map className="w-6 h-6 text-primary" />
+                      Career Pathway Architecture
+                    </h2>
+                    
+                    {pathwaysLoading ? (
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto my-8 text-muted-foreground" />
+                    ) : pathways?.length === 0 ? (
+                      <div className="text-center py-12 border border-dashed rounded-2xl">
+                        <p className="text-muted-foreground">No career pathways architected yet.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {(pathways as any[]).map((path) => (
+                          <div key={path.id} className={`p-6 rounded-2xl border-2 ${path.is_primary ? 'border-primary bg-primary/[0.02]' : 'bg-white'} transition-all`}>
+                            <div className="flex justify-between items-start mb-6">
+                              <div>
+                                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                                  {path.title}
+                                  {path.is_primary && <Star className="w-4 h-4 text-primary fill-primary" />}
+                                </h3>
+                                <p className="text-xs text-muted-foreground">Architected on {format(new Date(path.created_at), "MMM d, yyyy")}</p>
+                              </div>
+                            </div>
+
+                            <div className="grid md:grid-cols-3 gap-6">
+                              <div className="p-4 bg-muted/20 rounded-xl">
+                                <Label className="text-[10px] uppercase font-bold text-muted-foreground block mb-2">1. Academic Base</Label>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {(path.subjects as string[]).map(s => (
+                                    <span key={s} className="bg-white border text-[10px] px-2 py-1 rounded-md font-medium">{s}</span>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="p-4 bg-muted/20 rounded-xl">
+                                <Label className="text-[10px] uppercase font-bold text-muted-foreground block mb-2">2. Higher Ed Goal</Label>
+                                <p className="text-sm font-bold text-foreground">{path.higher_ed_goal || "Not set"}</p>
+                              </div>
+                              <div className="p-4 bg-muted/20 rounded-xl">
+                                <Label className="text-[10px] uppercase font-bold text-muted-foreground block mb-2">3. Career Destination</Label>
+                                <p className="text-sm font-bold text-foreground">{path.title}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
