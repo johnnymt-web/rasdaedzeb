@@ -299,7 +299,7 @@ const CounselorStudentDetail = () => {
                   <div className="card-warm p-5 border-amber-200 bg-amber-50/30 md:w-96 relative">
                     <h2 className="font-heading font-bold text-sm text-amber-800 mb-2 flex items-center gap-2">
                       <Brain className="w-4 h-4" />
-                      AI Counselor Brief
+                      Guidance Brief
                     </h2>
                     
                     {isSynthesizing ? (
@@ -310,7 +310,7 @@ const CounselorStudentDetail = () => {
                     ) : synthesis ? (
                       <>
                         <p className="text-xs text-amber-900/80 leading-relaxed mb-3">
-                          {synthesis.summary || "Complete more assessments to generate a clinical summary."}
+                          {synthesis.summary || "Complete more assessments to generate a guidance summary."}
                         </p>
                         {synthesis.recommendations.length > 0 && (
                           <div className="space-y-1.5">
@@ -396,7 +396,7 @@ const CounselorStudentDetail = () => {
                         <div>
                           <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                             <Brain className="w-4 h-4 text-violet-500" />
-                            Big Five Traits
+                            Learning & Working Style
                           </h3>
                           <div className="grid grid-cols-2 gap-2">
                             {[
@@ -457,7 +457,7 @@ const CounselorStudentDetail = () => {
                         <div className="pt-4 border-t">
                           <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                             <BrainCircuit className="w-4 h-4 text-blue-500" />
-                            Emotional Intelligence
+                            Emotional Skills Reflection
                           </h3>
                           <div className="grid grid-cols-1 gap-2">
                             {[
@@ -578,7 +578,7 @@ const CounselorStudentDetail = () => {
                 <div className="card-warm p-8">
                   <h2 className="text-xl font-heading font-bold text-foreground mb-6 flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-primary" />
-                    Unified Student Diagnostic Report
+                    Student Discovery Profile
                   </h2>
                   <div className="border-t pt-6">
                     <ComprehensiveReportView 

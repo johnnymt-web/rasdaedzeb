@@ -1,15 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Info, Sparkles, Target, Users, Loader2, BookOpen, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, Heart, ArrowRight } from "lucide-react";
+import { Info, Sparkles, Target, Users, Loader2, BookOpen, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, Heart, ArrowRight, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { normalizeAllAssessments, getTopResults, getLowResults } from "@/utils/assessmentNormalization";
 import { parseGrade, isAssessmentVisible } from "@/utils/gradeLogic";
+import { getGradeBand, getReportToneForGradeBand } from "@/utils/gradeBands";
 import { generateAiSynthesis, SynthesisResponse } from "@/services/aiService";
 import OnetCareerSection from "./OnetCareerSection";
+import { useState } from "react";
+import { toast } from "sonner";
 
 
 interface Props {
@@ -22,8 +25,37 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
   const { t } = useTranslation();
   const { user, profile: authProfile } = useAuth();
   const numericGrade = parseGrade(propGrade || authProfile?.grade || user?.user_metadata?.grade);
+  const gradeBand = getGradeBand(String(numericGrade));
+  const reportTone = getReportToneForGradeBand(gradeBand);
+  
+  const [reflectionText, setReflectionText] = useState("");
+  const [isSavingReflection, setIsSavingReflection] = useState(false);
+
+  const handleSaveReflection = async () => {
+    if (!reflectionText.trim()) {
+      toast.error("Please write something before saving.");
+      return;
+    }
+    setIsSavingReflection(true);
+    try {
+      const { error } = await supabase.from("reflections" as any).insert({
+        user_id: studentId,
+        prompt: "Discovery Profile Reflection",
+        response: reflectionText.trim(),
+      });
+      if (error) throw error;
+      toast.success("Reflection saved successfully!");
+      setReflectionText("");
+    } catch (err: any) {
+      console.error("Failed to save reflection:", err);
+      toast.error("Could not save reflection. Please try again.");
+    } finally {
+      setIsSavingReflection(false);
+    }
+  };
 
   const isVisible = (id: string) => isAssessmentVisible(id, numericGrade);
+
 
   const { data: normData, isLoading } = useQuery({
     queryKey: ["gold-standard-report-normalized", studentId],
@@ -135,7 +167,7 @@ const explorationTheme = getExplorationTheme();
   return (
     <div className="space-y-12 pb-20">
       <div className="text-[10px] text-muted-foreground opacity-30 text-right">
-        Diagnostic Context: Grade {numericGrade}
+        Grade {numericGrade}
       </div>
       {/* SECTION 1: Report purpose and disclaimer */}
       <section className="bg-primary/5 border border-primary/20 rounded-2xl p-6 flex gap-4 items-start">
@@ -143,7 +175,10 @@ const explorationTheme = getExplorationTheme();
         <div>
           <h3 className="font-heading font-bold text-lg text-primary-900 mb-2">Purpose of this Reflection Report</h3>
           <p className="text-sm text-primary-800 leading-relaxed">
-            This report summarizes your current career exploration responses. <strong>It does not decide your future career.</strong> It is designed to support reflection, discussion, and planning with your counselor, teachers, and family. Your interests, strengths, and goals will evolve over time.
+            This report summarizes your current career exploration responses. <strong>It does not decide your future career.</strong> It is designed to support reflection, discussion, and planning with your counselor, teachers, and family.
+          </p>
+          <p className="text-sm text-primary-700 leading-relaxed mt-2 italic">
+            {reportTone}
           </p>
         </div>
       </section>
@@ -420,8 +455,9 @@ const explorationTheme = getExplorationTheme();
           </section>
 
           {/* SECTION 10: Reflection questions */}
+          {!isCounselorView && (
           <section className="card-warm p-8 shadow-sm border-l-4 border-l-primary/50">
-            <h3 className="text-xl font-heading font-bold mb-6">Reflection Questions</h3>
+            <h3 className="text-xl font-heading font-bold mb-6">Your Reflection</h3>
             <div className="space-y-4 text-foreground/80 italic text-sm">
               <p>• Do these results feel accurate to you? Why or why not?</p>
               <p>• Which result surprised you?</p>
@@ -434,13 +470,23 @@ const explorationTheme = getExplorationTheme();
                 className="w-full p-4 rounded-xl border bg-muted/20 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" 
                 rows={4} 
                 placeholder="Write your thoughts here..."
+                value={reflectionText}
+                onChange={(e) => setReflectionText(e.target.value)}
               />
-              {/* TODO: Add persistence logic to save reflections to 'student_reflections' table */}
-              <Button onClick={() => alert("Reflection saved locally! (Database persistence coming soon)")} className="bg-primary text-white">
-                Save Reflection
+              <Button 
+                onClick={handleSaveReflection} 
+                disabled={isSavingReflection || !reflectionText.trim()}
+                className="bg-primary text-white"
+              >
+                {isSavingReflection ? (
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</>
+                ) : (
+                  <><Save className="w-4 h-4 mr-2" /> Save Reflection</>
+                )}
               </Button>
             </div>
           </section>
+          )}
         </>
       ) : (
         <div className="text-center py-20 bg-muted/10 rounded-3xl border border-dashed">

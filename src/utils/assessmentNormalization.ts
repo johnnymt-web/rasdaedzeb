@@ -269,3 +269,40 @@ export function normalizeAllAssessments(rawData: {
     eq: normalizeEqAssessment(eqRaw)
   };
 }
+
+/**
+ * Cross-references a student's completed assessments against the
+ * recommended assessments for their grade band.
+ */
+export function getAssessmentCompletionStatus(
+  normData: ReturnType<typeof normalizeAllAssessments>,
+  recommendedIds: string[]
+): { total: number; completed: number; pct: number; missing: string[] } {
+  const assessmentMap: Record<string, NormalizedAssessment> = {
+    riasec: normData.riasec,
+    skills: normData.skills,
+    bigfive: normData.bigFive,
+    caas: normData.caas,
+    workvalues: normData.workValues,
+    eq: normData.eq,
+  };
+
+  const missing: string[] = [];
+  let completed = 0;
+
+  for (const id of recommendedIds) {
+    const a = assessmentMap[id];
+    if (a && a.isComplete) {
+      completed++;
+    } else {
+      missing.push(a?.label || id);
+    }
+  }
+
+  return {
+    total: recommendedIds.length,
+    completed,
+    pct: recommendedIds.length > 0 ? Math.round((completed / recommendedIds.length) * 100) : 0,
+    missing,
+  };
+}

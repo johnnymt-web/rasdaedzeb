@@ -11,6 +11,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { normalizeAllAssessments } from "@/utils/assessmentNormalization";
 
+import { getGradeBand } from "@/utils/gradeBands";
+
 interface StudentData {
   id: string;
   full_name: string | null;
@@ -27,36 +29,61 @@ function deriveSupportNeeds(students: StudentData[], t: any) {
   for (const s of students) {
     const name = s.full_name || t("counselor.unnamed_student");
     const grade = s.grade || "—";
-    const { riasec, caas, skills, eq } = s.normData;
+    const { riasec, caas, skills, eq, bigFive, workValues } = s.normData;
+    const band = getGradeBand(s.grade);
 
-    // 1. Missing basic assessments
+    // 1. Missing basic assessment — high priority
     if (!riasec.isComplete) {
       items.push({ id: s.id, name, grade, reason: "Career Interests assessment not started", urgency: "high" });
     }
 
-    // 2. Low CAAS confidence/curiosity (score < 3)
+    // 2. Low CAAS dimensions (score < 3) — needs exploration support
     if (caas.isComplete && caas.results.length > 0) {
       const lowCaas = caas.results.filter(r => (r.score ?? 0) < 3.0);
       if (lowCaas.length > 0) {
         items.push({ 
-          id: s.id, 
-          name, 
-          grade, 
+          id: s.id, name, grade, 
           reason: `Exploration support recommended (${lowCaas.map(c => c.label).join(', ')})`, 
           urgency: "medium" 
         });
       }
-    } else if (!caas.isComplete && riasec.isComplete) {
-      items.push({ id: s.id, name, grade, reason: "Career Adaptability reflection pending", urgency: "low" });
+    } else if (!caas.isComplete && riasec.isComplete && (band === "planning" || band === "transition")) {
+      items.push({ id: s.id, name, grade, reason: "Career Adaptability reflection pending", urgency: "medium" });
     }
 
-    // 3. Very narrow exploration profile / Subject-choice support
+    // 3. Narrow exploration profile
     if (riasec.isComplete) {
       const topPct = riasec.results[0]?.pct || 0;
-      // If top interest is very low, they might be unengaged or unsure
       if (topPct < 40) {
         items.push({ id: s.id, name, grade, reason: "Subject-choice/exploration support recommended", urgency: "medium" });
       }
+    }
+
+    // 4. EQ reflection check — low self-awareness or relationship management
+    if (eq.isComplete && eq.results.length > 0) {
+      const lowEq = eq.results.filter(r => (r.score ?? 0) < 2.5);
+      if (lowEq.length > 0) {
+        items.push({
+          id: s.id, name, grade,
+          reason: `Emotional skills growth area (${lowEq.map(e => e.label).join(', ')})`,
+          urgency: "low"
+        });
+      }
+    }
+
+    // 5. Subject-choice discussion recommended for Grades 9-10
+    if (band === "exploration" && riasec.isComplete && !workValues.isComplete) {
+      items.push({ id: s.id, name, grade, reason: "Subject-choice discussion recommended — Work Values not yet completed", urgency: "low" });
+    }
+
+    // 6. Transition planning needed for Grades 11+
+    if ((band === "planning" || band === "transition") && riasec.isComplete && !caas.isComplete && !skills.isComplete) {
+      items.push({ id: s.id, name, grade, reason: "Transition planning needed — key reflections incomplete", urgency: "high" });
+    }
+
+    // 7. Portfolio/skills development 
+    if (riasec.isComplete && !skills.isComplete && band !== "discovery") {
+      items.push({ id: s.id, name, grade, reason: "Employability Skills check recommended", urgency: "low" });
     }
   }
 
