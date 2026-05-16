@@ -38,11 +38,11 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
     }
     setIsSavingReflection(true);
     try {
-      const { error } = await supabase.from("reflections" as any).insert({
+      const { error } = await (supabase.from("reflections" as any) as any).insert([{
         user_id: studentId,
         prompt: "Discovery Profile Reflection",
         response: reflectionText.trim(),
-      });
+      }]);
       if (error) throw error;
       toast.success("Reflection saved successfully!");
       setReflectionText("");

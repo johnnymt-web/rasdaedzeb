@@ -36,13 +36,18 @@ const SubjectChoices = () => {
   const { data: latestAssessment, isLoading: loadingAssessment } = useQuery({
     queryKey: ["latest-assessment-subjects", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("assessments")
         .select("results")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching assessment:", error);
+        return null;
+      }
       return data;
     },
     enabled: !!user?.id,

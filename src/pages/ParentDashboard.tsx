@@ -91,8 +91,7 @@ const ParentDashboard = () => {
   const { data: exposures = [], isLoading: loadingExposures } = useQuery({
     queryKey: ["parent-student-exposures", activeStudentId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("career_exposure_activities")
+      const { data, error } = await (supabase.from("career_exposure_activities" as any) as any)
         .select("*")
         .eq("student_id", activeStudentId!)
         .order("created_at", { ascending: false });
@@ -106,8 +105,7 @@ const ParentDashboard = () => {
   const { data: actionPlans = [], isLoading: loadingActionPlans } = useQuery({
     queryKey: ["parent-student-action-plans", activeStudentId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("student_action_plans")
+      const { data, error } = await (supabase.from("student_action_plans" as any) as any)
         .select("*")
         .eq("student_id", activeStudentId!)
         .order("created_at", { ascending: false });

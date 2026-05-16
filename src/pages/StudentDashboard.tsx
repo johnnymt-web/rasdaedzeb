@@ -45,7 +45,14 @@ const StudentDashboard = () => {
 
   const latestAssessment = allAssessments?.find(a => {
     if (a.assessment_type?.toLowerCase() === 'skills') return false;
-    return (a.results as unknown as AssessmentResult[])?.some((r) => RIASEC_CATEGORIES.includes(r.category as typeof RIASEC_CATEGORIES[number]));
+    const results = a.results as any[];
+    if (!Array.isArray(results)) return false;
+    
+    // Check for any RIASEC category, ignoring case
+    return results.some((r) => {
+      const cat = (r.category || r.key || r.label || "").toLowerCase();
+      return RIASEC_CATEGORIES.some(baseCat => baseCat.toLowerCase() === cat);
+    });
   });
 
   const latestSkills = allAssessments?.find(a => {

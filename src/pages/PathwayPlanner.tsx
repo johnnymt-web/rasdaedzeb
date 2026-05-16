@@ -45,7 +45,7 @@ export default function PathwayPlanner() {
         .eq("student_id", user!.id)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data as CareerPathway[];
+      return (data as any) as CareerPathway[];
     },
     enabled: !!user?.id,
   });
@@ -54,12 +54,11 @@ export default function PathwayPlanner() {
   const { data: savedSubjects = [] } = useQuery({
     queryKey: ["saved-subjects-ref", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("student_subject_plans")
+      const { data } = await (supabase.from("student_subject_plans" as any) as any)
         .select("subjects")
         .eq("student_id", user!.id)
         .maybeSingle();
-      return (data?.subjects || []) as any[];
+      return ((data as any)?.subjects || []) as any[];
     },
     enabled: !!user?.id,
   });
@@ -152,9 +151,11 @@ export default function PathwayPlanner() {
                 <div className="p-4 bg-muted/30 rounded-xl">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">Pre-linked Subjects</p>
                   <div className="flex flex-wrap gap-2">
-                    {savedSubjects.length > 0 ? (
-                      savedSubjects.map(s => (
-                        <span key={s.name} className="text-[11px] bg-white border px-2 py-0.5 rounded-md">{s.name}</span>
+                    {Array.isArray(savedSubjects) && savedSubjects.length > 0 ? (
+                      savedSubjects.map((s, idx) => (
+                        <span key={s?.name || idx} className="text-[11px] bg-white border px-2 py-0.5 rounded-md">
+                          {s?.name || "Unnamed Subject"}
+                        </span>
                       ))
                     ) : (
                       <span className="text-xs text-muted-foreground italic">No subjects planned yet.</span>

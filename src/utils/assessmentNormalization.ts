@@ -104,30 +104,40 @@ export function normalizeSkillsAssessment(raw: any): NormalizedAssessment {
 }
 
 export function normalizeBigFiveAssessment(raw: any): NormalizedAssessment {
-  const isComplete = !!(raw && (raw.openness !== undefined || (Array.isArray(raw.results) && raw.results.length > 0)));
+  // A record is complete if it has openness or a non-empty results array
+  const hasFlatScores = raw && raw.openness !== undefined && raw.openness !== null;
+  const hasResultArray = !!(raw && Array.isArray(raw.results) && raw.results.length > 0);
+  const isComplete = hasFlatScores || hasResultArray;
   
   let results: NormalizedAssessmentResult[] = [];
+  
   if (isComplete && raw) {
-    if (raw.openness !== undefined) {
+    if (hasFlatScores) {
+      // Use flat columns (legacy or standard format)
       results = [
-        { key: "openness", label: "Curiosity and imagination", pct: raw.openness, scale: "0-100", source: "big_five" },
-        { key: "conscientiousness", label: "Organization and follow-through", pct: raw.conscientiousness, scale: "0-100", source: "big_five" },
-        { key: "extraversion", label: "Social energy", pct: raw.extraversion, scale: "0-100", source: "big_five" },
-        { key: "agreeableness", label: "Cooperation and empathy", pct: raw.agreeableness, scale: "0-100", source: "big_five" },
-        { key: "neuroticism", label: "Emotional sensitivity / stress response", pct: raw.neuroticism, scale: "0-100", source: "big_five" },
+        { key: "openness", label: "Curiosity and imagination", pct: Math.round(Number(raw.openness) || 0), scale: "0-100", source: "big_five" },
+        { key: "conscientiousness", label: "Organization and follow-through", pct: Math.round(Number(raw.conscientiousness) || 0), scale: "0-100", source: "big_five" },
+        { key: "extraversion", label: "Social energy", pct: Math.round(Number(raw.extraversion) || 0), scale: "0-100", source: "big_five" },
+        { key: "agreeableness", label: "Cooperation and empathy", pct: Math.round(Number(raw.agreeableness) || 0), scale: "0-100", source: "big_five" },
+        { key: "neuroticism", label: "Emotional sensitivity / stress response", pct: Math.round(Number(raw.neuroticism) || 0), scale: "0-100", source: "big_five" },
       ];
-    } else if (Array.isArray(raw.results)) {
+    } else if (hasResultArray) {
+      // Use results array (alternate format)
       results = raw.results.map((r: any) => {
-        let label = r?.category || r?.label || r?.key || "Unknown";
-        if (label?.toLowerCase() === 'openness') label = 'Curiosity and imagination';
-        if (label?.toLowerCase() === 'conscientiousness') label = 'Organization and follow-through';
-        if (label?.toLowerCase() === 'extraversion') label = 'Social energy';
-        if (label?.toLowerCase() === 'agreeableness') label = 'Cooperation and empathy';
-        if (label?.toLowerCase() === 'neuroticism') label = 'Emotional sensitivity / stress response';
+        const key = (r?.category || r?.key || r?.label || "unknown").toLowerCase();
+        let label = r?.label || r?.category || r?.key || "Unknown";
+        
+        // Ensure consistent labels for Big Five traits
+        if (key.includes('openness')) label = 'Curiosity and imagination';
+        if (key.includes('conscientiousness')) label = 'Organization and follow-through';
+        if (key.includes('extraversion')) label = 'Social energy';
+        if (key.includes('agreeableness')) label = 'Cooperation and empathy';
+        if (key.includes('neuroticism')) label = 'Emotional sensitivity / stress response';
+        
         return {
-          key: r?.category || r?.key || label?.toLowerCase(),
-          label,
-          pct: r?.pct || r?.score || 0,
+          key: key,
+          label: label,
+          pct: Math.round(Number(r?.pct || r?.score) || 0),
           scale: "0-100",
           source: "big_five" as const
         };

@@ -28,7 +28,7 @@ export default function SchoolAnalytics() {
   const { data: subjectDemand = [] } = useQuery({
     queryKey: ["admin-analytics-subjects", selectedGrade],
     queryFn: async () => {
-      let query = supabase.from("student_subject_plans").select("subjects, student_id");
+      let query = (supabase.from("student_subject_plans" as any) as any).select("subjects, student_id");
       
       // If grade filtering is needed, we'd join with profiles, but for now we aggregate
       const { data, error } = await query;
@@ -73,8 +73,7 @@ export default function SchoolAnalytics() {
   const { data: engagementData = [] } = useQuery({
     queryKey: ["admin-analytics-engagement"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("career_exposure_activities")
+      const { data, error } = await (supabase.from("career_exposure_activities" as any) as any)
         .select("created_at");
       if (error) throw error;
 

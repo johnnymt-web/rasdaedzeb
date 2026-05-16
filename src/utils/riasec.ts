@@ -35,12 +35,18 @@ export const normalizeRiasecResults = (raw: unknown) => {
   const t = i18next.t.bind(i18next);
   
   if (Array.isArray(raw)) {
-    return (raw as RIASECResult[]).map(r => ({
-      name: r.category,
-      label: t(`riasec.${r.category}`, { defaultValue: r.category }),
-      pct: r.pct || 0,
-      color: categoryColors[r.category] || "bg-primary"
-    })).sort((a, b) => b.pct - a.pct);
+    return (raw as any[]).map(r => {
+      const category = r.category || r.key || r.label || "Unknown";
+      // Fallback to score if pct is missing or 0, but ensure we don't divide by zero if we were to scale
+      const value = r.pct || r.score || 0;
+      
+      return {
+        name: category,
+        label: t(`riasec.${category}`, { defaultValue: category }),
+        pct: value,
+        color: categoryColors[category] || "bg-primary"
+      };
+    }).sort((a, b) => b.pct - a.pct);
   }
   
   // Fallback for flat object format: { Realistic: 80, Social: 40, ... }

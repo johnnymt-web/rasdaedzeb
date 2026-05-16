@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { 
   Video, Users, MapPin, Search, Plus, Calendar, 
   MessageSquare, ExternalLink, CheckCircle2, Clock,
-  Trophy, BookOpen, UserCheck, Star
+  Trophy, BookOpen, UserCheck, Star, Compass
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,8 +73,7 @@ const CareerExposure = () => {
   const { data: activities, isLoading } = useQuery({
     queryKey: ["career-exposure-activities", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("career_exposure_activities")
+      const { data, error } = await (supabase.from("career_exposure_activities" as any) as any)
         .select("*")
         .eq("student_id", user?.id)
         .order("activity_date", { ascending: false });
@@ -87,8 +86,7 @@ const CareerExposure = () => {
 
   const createMutation = useMutation({
     mutationFn: async (newData: typeof formData) => {
-      const { error } = await supabase
-        .from("career_exposure_activities")
+      const { error } = await (supabase.from("career_exposure_activities" as any) as any)
         .insert([{ ...newData, student_id: user?.id }]);
       if (error) throw error;
     },
@@ -243,7 +241,7 @@ const CareerExposure = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {activities?.map((activity) => {
+          {activities?.map((activity: any) => {
             const typeInfo = ACTIVITY_TYPES.find(t => t.value === activity.activity_type) || ACTIVITY_TYPES[ACTIVITY_TYPES.length - 1];
             return (
               <motion.div 

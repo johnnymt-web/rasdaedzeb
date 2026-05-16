@@ -45,8 +45,12 @@ const RiasecRadarChart = ({ assessments, maxOverlays = 3, categories = DEFAULT_C
     };
     visible.forEach((a, i) => {
       const resultsArray = Array.isArray(a.results) ? a.results : [];
-      const r = resultsArray.find((res) => res.category === cat);
-      entry[`a${i}`] = Number(r?.pct) || 0;
+      const r = resultsArray.find((res) => {
+        const resCat = (res.category || res.key || res.label || "").toLowerCase();
+        return resCat === cat.toLowerCase();
+      });
+      // Fallback to score if pct is missing
+      entry[`a${i}`] = Number(r?.pct || r?.score) || 0;
     });
     return entry;
   });

@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { useTranslation } from "react-i18next";
 import { useMemo, useState } from "react";
-import { normalizeAllAssessments } from "@/utils/assessmentNormalization";
+// Individual normalize functions are dynamically imported inside the query
 
 interface Assessment {
   id: string;
@@ -44,39 +44,44 @@ export default function AssessmentHistory() {
     queryKey: ["assessments-combined-history-radar", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const [std, bigFive, caas, workValues] = await Promise.all([
-        supabase.from("assessments").select("*").eq("user_id", user.id),
-        supabase.from("big_five_assessments" as any).select("*").eq("student_id", user.id),
-        supabase.from("caas_assessments" as any).select("*").eq("student_id", user.id),
-        supabase.from("work_values_assessments").select("*").eq("student_id", user.id)
+
+      // Fetch each table individually to prevent one failure from crashing all
+      const fetchSafe = async (query: any) => {
+        try {
+          const { data, error } = await query;
+          if (error) {
+            console.warn("Assessment history fetch warning:", error.message);
+            return [];
+          }
+          return data || [];
+        } catch (err) {
+          console.warn("Assessment history fetch error:", err);
+          return [];
+        }
+      };
+
+      const [stdData, bigFiveData, caasData, workValuesData] = await Promise.all([
+        fetchSafe(supabase.from("assessments").select("*").eq("user_id", user.id)),
+        fetchSafe((supabase.from("big_five_assessments" as any) as any).select("*").eq("student_id", user.id)),
+        fetchSafe((supabase.from("caas_assessments" as any) as any).select("*").eq("student_id", user.id)),
+        fetchSafe(supabase.from("work_values_assessments").select("*").eq("student_id", user.id))
       ]);
-
-      const normalized = normalizeAllAssessments({
-        std: std.data || [],
-        bigFive: bigFive.data || [],
-        caas: caas.data || [],
-        workValues: workValues.data || [],
-        eq: [] // We don't have eq history fetched here yet, but we can add it if needed
-      });
-
-      const formattedHistory: any[] = [];
-
-      // We need to map all historic entries, not just the latest
-      // The normalizeAllAssessments only returns the latest.
-      // Wait, normalizeAllAssessments as I wrote it only grabs the latest one (index 0).
-      // For history, we need all of them. I'll need to map them individually.
 
       const processHistory = (data: any[], type: string, normalizeFn: (a: any) => any) => {
         return data.map(a => {
-          const norm = normalizeFn(a);
-          return {
-            id: a.id,
-            assessment_type: type,
-            completed_at: a.completed_at || a.created_at,
-            created_at: a.created_at,
-            results: norm.results?.map((r: any) => ({ category: r.label, pct: r.pct || 0 })) || []
-          };
-        });
+          try {
+            const norm = normalizeFn(a);
+            return {
+              id: a.id,
+              assessment_type: type,
+              completed_at: a.completed_at || a.created_at,
+              created_at: a.created_at,
+              results: norm.results?.map((r: any) => ({ category: r.label, pct: r.pct || 0 })) || []
+            };
+          } catch {
+            return null;
+          }
+        }).filter(Boolean);
       };
 
       const { 
@@ -87,11 +92,11 @@ export default function AssessmentHistory() {
         normalizeSkillsAssessment
       } = await import("@/utils/assessmentNormalization");
 
-      const riasecHistory = processHistory((std.data || []).filter(a => a.assessment_type === 'riasec' || a.assessment_type === 'std' || !a.assessment_type), 'riasec', normalizeRiasecAssessment);
-      const skillsHistory = processHistory((std.data || []).filter(a => a.assessment_type === 'skills'), 'skills', normalizeSkillsAssessment);
-      const bigFiveHistory = processHistory(bigFive.data || [], 'bigfive', normalizeBigFiveAssessment);
-      const caasHistory = processHistory(caas.data || [], 'caas', normalizeCaasAssessment);
-      const workValuesHistory = processHistory(workValues.data || [], 'workvalues', normalizeWorkValuesAssessment);
+      const riasecHistory = processHistory(stdData.filter((a: any) => a.assessment_type === 'riasec' || a.assessment_type === 'std' || !a.assessment_type), 'riasec', normalizeRiasecAssessment);
+      const skillsHistory = processHistory(stdData.filter((a: any) => a.assessment_type === 'skills'), 'skills', normalizeSkillsAssessment);
+      const bigFiveHistory = processHistory(bigFiveData, 'bigfive', normalizeBigFiveAssessment);
+      const caasHistory = processHistory(caasData, 'caas', normalizeCaasAssessment);
+      const workValuesHistory = processHistory(workValuesData, 'workvalues', normalizeWorkValuesAssessment);
 
       return [
         ...riasecHistory,
@@ -99,7 +104,7 @@ export default function AssessmentHistory() {
         ...bigFiveHistory, 
         ...caasHistory,
         ...workValuesHistory
-      ].sort((a, b) => 
+      ].sort((a: any, b: any) => 
         new Date(b.completed_at || b.created_at).getTime() - new Date(a.completed_at || a.created_at).getTime()
       );
     },

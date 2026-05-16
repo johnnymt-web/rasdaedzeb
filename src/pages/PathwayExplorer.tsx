@@ -25,13 +25,18 @@ export default function PathwayExplorer() {
   const { data: latestAssessment, isLoading: loadingAssessment } = useQuery({
     queryKey: ["latest-assessment-pathways", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("assessments")
         .select("results")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching assessment for pathways:", error);
+        return null;
+      }
       return data;
     },
     enabled: !!user?.id,
@@ -116,7 +121,7 @@ export default function PathwayExplorer() {
               Explore Pathways 🧭
             </h1>
             <p className="text-muted-foreground max-w-2xl">
-              {band === "decision" 
+              {(band === "planning" || band === "transition")
                 ? "It's time to start planning your next steps after school. Explore these specific pathways and save the ones that align with your goals." 
                 : "Explore the different types of routes you can take after high school. There is no single 'right' way to reach your career goals."}
             </p>
