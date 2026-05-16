@@ -124,7 +124,7 @@ export default function AssessmentPage() {
 
         if (error) {
           console.error("Supabase sync error:", error);
-          toast.error("Cloud sync failed, but showing results locally.");
+          toast.error(`Sync failed: ${error.message || JSON.stringify(error)}`);
         } else {
           console.log("Assessment synced successfully");
           toast.success("Assessment saved successfully!");
