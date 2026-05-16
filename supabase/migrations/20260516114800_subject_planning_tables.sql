@@ -27,24 +27,11 @@ CREATE POLICY "Students can manage their own subject plans"
   FOR ALL
   USING (auth.uid() = student_id);
 
--- Counselors can view and update plans for their students
-CREATE POLICY "Counselors can view and update student subject plans"
+-- Counselors and Admins can view and update plans
+CREATE POLICY "Counselors and Admins can manage student subject plans"
   ON public.student_subject_plans
   FOR ALL
   USING (
-    EXISTS (
-      SELECT 1 FROM public.counselor_students
-      WHERE counselor_id = auth.uid() AND student_id = public.student_subject_plans.student_id
-    )
-  );
-
--- Admins can view all
-CREATE POLICY "Admins can view all subject plans"
-  ON public.student_subject_plans
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('admin', 'superadmin')
-    )
+    public.has_role(auth.uid(), 'counselor') OR 
+    public.has_role(auth.uid(), 'admin')
   );
