@@ -275,21 +275,35 @@ const CounselorStudentDetail = () => {
     },
   });
 
-  const updateActionStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+  const { data: subjectPlan, isLoading: subjectPlanLoading } = useQuery({
+    queryKey: ["counselor-student-subject-plan", studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("student_subject_plans")
+        .select("*")
+        .eq("student_id", studentId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!studentId,
+  });
+
+  const subjectFeedbackMutation = useMutation({
+    mutationFn: async (feedback: string) => {
       const { error } = await supabase
-        .from("student_action_plans")
-        .update({ status })
-        .eq("id", id);
+        .from("student_subject_plans")
+        .update({ counselor_feedback: feedback, status: 'reviewed' })
+        .eq("student_id", studentId!);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["counselor-student-action-plans"] });
-      toast.success("Status updated");
+      queryClient.invalidateQueries({ queryKey: ["counselor-student-subject-plan"] });
+      toast.success("Subject plan feedback saved");
     },
   });
 
-  const [activeTab, setActiveTab] = useState<"overview" | "report" | "exposure" | "plan" | "notes">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "report" | "exposure" | "plan" | "subjects" | "notes">("overview");
 
   const [synthesis, setSynthesis] = useState<SynthesisResponse | null>(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -377,6 +391,7 @@ const CounselorStudentDetail = () => {
                   { id: "overview", label: "Overview", icon: Brain },
                   { id: "exposure", label: "Career Exposure", icon: Compass },
                   { id: "plan", label: "Action Plan", icon: Target },
+                  { id: "subjects", label: "Subjects", icon: GraduationCap },
                   { id: "report", label: "Discovery Profile", icon: Sparkles },
                   { id: "notes", label: "Counselor Notes", icon: MessageSquare }
                 ].map((tab) => (
@@ -795,6 +810,86 @@ const CounselorStudentDetail = () => {
                             </Select>
                           </div>
                         ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "subjects" && (
+                <div className="space-y-6">
+                  <div className="card-warm p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
+                        <GraduationCap className="w-6 h-6 text-primary" />
+                        Subject-Choice Plan Review
+                      </h2>
+                      {subjectPlan && (
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                          subjectPlan.status === 'submitted' ? 'bg-amber-100 text-amber-700' : 
+                          subjectPlan.status === 'reviewed' ? 'bg-emerald-100 text-emerald-700' : 
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {subjectPlan.status}
+                        </div>
+                      )}
+                    </div>
+
+                    {subjectPlanLoading ? (
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto my-8 text-muted-foreground" />
+                    ) : !subjectPlan ? (
+                      <div className="text-center py-12 border border-dashed rounded-2xl">
+                        <p className="text-muted-foreground">No subject plan has been drafted by this student.</p>
+                      </div>
+                    ) : (
+                      <div className="grid lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 space-y-4">
+                          <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Proposed Subjects</h3>
+                          <div className="space-y-3">
+                            {(subjectPlan.subjects as any[]).map((subject, idx) => (
+                              <div key={idx} className="p-4 bg-white border rounded-xl shadow-sm">
+                                <div className="flex justify-between items-start mb-3">
+                                  <h4 className="font-bold text-foreground">{subject.name}</h4>
+                                  <div className="flex gap-2">
+                                    <div className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded">Int: {subject.interest_score}/5</div>
+                                    <div className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Conf: {subject.confidence_score}/5</div>
+                                  </div>
+                                </div>
+                                {subject.notes && <p className="text-xs text-muted-foreground italic">"{subject.notes}"</p>}
+                              </div>
+                            ))}
+                          </div>
+
+                          {subjectPlan.rationale && (
+                            <div className="mt-6">
+                              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Choice Rationale</h3>
+                              <div className="p-4 bg-muted/30 rounded-xl text-sm leading-relaxed whitespace-pre-wrap">
+                                {subjectPlan.rationale}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-6">
+                          <div className="card-warm p-6 surface-sage">
+                            <h3 className="font-heading font-bold text-foreground mb-4">Counselor Review</h3>
+                            <form onSubmit={(e) => {
+                              e.preventDefault();
+                              const feedback = (e.target as any).feedback.value;
+                              subjectFeedbackMutation.mutate(feedback);
+                            }} className="space-y-4">
+                              <Textarea 
+                                name="feedback"
+                                placeholder="Provide guidance or approval for these choices..."
+                                className="min-h-[150px] text-sm bg-white/50"
+                                defaultValue={subjectPlan.counselor_feedback || ""}
+                              />
+                              <Button type="submit" className="w-full" disabled={subjectFeedbackMutation.isPending}>
+                                Save & Mark as Reviewed
+                              </Button>
+                            </form>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
