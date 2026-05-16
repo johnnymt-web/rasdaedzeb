@@ -81,7 +81,7 @@ export default function AssessmentHistory() {
           } catch {
             return null;
           }
-        }).filter(Boolean);
+        }).filter((x): x is NonNullable<typeof x> => x != null);
       };
 
       const { 

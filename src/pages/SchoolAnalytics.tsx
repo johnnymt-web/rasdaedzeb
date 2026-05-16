@@ -35,7 +35,7 @@ export default function SchoolAnalytics() {
       if (error) throw error;
 
       const counts: Record<string, number> = {};
-      data.forEach(plan => {
+      data.forEach((plan: any) => {
         const subjects = (plan.subjects as any[]) || [];
         subjects.forEach(s => {
           const name = s.name || s;
@@ -54,11 +54,11 @@ export default function SchoolAnalytics() {
   const { data: careerPathways = [] } = useQuery({
     queryKey: ["admin-analytics-pathways"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("student_career_pathways" as any).select("title");
+      const { data, error } = await (supabase.from("student_career_pathways" as any) as any).select("title");
       if (error) throw error;
 
       const counts: Record<string, number> = {};
-      data.forEach(p => {
+      data.forEach((p: any) => {
         counts[p.title] = (counts[p.title] || 0) + 1;
       });
 
@@ -79,7 +79,7 @@ export default function SchoolAnalytics() {
 
       // Group by month
       const months: Record<string, number> = {};
-      data.forEach(d => {
+      data.forEach((d: any) => {
         const date = new Date(d.created_at);
         const key = date.toLocaleString('default', { month: 'short' });
         months[key] = (months[key] || 0) + 1;
