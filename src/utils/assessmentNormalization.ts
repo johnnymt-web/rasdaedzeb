@@ -58,13 +58,13 @@ export function getLowResults(results: NormalizedAssessmentResult[], threshold: 
 }
 
 export function normalizeRiasecAssessment(raw: any): NormalizedAssessment {
-  const isComplete = raw && raw.results && Array.isArray(raw.results) && raw.results.length > 0;
+  const isComplete = !!(raw && raw.results && Array.isArray(raw.results) && raw.results.length > 0);
   
   const results: NormalizedAssessmentResult[] = isComplete ? raw.results.map((r: any) => ({
-    key: r.category || r.key,
-    label: r.category || r.label,
-    pct: r.pct || r.score,
-    score: r.score,
+    key: r?.category || r?.key || "unknown",
+    label: r?.category || r?.label || "Unknown",
+    pct: r?.pct || r?.score || 0,
+    score: r?.score,
     scale: "0-100",
     source: "riasec" as const
   })) : [];
@@ -81,13 +81,13 @@ export function normalizeRiasecAssessment(raw: any): NormalizedAssessment {
 }
 
 export function normalizeSkillsAssessment(raw: any): NormalizedAssessment {
-  const isComplete = raw && raw.results && Array.isArray(raw.results) && raw.results.length > 0;
+  const isComplete = !!(raw && raw.results && Array.isArray(raw.results) && raw.results.length > 0);
   
   const results: NormalizedAssessmentResult[] = isComplete ? raw.results.map((r: any) => ({
-    key: r.category || r.key,
-    label: r.category || r.label,
-    pct: r.pct || r.score,
-    score: r.score,
+    key: r?.category || r?.key || "unknown",
+    label: r?.category || r?.label || "Unknown",
+    pct: r?.pct || r?.score || 0,
+    score: r?.score,
     scale: "0-100",
     source: "skills" as const
   })) : [];
@@ -104,10 +104,10 @@ export function normalizeSkillsAssessment(raw: any): NormalizedAssessment {
 }
 
 export function normalizeBigFiveAssessment(raw: any): NormalizedAssessment {
-  const isComplete = raw && (raw.openness !== undefined || (raw.results && raw.results.length > 0));
+  const isComplete = !!(raw && (raw.openness !== undefined || (Array.isArray(raw.results) && raw.results.length > 0)));
   
   let results: NormalizedAssessmentResult[] = [];
-  if (isComplete) {
+  if (isComplete && raw) {
     if (raw.openness !== undefined) {
       results = [
         { key: "openness", label: "Curiosity and imagination", pct: raw.openness, scale: "0-100", source: "big_five" },
@@ -116,18 +116,18 @@ export function normalizeBigFiveAssessment(raw: any): NormalizedAssessment {
         { key: "agreeableness", label: "Cooperation and empathy", pct: raw.agreeableness, scale: "0-100", source: "big_five" },
         { key: "neuroticism", label: "Emotional sensitivity / stress response", pct: raw.neuroticism, scale: "0-100", source: "big_five" },
       ];
-    } else if (raw.results) {
+    } else if (Array.isArray(raw.results)) {
       results = raw.results.map((r: any) => {
-        let label = r.category || r.label || r.key;
+        let label = r?.category || r?.label || r?.key || "Unknown";
         if (label?.toLowerCase() === 'openness') label = 'Curiosity and imagination';
         if (label?.toLowerCase() === 'conscientiousness') label = 'Organization and follow-through';
         if (label?.toLowerCase() === 'extraversion') label = 'Social energy';
         if (label?.toLowerCase() === 'agreeableness') label = 'Cooperation and empathy';
         if (label?.toLowerCase() === 'neuroticism') label = 'Emotional sensitivity / stress response';
         return {
-          key: r.category || r.key || label.toLowerCase(),
+          key: r?.category || r?.key || label?.toLowerCase(),
           label,
-          pct: r.pct || r.score,
+          pct: r?.pct || r?.score || 0,
           scale: "0-100",
           source: "big_five" as const
         };
@@ -147,10 +147,10 @@ export function normalizeBigFiveAssessment(raw: any): NormalizedAssessment {
 }
 
 export function normalizeCaasAssessment(raw: any): NormalizedAssessment {
-  const isComplete = raw && raw.concern !== undefined;
+  const isComplete = !!(raw && raw.concern !== undefined);
   
   let results: NormalizedAssessmentResult[] = [];
-  if (isComplete) {
+  if (isComplete && raw) {
     results = [
       { key: "concern", label: "Concern", score: raw.concern, pct: scoreToPct(raw.concern, "1-5"), scale: "1-5", source: "caas" },
       { key: "control", label: "Control", score: raw.control, pct: scoreToPct(raw.control, "1-5"), scale: "1-5", source: "caas" },
@@ -171,18 +171,31 @@ export function normalizeCaasAssessment(raw: any): NormalizedAssessment {
 }
 
 export function normalizeWorkValuesAssessment(raw: any): NormalizedAssessment {
-  const isComplete = raw && raw.achievement !== undefined;
-  
   let results: NormalizedAssessmentResult[] = [];
-  if (isComplete) {
-    results = [
-      { key: "achievement", label: "Achievement", score: raw.achievement, pct: scoreToPct(raw.achievement, "1-5"), scale: "1-5", source: "work_values" },
-      { key: "independence", label: "Independence", score: raw.independence, pct: scoreToPct(raw.independence, "1-5"), scale: "1-5", source: "work_values" },
-      { key: "recognition", label: "Recognition", score: raw.recognition, pct: scoreToPct(raw.recognition, "1-5"), scale: "1-5", source: "work_values" },
-      { key: "relationships", label: "Relationships", score: raw.relationships, pct: scoreToPct(raw.relationships, "1-5"), scale: "1-5", source: "work_values" },
-      { key: "support", label: "Support", score: raw.support, pct: scoreToPct(raw.support, "1-5"), scale: "1-5", source: "work_values" },
-      { key: "working_conditions", label: "Working Conditions", score: raw.working_conditions, pct: scoreToPct(raw.working_conditions, "1-5"), scale: "1-5", source: "work_values" },
-    ];
+  let isComplete = false;
+
+  if (raw) {
+    if (raw.achievement !== undefined) {
+      isComplete = true;
+      results = [
+        { key: "achievement", label: "Achievement", score: raw.achievement, pct: scoreToPct(raw.achievement, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "independence", label: "Independence", score: raw.independence, pct: scoreToPct(raw.independence, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "recognition", label: "Recognition", score: raw.recognition, pct: scoreToPct(raw.recognition, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "relationships", label: "Relationships", score: raw.relationships, pct: scoreToPct(raw.relationships, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "support", label: "Support", score: raw.support, pct: scoreToPct(raw.support, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "working_conditions", label: "Working Conditions", score: raw.working_conditions, pct: scoreToPct(raw.working_conditions, "1-5"), scale: "1-5", source: "work_values" },
+      ];
+    } else if (Array.isArray(raw.results)) {
+      isComplete = true;
+      results = raw.results.map((r: any) => ({
+        key: (r.category || r.key || r.label).toLowerCase().replace(/\s+/g, '_'),
+        label: r.category || r.label,
+        score: r.score,
+        pct: r.pct || (r.score ? scoreToPct(r.score, "1-5") : undefined),
+        scale: "1-5",
+        source: "work_values" as const
+      }));
+    }
   }
 
   return {
@@ -197,16 +210,29 @@ export function normalizeWorkValuesAssessment(raw: any): NormalizedAssessment {
 }
 
 export function normalizeEqAssessment(raw: any): NormalizedAssessment {
-  const isComplete = raw && raw.self_awareness !== undefined;
-  
   let results: NormalizedAssessmentResult[] = [];
-  if (isComplete) {
-    results = [
-      { key: "self_awareness", label: "Self-Awareness", score: raw.self_awareness, pct: raw.self_awareness_pct ?? scoreToPct(raw.self_awareness, "1-5"), scale: "1-5", source: "eq" },
-      { key: "self_management", label: "Self-Management", score: raw.self_management, pct: raw.self_management_pct ?? scoreToPct(raw.self_management, "1-5"), scale: "1-5", source: "eq" },
-      { key: "social_awareness", label: "Social Awareness", score: raw.social_awareness, pct: raw.social_awareness_pct ?? scoreToPct(raw.social_awareness, "1-5"), scale: "1-5", source: "eq" },
-      { key: "relationship_management", label: "Relationship Management", score: raw.relationship_management, pct: raw.relationship_management_pct ?? scoreToPct(raw.relationship_management, "1-5"), scale: "1-5", source: "eq" },
-    ];
+  let isComplete = false;
+
+  if (raw) {
+    if (raw.self_awareness !== undefined) {
+      isComplete = true;
+      results = [
+        { key: "self_awareness", label: "Self-Awareness", score: raw.self_awareness, pct: raw.self_awareness_pct ?? scoreToPct(raw.self_awareness, "1-5"), scale: "1-5", source: "eq" },
+        { key: "self_management", label: "Self-Management", score: raw.self_management, pct: raw.self_management_pct ?? scoreToPct(raw.self_management, "1-5"), scale: "1-5", source: "eq" },
+        { key: "social_awareness", label: "Social Awareness", score: raw.social_awareness, pct: raw.social_awareness_pct ?? scoreToPct(raw.social_awareness, "1-5"), scale: "1-5", source: "eq" },
+        { key: "relationship_management", label: "Relationship Management", score: raw.relationship_management, pct: raw.relationship_management_pct ?? scoreToPct(raw.relationship_management, "1-5"), scale: "1-5", source: "eq" },
+      ];
+    } else if (Array.isArray(raw.results)) {
+      isComplete = true;
+      results = raw.results.map((r: any) => ({
+        key: (r.category || r.key || r.label).toLowerCase().replace(/\s+/g, '_'),
+        label: r.category || r.label,
+        score: r.score,
+        pct: r.pct || (r.score ? scoreToPct(r.score, "1-5") : undefined),
+        scale: "1-5",
+        source: "eq" as const
+      }));
+    }
   }
 
   return {

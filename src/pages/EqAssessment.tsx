@@ -76,15 +76,29 @@ export default function EqAssessment() {
   };
 
   const handleSubmit = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Your session has expired. Please log in again.");
+      return;
+    }
+    
     setIsSubmitting(true);
+    console.log("Starting EQ submission for user:", user.id);
+
     try {
+      // Validate session again just in case
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("No active session found during submission.");
+      }
+
       const calculatedResults = calculateResults();
       const resultsArray = Object.keys(calculatedResults).map(key => ({
         category: key,
         score: calculatedResults[key],
         pct: (calculatedResults[key] / 5) * 100
       }));
+
+      console.log("Calculated results:", resultsArray);
 
       const { error } = await supabase.from("assessments").insert({
         user_id: user.id,
@@ -94,13 +108,23 @@ export default function EqAssessment() {
         completed_at: new Date().toISOString(),
       });
 
-      if (error) throw error;
-      setIsComplete(true);
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
+
+      console.log("EQ submission successful");
       toast.success("Emotional Skills profile saved!");
-    } catch (error) {
-      console.error("Error saving EQ reflection:", error);
-      toast.error("Failed to save results. Please try again.");
-    } finally {
+      
+      // Give the UI a moment to show the success state before switching views
+      setTimeout(() => {
+        setIsComplete(true);
+        setIsSubmitting(false);
+      }, 500);
+
+    } catch (error: any) {
+      console.error("Critical error saving EQ reflection:", error);
+      toast.error(error.message || "Failed to save results. Please check your connection.");
       setIsSubmitting(false);
     }
   };

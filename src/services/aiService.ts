@@ -42,46 +42,53 @@ export const generateAiSynthesis = async (
  */
 const generateLocalSynthesis = (data: StudentProfileData): SynthesisResponse => {
   const { primaryInterest, traits, adapt, values, eqResults } = data;
-  let summary = "Local Synthesis Active: ";
+  let summary = "Discovery Guidance Brief: ";
   let recommendations = [];
   
   if (primaryInterest === "Social") {
-    summary += "Student is highly people-oriented and collaborative. ";
-    if (traits?.extraversion > 70) summary += "Their high extraversion suggests they thrive in group settings. ";
+    summary += "You show a strong interest in working with people and collaborative environments. ";
+    if (traits?.extraversion > 70) summary += "Your energetic approach to social settings suggests you might enjoy group projects or leadership roles. ";
   } else if (primaryInterest === "Investigative") {
-    summary += "Student shows a strong analytical and problem-solving mindset. ";
-    if (traits?.openness > 70) summary += "Their curiosity makes them ideal for research-heavy roles. ";
+    summary += "You show a strong analytical and problem-solving mindset. ";
+    if (traits?.openness > 70) summary += "Your curiosity makes you a great fit for research or exploration-focused activities. ";
+  } else {
+    summary += `Your primary interest in ${primaryInterest} areas suggests unique strengths to explore. `;
   }
 
   if (values?.independence > 4) {
-    summary += "They have a high need for autonomy and self-direction. ";
+    summary += "You seem to value independence and making your own choices. ";
   }
   if (values?.relationships > 4) {
-    summary += "Service to others and a supportive social environment are critical motivators. ";
+    summary += "Working in a supportive environment with good people is important to you. ";
   }
 
-  if (traits?.conscientiousness < 40) {
-    summary += "They may struggle with organization or long-term planning. ";
-    recommendations.push("Set up recurring check-ins for deadline management.");
+  if (traits?.conscientiousness && traits.conscientiousness < 40) {
+    summary += "You might sometimes find highly structured or strict environments challenging. ";
+    recommendations.push("Try breaking large assignments into smaller, manageable steps.");
   }
 
-  if (adapt?.total_score < 3) {
-    summary += "Career adaptability is currently emerging, suggesting a need for more exploration. ";
-    recommendations.push("Schedule a shadowing experience to build career confidence.");
+  if (adapt && adapt.total_score < 3) {
+    summary += "You are just starting to map out your future career ideas, which is completely normal. ";
+    recommendations.push("Schedule a brief chat with your school counselor to explore what subjects interest you most.");
   }
 
-  if (values?.achievement > 4 && traits?.conscientiousness < 40) {
-    recommendations.push("Focus on short-term 'win' milestones to sustain achievement motivation.");
+  if (values?.achievement > 4 && traits?.conscientiousness && traits.conscientiousness < 40) {
+    recommendations.push("Focus on celebrating small, short-term wins to keep your motivation high.");
   }
 
-  if (eqResults["Self-Awareness"] && eqResults["Self-Awareness"] < 3) {
-    summary += "Emotional self-awareness is currently an area for growth. ";
-    recommendations.push("Introduce journaling or mindfulness exercises to build emotional vocabulary.");
+  if (eqResults && eqResults["Self-Awareness"] && eqResults["Self-Awareness"] < 3) {
+    summary += "Building your emotional self-awareness could be a great next step. ";
+    recommendations.push("Try a simple weekly reflection journal to notice how different tasks make you feel.");
   }
   
-  if (eqResults["Relationship Management"] && eqResults["Relationship Management"] > 4) {
-    summary += "They demonstrate excellent interpersonal leadership potential. ";
-    recommendations.push("Encourage peer mentoring or leadership roles in group projects.");
+  if (eqResults && eqResults["Relationship Management"] && eqResults["Relationship Management"] > 4) {
+    summary += "You show great potential for teamwork and helping others succeed. ";
+    recommendations.push("Consider joining a peer mentoring program or a club leadership team.");
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push("Keep exploring different subjects and extracurriculars to see what sparks your interest.");
+    recommendations.push("Discuss your Discovery Profile with your family or counselor.");
   }
 
   return { summary, recommendations };

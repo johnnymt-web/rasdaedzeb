@@ -98,6 +98,9 @@ export default function AssessmentSelection() {
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               {t("discovery_hub.subtitle", { grade })}
             </p>
+            <div className="text-[10px] text-muted-foreground opacity-30 mt-2">
+              Diagnostic Hub Grade: {grade}
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
