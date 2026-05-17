@@ -34,26 +34,35 @@ const ReflectionPrompt = ({ assessmentId, topInterest }: ReflectionPromptProps) 
   const { data: existingReflection, isLoading } = useQuery({
     queryKey,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("reflections")
-        .select("*")
-        .eq("assessment_id", assessmentId)
-        .single();
+      let query = (supabase.from("reflections" as any) as any).select("*").eq("user_id", user!.id);
       
-      if (error && error.code !== 'PGRST116') throw error; // ignore not found
+      if (assessmentId && assessmentId !== "latest") {
+        query = query.eq("assessment_id", assessmentId);
+      } else {
+        query = query.is("assessment_id", null);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') throw error; 
       return data;
     },
-    enabled: !!user && !!assessmentId,
+    enabled: !!user,
   });
 
   const saveMutation = useMutation({
     mutationFn: async (text: string) => {
-      const { error } = await supabase.from("reflections").insert({
+      const payload: any = {
         user_id: user!.id,
-        assessment_id: assessmentId,
         prompt: prompt,
         response: text.trim(),
-      });
+      };
+      
+      if (assessmentId && assessmentId !== "latest") {
+        payload.assessment_id = assessmentId;
+      }
+
+      const { error } = await (supabase.from("reflections" as any) as any).insert([payload]);
       if (error) throw error;
     },
     onSuccess: () => {
