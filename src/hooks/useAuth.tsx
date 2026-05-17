@@ -31,30 +31,112 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserData = async (userId: string, currentUser?: User) => {
     try {
-      const [{ data: roleData, error: roleError }, { data: profileData, error: profileError }] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", userId).single(),
-        supabase.from("profiles").select("full_name, avatar_url, grade, school_id, preferred_language").eq("id", userId).single(),
-      ]);
-      
+      // 1. Fetch user role with fallback
+      let { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .single();
+
+      if (roleError && (roleError.code === "PGRST116" || roleError.message?.includes("0 rows"))) {
+        console.log("Auth - Role row not found in database. Auto-creating student role...");
+        const newRole = {
+          user_id: userId,
+          role: currentUser?.user_metadata?.role || "student"
+        };
+        const { data: inserted, error: insertError } = await supabase
+          .from("user_roles")
+          .insert(newRole)
+          .select("role")
+          .maybeSingle();
+        
+        if (!insertError && inserted) {
+          roleData = inserted;
+          roleError = null;
+        }
+      }
+
+      // 2. Fetch profile with column fallback and auto-creation fallback
+      let profileData = null;
+      let profileError = null;
+
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url, grade, school_id, preferred_language")
+          .eq("id", userId)
+          .single();
+        
+        if (error) {
+          if (error.code === "42703" || error.message?.includes("preferred_language")) {
+            console.warn("Auth - preferred_language column missing in profiles, falling back...");
+            const fallbackRes = await supabase
+              .from("profiles")
+              .select("full_name, avatar_url, grade, school_id")
+              .eq("id", userId)
+              .single();
+            profileData = fallbackRes.data;
+            profileError = fallbackRes.error;
+          } else {
+            profileData = data;
+            profileError = error;
+          }
+        } else {
+          profileData = data;
+          profileError = error;
+        }
+      } catch (profileCatch) {
+        console.error("Auth - Profile query caught exception, trying fallback:", profileCatch);
+        const fallbackRes = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url, grade, school_id")
+          .eq("id", userId)
+          .single();
+        profileData = fallbackRes.data;
+        profileError = fallbackRes.error;
+      }
+
+      // If profile row doesn't exist, auto-create it!
+      if (profileError && (profileError.code === "PGRST116" || profileError.message?.includes("0 rows") || !profileData)) {
+        console.log("Auth - Profile row not found in database. Auto-creating profile...");
+        const newProfile = {
+          id: userId,
+          full_name: currentUser?.user_metadata?.full_name || currentUser?.email?.split("@")[0] || "Student",
+          grade: currentUser?.user_metadata?.grade || "Grade 7",
+          avatar_url: currentUser?.user_metadata?.avatar_url || null,
+          school_id: currentUser?.user_metadata?.school_id || null
+        };
+        const { data: inserted, error: insertError } = await supabase
+          .from("profiles")
+          .insert(newProfile)
+          .select()
+          .maybeSingle();
+
+        if (!insertError && inserted) {
+          profileData = inserted;
+          profileError = null;
+        }
+      }
+
+      // 3. Update state
       if (roleError) {
         console.error("Role fetch error:", roleError);
-        // Fallback to metadata if DB role is missing
         if (currentUser?.user_metadata?.role) {
           setRole(currentUser.user_metadata.role as AppRole);
         }
-      }
-      if (profileError) console.error("Profile fetch error:", profileError);
-      
-      if (roleData) {
+      } else if (roleData) {
         console.log("Auth Debug - Role found:", roleData.role);
         setRole(roleData.role as AppRole);
       } else if (currentUser?.user_metadata?.role) {
-        console.log("Auth Debug - Role from metadata:", currentUser.user_metadata.role);
         setRole(currentUser.user_metadata.role as AppRole);
       }
       
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+      }
+      
       if (profileData) {
-        console.log("Auth Debug - Profile found:", profileData);
+        console.log("Auth Debug - Profile resolved:", profileData);
         setProfile(profileData);
       } else {
         console.warn("Auth Debug - No profile found in DB for user:", userId);
