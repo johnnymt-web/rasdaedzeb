@@ -60,21 +60,36 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
   const { data: normData, isLoading } = useQuery({
     queryKey: ["gold-standard-report-normalized", studentId],
     queryFn: async () => {
+      const fetchSafe = async (query: any) => {
+        try {
+          const res = await query;
+          if (res.error) {
+            console.error("Query failed:", res.error);
+            return [];
+          }
+          return res.data || [];
+        } catch (err) {
+          console.error("Query threw:", err);
+          return [];
+        }
+      };
+
       const [std, bigFive, caas, workvalues] = await Promise.all([
-        supabase.from("assessments").select("*").eq("user_id", studentId).order("created_at", { ascending: false }),
-        supabase.from("big_five_assessments" as any).select("*").eq("student_id", studentId).order("completed_at", { ascending: false }).limit(1),
-        supabase.from("caas_assessments" as any).select("*").eq("student_id", studentId).order("completed_at", { ascending: false }).limit(1),
-        supabase.from("work_values_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false }).limit(1)
+        fetchSafe(supabase.from("assessments").select("*").eq("user_id", studentId).order("created_at", { ascending: false })),
+        fetchSafe(supabase.from("big_five_assessments" as any).select("*").eq("student_id", studentId).order("completed_at", { ascending: false }).limit(1)),
+        fetchSafe(supabase.from("caas_assessments" as any).select("*").eq("student_id", studentId).order("completed_at", { ascending: false }).limit(1)),
+        fetchSafe(supabase.from("work_values_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false }).limit(1))
       ]);
 
       return normalizeAllAssessments({
-        std: std.data || [],
-        bigFive: bigFive.data || [],
-        caas: caas.data || [],
-        workValues: workvalues.data || []
+        std,
+        bigFive,
+        caas,
+        workValues: workvalues
       });
     },
     enabled: !!studentId,
+    retry: false,
   });
 
   const { data: synthesis, isLoading: isSynthesisLoading } = useQuery({
