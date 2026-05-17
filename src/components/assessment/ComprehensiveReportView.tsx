@@ -96,6 +96,12 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
     queryKey: ["ai-report-synthesis", studentId],
     queryFn: async () => {
       if (!normData) return null;
+      
+      const eqResults: Record<string, number> = {};
+      normData.eq.results.forEach(r => {
+        if (r.label) eqResults[r.label] = r.score || 0;
+      });
+
       return generateAiSynthesis({
         primaryInterest: getTopResults(normData.riasec.results, 1)[0]?.label || "Unknown",
         traits: normData.bigFive.isComplete ? normData.bigFive.results.reduce((acc: any, r) => ({ ...acc, [r.key]: r.pct }), {}) : null,
@@ -586,7 +592,7 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
                 <p className="text-muted-foreground text-sm">Your responses indicate a strong alignment with these interest areas. These are broad themes, not fixed career recommendations.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {topInterests.map((r, i) => {
-                    const interpret = getRichInterpretation(r.key, r.pct, gradeBand);
+                    const interpret = getRichInterpretation(r.key, r.pct || 0, gradeBand);
                     return (
                       <div key={i} className="p-5 bg-white rounded-2xl border border-primary/10 shadow-sm flex flex-col transition-all hover:shadow-md hover:border-primary/20">
                         <div className="flex justify-between items-start mb-1">
@@ -697,7 +703,7 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
               <p className="text-muted-foreground text-sm mb-6">This reflects how you tend to approach learning, interact with others, and manage your tasks.</p>
               <div className="grid md:grid-cols-2 gap-6">
                 {bigFive.results.map((r, i) => {
-                  const interpret = getRichInterpretation(r.key, r.pct, gradeBand);
+                  const interpret = getRichInterpretation(r.key, r.pct || 0, gradeBand);
                   return (
                     <div key={i} className="p-5 bg-white rounded-2xl border border-violet-100 shadow-sm flex flex-col transition-all hover:shadow-md hover:border-violet-200">
                       <div className="flex justify-between items-center mb-2">
@@ -787,7 +793,7 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
               <p className="text-muted-foreground text-sm mb-6">These are the aspects of an environment that you value most. Consider these as you explore future options.</p>
               <div className="grid md:grid-cols-3 gap-6">
                 {getTopResults(workValues.results, 3).map((r, i) => {
-                  const interpret = getRichInterpretation(r.key, r.pct, gradeBand);
+                  const interpret = getRichInterpretation(r.key, r.pct || 0, gradeBand);
                   return (
                     <div key={i} className="p-5 bg-white rounded-2xl border border-rose-100 shadow-sm flex flex-col transition-all hover:shadow-md hover:border-rose-200">
                       <div className="flex justify-between items-center mb-1">
