@@ -114,26 +114,45 @@ export default function AssessmentPage() {
         }, {} as Record<string, number>);
 
         console.log("Attempting to sync assessment to cloud...");
-        const { error } = await supabase.from("assessments").insert({
-          user_id: user.id,
-          assessment_type: type || "riasec",
-          answers: sanitizedAnswers as any,
-          results: results as any,
-          completed_at: new Date().toISOString(),
-        });
+        
+        // Use a timeout promise to prevent getting stuck on network/adblock hangs
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout")), 4000)
+        );
 
-        if (error) {
-          console.error("Supabase sync error:", error);
-          toast.error(`Sync failed: ${error.message || "Please check console"}`);
-        } else {
-          console.log("Assessment synced successfully");
-          toast.success("Assessment saved successfully!");
+        const syncPromise = (async () => {
+          const { error } = await supabase.from("assessments").insert({
+            user_id: user.id,
+            assessment_type: type || "riasec",
+            answers: sanitizedAnswers as any,
+            results: results as any,
+            completed_at: new Date().toISOString(),
+          });
+          return error;
+        })();
+
+        try {
+          const error = await Promise.race([syncPromise, timeoutPromise]);
+          if (error) {
+            console.error("Supabase sync error:", error);
+            toast.error(`Sync failed: ${error.message || "Please check console"}`);
+          } else {
+            console.log("Assessment synced successfully");
+            toast.success("Assessment saved successfully!");
+          }
+        } catch (raceError: any) {
+          if (raceError.message === "Timeout") {
+            console.warn("Cloud sync timed out (possibly blocked by an ad-blocker or network issues)");
+            toast.error("Could not sync to cloud. Showing results locally.");
+          } else {
+            throw raceError;
+          }
         }
       } else {
         console.warn("No user found during save, showing local results only.");
       }
       
-      // Always show results, even if sync failed or was skipped
+      // Always show results, even if sync failed or timed out
       setShowResults(true);
     } catch (err) {
       console.error("Critical assessment save failure:", err);

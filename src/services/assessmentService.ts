@@ -78,10 +78,19 @@ export const calculateBigFiveScores = (responses: Record<string, number>): BigFi
   };
 };
 
+const withTimeout = <T>(promise: Promise<T>, ms: number = 4000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error("Timeout")), ms)
+    )
+  ]);
+};
+
 export const saveBigFiveAssessment = async (studentId: string, responses: Record<string, number>) => {
   const scores = calculateBigFiveScores(responses);
   
-  const { data, error } = await supabase
+  const query = supabase
     .from("big_five_assessments" as any)
     .insert({
       student_id: studentId,
@@ -92,6 +101,8 @@ export const saveBigFiveAssessment = async (studentId: string, responses: Record
     .select()
     .single();
 
+  const { data, error } = await withTimeout(query);
+ 
   if (error) throw error;
   return data;
 };
@@ -133,7 +144,7 @@ export const calculateCaasScores = (responses: Record<string, number>): CaasResu
 export const saveCaasAssessment = async (studentId: string, responses: Record<string, number>) => {
   const scores = calculateCaasScores(responses);
   
-  const { data, error } = await supabase
+  const query = supabase
     .from("caas_assessments" as any)
     .insert({
       student_id: studentId,
@@ -144,6 +155,8 @@ export const saveCaasAssessment = async (studentId: string, responses: Record<st
     .select()
     .single();
 
+  const { data, error } = await withTimeout(query);
+ 
   if (error) throw error;
   return data;
 };
