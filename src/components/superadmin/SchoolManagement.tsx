@@ -29,9 +29,26 @@ const SchoolManagement = () => {
     }
   });
 
+  const parseSchoolName = (rawName: string) => {
+    const match = rawName.match(/^(.*?)\s*\((.*?)\s*\|\s*(.*?)\)$/);
+    if (match) {
+      return {
+        name: match[1],
+        address: match[2],
+        contact_email: match[3]
+      };
+    }
+    return {
+      name: rawName,
+      address: "",
+      contact_email: ""
+    };
+  };
+
   const addSchoolMutation = useMutation({
     mutationFn: async (newSchool: typeof formData) => {
-      const { data, error } = await supabase.from("schools").insert([newSchool]);
+      const formattedName = `${newSchool.name.trim()} (${newSchool.address.trim()} | ${newSchool.contact_email.trim()})`;
+      const { data, error } = await supabase.from("schools").insert([{ name: formattedName }]);
       if (error) throw error;
       return data;
     },
@@ -46,9 +63,20 @@ const SchoolManagement = () => {
     }
   });
 
-  const filteredSchools = schools.filter(s => 
+  const parsedSchools = schools.map(s => {
+    const parsed = parseSchoolName(s.name);
+    return {
+      ...s,
+      name: parsed.name,
+      address: parsed.address || s.address || "",
+      contact_email: parsed.contact_email || s.contact_email || ""
+    };
+  });
+
+  const filteredSchools = parsedSchools.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.contact_email?.toLowerCase().includes(searchTerm.toLowerCase())
+    s.contact_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.address?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (

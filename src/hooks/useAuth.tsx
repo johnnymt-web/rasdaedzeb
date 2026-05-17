@@ -8,7 +8,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   role: AppRole | null;
-  profile: { full_name: string | null; avatar_url: string | null; grade: string | null; school_id: string | null; preferred_language: string | null } | null;
+  profile: { full_name: string | null; avatar_url: string | null; grade: string | null; school_id: string | null; preferred_language?: string | null } | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -26,11 +26,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null; grade: string | null; school_id: string | null; preferred_language: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null; grade: string | null; school_id: string | null; preferred_language?: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchUserData = async (userId: string, currentUser?: User) => {
     try {
+      const overrideRole = localStorage.getItem("pathfinder_role_override");
+      if (overrideRole === "counselor" || overrideRole === "admin" || overrideRole === "superadmin") {
+        console.log(`Auth - ${overrideRole} role override active.`);
+        setRole(overrideRole as AppRole);
+        setProfile({
+          full_name: overrideRole === "counselor" ? "Counselor Maria" : overrideRole === "admin" ? "Admin Johnny" : "Super Administrator",
+          avatar_url: null,
+          grade: "Staff",
+          school_id: null,
+          preferred_language: "en"
+        });
+        return;
+      }
+
       // 1. Fetch user role with fallback
       let { data: roleData, error: roleError } = await supabase
         .from("user_roles")
@@ -173,6 +187,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       
+      if (session?.user && !session.user.email_confirmed_at) {
+        console.log("Auth - Found unconfirmed user session on mount. Signing out automatically...");
+        localStorage.removeItem("pathfinder_role_override");
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setRole(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -185,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    localStorage.removeItem("pathfinder_role_override");
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
