@@ -7,45 +7,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
+import { getGradeBand } from "@/utils/gradeBands";
+import { RIASEC_QUESTIONS_BY_GRADE, FALLBACK_RIASEC_QUESTIONS } from "@/data/riasecQuestions";
 
 interface Question {
   id: number;
   text: string;
   category: string;
 }
-
-const getRiasecQuestions = (t: any): Question[] => [
-  { id: 1, text: t("assessment.riasec.questions.1"), category: "Realistic" },
-  { id: 2, text: t("assessment.riasec.questions.2"), category: "Realistic" },
-  { id: 3, text: t("assessment.riasec.questions.3"), category: "Realistic" },
-  { id: 4, text: t("assessment.riasec.questions.4"), category: "Realistic" },
-  { id: 5, text: t("assessment.riasec.questions.5"), category: "Realistic" },
-  { id: 6, text: t("assessment.riasec.questions.6"), category: "Investigative" },
-  { id: 7, text: t("assessment.riasec.questions.7"), category: "Investigative" },
-  { id: 8, text: t("assessment.riasec.questions.8"), category: "Investigative" },
-  { id: 9, text: t("assessment.riasec.questions.9"), category: "Investigative" },
-  { id: 10, text: t("assessment.riasec.questions.10"), category: "Investigative" },
-  { id: 11, text: t("assessment.riasec.questions.11"), category: "Artistic" },
-  { id: 12, text: t("assessment.riasec.questions.12"), category: "Artistic" },
-  { id: 13, text: t("assessment.riasec.questions.13"), category: "Artistic" },
-  { id: 14, text: t("assessment.riasec.questions.14"), category: "Artistic" },
-  { id: 15, text: t("assessment.riasec.questions.15"), category: "Artistic" },
-  { id: 16, text: t("assessment.riasec.questions.16"), category: "Social" },
-  { id: 17, text: t("assessment.riasec.questions.17"), category: "Social" },
-  { id: 18, text: t("assessment.riasec.questions.18"), category: "Social" },
-  { id: 19, text: t("assessment.riasec.questions.19"), category: "Social" },
-  { id: 20, text: t("assessment.riasec.questions.20"), category: "Social" },
-  { id: 21, text: t("assessment.riasec.questions.21"), category: "Enterprising" },
-  { id: 22, text: t("assessment.riasec.questions.22"), category: "Enterprising" },
-  { id: 23, text: t("assessment.riasec.questions.23"), category: "Enterprising" },
-  { id: 24, text: t("assessment.riasec.questions.24"), category: "Enterprising" },
-  { id: 25, text: t("assessment.riasec.questions.25"), category: "Enterprising" },
-  { id: 26, text: t("assessment.riasec.questions.26"), category: "Conventional" },
-  { id: 27, text: t("assessment.riasec.questions.27"), category: "Conventional" },
-  { id: 28, text: t("assessment.riasec.questions.28"), category: "Conventional" },
-  { id: 29, text: t("assessment.riasec.questions.29"), category: "Conventional" },
-  { id: 30, text: t("assessment.riasec.questions.30"), category: "Conventional" },
-];
 
 const getSkillsQuestions = (t: any): Question[] => [
   { id: 101, text: t("assessment.skills.questions.101"), category: "Communication" },
@@ -64,13 +33,13 @@ const getOptions = (t: any) => [
 ];
 
 export default function AssessmentPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { type = "riasec" } = useParams<{ type: string }>();
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [showResults, setShowResults] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,11 +48,27 @@ export default function AssessmentPage() {
     }
   }, [type, navigate]);
 
+  const gradeBand = useMemo(() => {
+    if (!profile?.grade) return "discovery";
+    return getGradeBand(profile.grade);
+  }, [profile]);
+
   const questions = useMemo(() => {
-    if (type === "riasec") return getRiasecQuestions(t);
+    if (type === "riasec") {
+      const lang = (i18n.language?.startsWith("ka") ? "ka" : "en") as "en" | "ka";
+      let bandKey: "discovery" | "exploration" | "planning" = "discovery";
+      if (gradeBand === "exploration") bandKey = "exploration";
+      else if (gradeBand === "planning" || gradeBand === "transition") bandKey = "planning";
+
+      const bandQs = RIASEC_QUESTIONS_BY_GRADE[bandKey]?.[lang];
+      if (bandQs && bandQs.length > 0) {
+        return bandQs;
+      }
+      return FALLBACK_RIASEC_QUESTIONS(t);
+    }
     if (type === "skills") return getSkillsQuestions(t);
     return [];
-  }, [type, t]);
+  }, [type, t, gradeBand, i18n.language]);
 
   const options = useMemo(() => getOptions(t), [t]);
 
