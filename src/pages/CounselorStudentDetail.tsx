@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { normalizeAllAssessments } from "@/utils/assessmentNormalization";
 
 interface AssessmentResult {
   category: string;
@@ -60,7 +61,7 @@ const CounselorStudentDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("assessments")
-        .select("id, results, completed_at, created_at, answers")
+        .select("id, results, completed_at, created_at, answers, assessment_type, type")
         .eq("user_id", studentId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -96,53 +97,22 @@ const CounselorStudentDetail = () => {
     enabled: !!studentId,
   });
 
-  const { data: bigFive, isLoading: bigFiveLoading } = useQuery({
-    queryKey: ["counselor-student-big-five", studentId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("big_five_assessments" as any)
-        .select("*")
-        .eq("student_id", studentId!)
-        .order("completed_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data as any;
-    },
-    enabled: !!studentId,
-  });
+  const normData = normalizeAllAssessments(assessments || []);
 
-  const { data: caas, isLoading: caasLoading } = useQuery({
-    queryKey: ["counselor-student-caas", studentId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("caas_assessments" as any)
-        .select("*")
-        .eq("student_id", studentId!)
-        .order("completed_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data as any;
-    },
-    enabled: !!studentId,
-  });
+  const bigFive = normData.bigFive.isComplete 
+    ? (Array.isArray(normData.bigFive.results) ? normData.bigFive.results.reduce((acc, r) => ({ ...acc, [r.key]: r.pct }), {} as Record<string, number>) : {})
+    : null;
 
-  const { data: workValues, isLoading: workValuesLoading } = useQuery({
-    queryKey: ["counselor-student-work-values", studentId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("work_values_assessments")
-        .select("*")
-        .eq("student_id", studentId!)
-        .order("completed_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!studentId,
-  });
+  const caas = normData.caas.isComplete
+    ? {
+        ...((Array.isArray(normData.caas.results) ? normData.caas.results.reduce((acc, r) => ({ ...acc, [r.key]: r.score }), {} as Record<string, number>) : {})),
+        total_score: (Array.isArray(normData.caas.results) ? normData.caas.results.reduce((sum, r) => sum + (r.score || 0), 0) / Math.max(1, normData.caas.results.length) : 0)
+      }
+    : null;
+
+  const workValues = normData.workValues.isComplete
+    ? (Array.isArray(normData.workValues.results) ? normData.workValues.results.reduce((acc, r) => ({ ...acc, [r.key]: r.score }), {} as Record<string, number>) : {})
+    : null;
 
   const { data: eqAssessment, isLoading: eqLoading } = useQuery({
     queryKey: ["counselor-student-eq", studentId],
@@ -189,10 +159,10 @@ const CounselorStudentDetail = () => {
     onError: (err: any) => toast.error(err.message || "Failed to verify skill")
   });
 
-  const isLoading = profileLoading || assessmentsLoading || bigFiveLoading || caasLoading || workValuesLoading || eqLoading;
+  const isLoading = profileLoading || assessmentsLoading || eqLoading;
 
   const completedAssessments = (assessments || []).filter(
-    (a) => a.completed_at && a.results
+    (a) => (a.completed_at || a.created_at) && a.results
   );
 
   const latestResults: AssessmentResult[] =
@@ -207,7 +177,7 @@ const CounselorStudentDetail = () => {
   const chartAssessments = completedAssessments.map((a) => ({
     id: a.id,
     results: (Array.isArray(a.results) ? a.results : []) as unknown as { category: string; pct: number }[],
-    completed_at: a.completed_at!,
+    completed_at: a.completed_at || a.created_at,
     created_at: a.created_at,
   }));
 

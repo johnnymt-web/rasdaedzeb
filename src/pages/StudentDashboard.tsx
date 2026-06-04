@@ -23,8 +23,6 @@ const StudentDashboard = () => {
   const { user, profile } = useAuth();
   const { t } = useTranslation();
 
-  const SKILLS_CATEGORIES = ["Communication", "Problem Solving", "Digital Literacy", "Teamwork", "Adaptability"];
-
   const { data: allAssessments, isLoading } = useQuery({
     queryKey: ["all-assessments", user?.id],
     queryFn: async () => {
@@ -53,12 +51,6 @@ const StudentDashboard = () => {
       const cat = (r.category || r.key || r.label || "").toLowerCase();
       return RIASEC_CATEGORIES.some(baseCat => baseCat.toLowerCase() === cat);
     });
-  });
-
-  const latestSkills = allAssessments?.find(a => {
-    if (a.assessment_type?.toLowerCase() === 'skills') return true;
-    if (a.assessment_type?.toLowerCase() === 'riasec') return false;
-    return (a.results as unknown as AssessmentResult[])?.some((r) => SKILLS_CATEGORIES.includes(r.category));
   });
 
   const { data: assessmentCount } = useQuery({
@@ -263,9 +255,9 @@ const StudentDashboard = () => {
                 </div>
               </div>
 
-              {/* Latest insight */}
+              {/* Career Discovery Profile (RIASEC) */}
               <div className="card-warm p-6">
-                <h2 className="font-heading font-semibold text-lg text-foreground mb-3">{t("dashboard.student.insight_title")}</h2>
+                <h2 className="font-heading font-semibold text-lg text-foreground mb-3">Career Discovery Profile</h2>
                 {isLoading ? (
                   <div className="flex items-center gap-2 text-muted-foreground py-4">
                     <Loader2 className="w-4 h-4 animate-spin" /> {t("dashboard.student.loading_results")}
@@ -294,33 +286,16 @@ const StudentDashboard = () => {
                         </div>
                       ))}
                     </div>
-                    <div className={`grid gap-6 mt-5 ${latestSkills ? 'md:grid-cols-2' : ''}`}>
-                      <div>
-                        <h3 className="text-sm font-medium text-foreground mb-2">{t("dashboard.student.riasec_profile")}</h3>
-                        <RiasecRadarChart
-                          assessments={[{
-                            id: latestAssessment!.id,
-                            results: rawResults as Array<{ category: string; pct: number }>,
-                            completed_at: latestAssessment!.completed_at || "",
-                            created_at: latestAssessment!.created_at,
-                          }]}
-                        />
-                      </div>
-                      
-                      {latestSkills && (
-                        <div>
-                          <h3 className="text-sm font-medium text-foreground mb-2">{t("dashboard.student.skills_profile")}</h3>
-                          <RiasecRadarChart
-                            categories={SKILLS_CATEGORIES}
-                            assessments={[{
-                              id: latestSkills.id,
-                              results: latestSkills.results as Array<{ category: string; pct: number }>,
-                              completed_at: latestSkills.completed_at || "",
-                              created_at: latestSkills.created_at,
-                            }]}
-                          />
-                        </div>
-                      )}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-medium text-foreground mb-2">{t("dashboard.student.riasec_profile")}</h3>
+                      <RiasecRadarChart
+                        assessments={[{
+                          id: latestAssessment!.id,
+                          results: rawResults as Array<{ category: string; pct: number }>,
+                          completed_at: latestAssessment!.completed_at || "",
+                          created_at: latestAssessment!.created_at,
+                        }]}
+                      />
                     </div>
                     <div className="flex gap-2 mt-6">
                       <Link to="/student/report">

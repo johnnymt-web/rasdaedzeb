@@ -39,7 +39,7 @@ export default function CounselorInsights() {
 
       // Metrics
       const total = studentIds.length;
-      const completed = Array.from(latestByUser.values()).filter(a => a.completed_at).length;
+      const completed = Array.from(latestByUser.values()).filter(a => a.completed_at || a.created_at).length;
       const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
       // Interest Distribution
@@ -69,7 +69,7 @@ export default function CounselorInsights() {
         if (!gradeMap.has(g)) gradeMap.set(g, { total: 0, done: 0 });
         const entry = gradeMap.get(g);
         entry.total++;
-        if (latestByUser.get(p.id)?.completed_at) entry.done++;
+        if (latestByUser.get(p.id)?.completed_at || latestByUser.get(p.id)?.created_at) entry.done++;
       }
 
       const gradeBreakdown = Array.from(gradeMap.entries()).map(([grade, d]) => ({

@@ -92,8 +92,12 @@ export default function WorkValuesAssessment() {
       const { error } = await supabase.from("work_values_assessments").insert({
         student_id: user.id,
         item_responses: finalAnswers,
-        ...scores,
-        completed_at: new Date().toISOString()
+        achievement: scores.achievement,
+        independence: scores.independence,
+        recognition: scores.recognition,
+        relationships: scores.relationships,
+        support: scores.support,
+        working_conditions: scores.working_conditions,
       });
 
       if (error) throw error;

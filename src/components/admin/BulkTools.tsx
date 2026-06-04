@@ -107,7 +107,7 @@ export default function BulkTools() {
 
       const exportData = (profiles || []).map(p => {
         const studentAssessments = (assessments || []).filter(a => a.user_id === p.id);
-        const latest = studentAssessments.sort((a,b) => new Date(b.completed_at || "").getTime() - new Date(a.completed_at || "").getTime())[0];
+        const latest = studentAssessments.sort((a,b) => new Date(b.completed_at || b.created_at || "").getTime() - new Date(a.completed_at || a.created_at || "").getTime())[0];
         const results = (latest?.results || []) as unknown as Array<{ category: string; pct: number }>;
         const getP = (cat: string) => results.find((r) => r.category === cat)?.pct || 0;
         
@@ -116,7 +116,7 @@ export default function BulkTools() {
           Email: p.email || t("users.not_available"), 
           School: p.school_id ? schoolMap.get(p.school_id) : t("users.unassigned"), 
           Grade: p.grade || t("users.not_available"), 
-          Status: p.is_archived ? t("bulk.status_archived") : (latest?.completed_at ? t("bulk.status_completed") : t("bulk.status_pending")),
+          Status: p.is_archived ? t("bulk.status_archived") : ((latest?.completed_at || latest?.created_at) ? t("bulk.status_completed") : t("bulk.status_pending")),
           Realistic: getP("Realistic"), 
           Investigative: getP("Investigative"), 
           Artistic: getP("Artistic"), 

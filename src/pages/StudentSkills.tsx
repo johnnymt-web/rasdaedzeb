@@ -4,9 +4,35 @@ import { ArrowLeft, Sparkles, Target, ShieldCheck, GraduationCap, Briefcase } fr
 import { Link } from "react-router-dom";
 import EmployabilityTracker from "@/components/student/EmployabilityTracker";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import RiasecRadarChart from "@/components/assessment/RiasecRadarChart";
+import { Loader2, ChevronRight } from "lucide-react";
 
 export default function StudentSkills() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  
+  const SKILLS_CATEGORIES = ["Communication", "Problem Solving", "Digital Literacy", "Teamwork", "Adaptability"];
+
+  const { data: latestSkills, isLoading } = useQuery({
+    queryKey: ["latest-skills-assessment", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assessments")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("assessment_type", "skills")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   return (
     <div className="space-y-8">
@@ -30,6 +56,45 @@ export default function StudentSkills() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Tracker */}
             <div className="lg:col-span-2 space-y-8">
+              <div className="card-warm p-6">
+                <h2 className="font-heading font-semibold text-lg text-foreground mb-3">Employability Skills Profile</h2>
+                {isLoading ? (
+                  <div className="flex items-center gap-2 text-muted-foreground py-4">
+                    <Loader2 className="w-4 h-4 animate-spin" /> {t("dashboard.student.loading_results", "Loading results...")}
+                  </div>
+                ) : latestSkills ? (
+                  <>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                      Your employability skills track your readiness for the workplace. Review your latest self-assessment below.
+                    </p>
+                    <div className="mt-5">
+                      <h3 className="text-sm font-medium text-foreground mb-2">Skills Profile</h3>
+                      <RiasecRadarChart
+                        categories={SKILLS_CATEGORIES}
+                        assessments={[{
+                          id: latestSkills.id,
+                          results: latestSkills.results as Array<{ category: string; pct: number }>,
+                          completed_at: latestSkills.completed_at || "",
+                          created_at: latestSkills.created_at,
+                        }]}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      You haven't completed an employability skills check yet. Discover your strengths and areas for growth!
+                    </p>
+                    <Link to="/student/assessment/skills">
+                      <Button variant="default" size="sm">
+                        Start Skills Check
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
               <EmployabilityTracker />
               
               <div className="card-warm p-6 bg-secondary/5 border-secondary/20">

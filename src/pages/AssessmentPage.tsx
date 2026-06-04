@@ -100,9 +100,9 @@ export default function AssessmentPage() {
 
         console.log("Attempting to sync assessment to cloud...");
         
-        // Use a timeout promise to prevent getting stuck on network/adblock hangs
+        // Use a timeout promise to prevent getting stuck on network/adblock hangs (increased to 15s for slower connections)
         const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error("Timeout")), 4000)
+          setTimeout(() => reject(new Error("Timeout")), 15000)
         );
 
         const syncPromise = (async () => {
@@ -111,7 +111,6 @@ export default function AssessmentPage() {
             assessment_type: type || "riasec",
             answers: sanitizedAnswers as any,
             results: results as any,
-            completed_at: new Date().toISOString(),
           });
           return error;
         })();

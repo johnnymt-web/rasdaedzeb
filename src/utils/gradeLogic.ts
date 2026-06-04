@@ -5,16 +5,17 @@ export function parseGrade(grade: any): number {
   return isNaN(numeric) ? 7 : numeric;
 }
 
-export function isAssessmentVisible(assessmentId: string, grade: number): boolean {
-  const g = grade;
-  // Level 1: Grades 6-8
+export function getAllowedAssessmentsForGrade(grade: number | undefined | string): string[] {
+  const g = parseGrade(grade);
   if (g <= 8) {
-    return ["riasec", "skills"].includes(assessmentId);
+    return ["riasec", "skills", "bigfive", "eq"];
   }
-  // Level 2: Grades 9-10
   if (g <= 10) {
-    return ["riasec", "skills", "bigfive", "workvalues"].includes(assessmentId);
+    return ["riasec", "skills", "bigfive", "caas", "workvalues"];
   }
-  // Level 3: Grades 11+
-  return true;
+  return ["riasec", "skills", "bigfive", "eq", "caas", "workvalues"];
+}
+
+export function isAssessmentVisible(assessmentId: string, grade: number): boolean {
+  return getAllowedAssessmentsForGrade(grade).includes(assessmentId);
 }

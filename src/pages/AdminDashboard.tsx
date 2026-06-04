@@ -127,7 +127,7 @@ const AdminDashboard = () => {
           const latest = latestByUser.get(sid);
           if (!latest) {
             needingAttention++;
-          } else if (latest.completed_at) {
+          } else if (latest.completed_at || latest.created_at) {
             completedCount++;
           } else {
             const started = new Date(latest.created_at).getTime();
@@ -146,7 +146,7 @@ const AdminDashboard = () => {
           if (!gradeMap.has(grade)) gradeMap.set(grade, { students: 0, completed: 0 });
           gradeMap.get(grade).students++;
           const latest = latestByUser.get(p.id);
-          if (latest?.completed_at) gradeMap.get(grade).completed++;
+          if (latest?.completed_at || latest?.created_at) gradeMap.get(grade).completed++;
         }
 
         const gradeBreakdown = Array.from(gradeMap.entries())

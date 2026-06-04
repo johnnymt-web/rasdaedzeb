@@ -78,7 +78,7 @@ export const calculateBigFiveScores = (responses: Record<string, number>): BigFi
   };
 };
 
-const withTimeout = <T>(promise: Promise<T>, ms: number = 4000): Promise<T> => {
+const withTimeout = <T>(promise: Promise<T>, ms: number = 15000): Promise<T> => {
   return Promise.race([
     promise,
     new Promise<never>((_, reject) => 
@@ -91,12 +91,16 @@ export const saveBigFiveAssessment = async (studentId: string, responses: Record
   const scores = calculateBigFiveScores(responses);
   
   const query = supabase
-    .from("big_five_assessments" as any)
+    .from("big_five_assessments")
     .insert({
       student_id: studentId,
       item_responses: responses,
-      ...scores,
-      completed_at: new Date().toISOString()
+      openness: scores.openness,
+      conscientiousness: scores.conscientiousness,
+      extraversion: scores.extraversion,
+      agreeableness: scores.agreeableness,
+      neuroticism: scores.neuroticism,
+      facet_scores: scores
     })
     .select()
     .single();
@@ -145,18 +149,22 @@ export const saveCaasAssessment = async (studentId: string, responses: Record<st
   const scores = calculateCaasScores(responses);
   
   const query = supabase
-    .from("caas_assessments" as any)
+    .from("caas_assessments")
     .insert({
       student_id: studentId,
       item_responses: responses,
-      ...scores,
-      completed_at: new Date().toISOString()
+      concern: scores.concern,
+      control: scores.control,
+      curiosity: scores.curiosity,
+      confidence: scores.confidence,
+      total_score: scores.total_score,
+      percentile: Math.round((scores.total_score / 5) * 100)
     })
     .select()
     .single();
 
   const { data, error } = await withTimeout(query);
- 
+
   if (error) throw error;
   return data;
 };

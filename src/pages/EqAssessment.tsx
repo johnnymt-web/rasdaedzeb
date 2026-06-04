@@ -99,7 +99,6 @@ export default function EqAssessment() {
         assessment_type: "eq",
         answers: answers as any,
         results: resultsArray as any,
-        completed_at: new Date().toISOString(),
       });
 
       if (error) {

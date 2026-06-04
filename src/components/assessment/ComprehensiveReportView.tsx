@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { normalizeAllAssessments, getTopResults, getLowResults } from "@/utils/assessmentNormalization";
-import { parseGrade, isAssessmentVisible } from "@/utils/gradeLogic";
+import { parseGrade, isAssessmentVisible, getAllowedAssessmentsForGrade } from "@/utils/gradeLogic";
 import { getGradeBand, getReportToneForGradeBand, GradeBand } from "@/utils/gradeBands";
 import { generateAiSynthesis, SynthesisResponse } from "@/services/aiService";
 import OnetCareerSection from "./OnetCareerSection";
@@ -57,39 +57,45 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
   const isVisible = (id: string) => isAssessmentVisible(id, numericGrade);
 
 
-  const { data: normData, isLoading } = useQuery({
+  const { data: normData, isLoading, isError } = useQuery({
     queryKey: ["gold-standard-report-normalized", studentId],
     queryFn: async () => {
-      const fetchSafe = async (query: any) => {
-        try {
-          const res = await query;
-          if (res.error) {
-            console.error("Query failed:", res.error);
+      // Wrap in a timeout to prevent hanging indefinitely on network issues
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Report data fetch timed out after 15s")), 15000)
+      );
+
+      const fetchPromise = (async () => {
+        const fetchSafe = async (query: any) => {
+          try {
+            const { data, error } = await query;
+            return error ? [] : (data || []);
+          } catch {
             return [];
           }
-          return res.data || [];
-        } catch (err) {
-          console.error("Query threw:", err);
-          return [];
-        }
-      };
+        };
 
-      const [std, bigFive, caas, workvalues] = await Promise.all([
-        fetchSafe(supabase.from("assessments").select("*").eq("user_id", studentId).order("created_at", { ascending: false })),
-        fetchSafe(supabase.from("big_five_assessments" as any).select("*").eq("student_id", studentId).order("completed_at", { ascending: false }).limit(1)),
-        fetchSafe(supabase.from("caas_assessments" as any).select("*").eq("student_id", studentId).order("completed_at", { ascending: false }).limit(1)),
-        fetchSafe(supabase.from("work_values_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false }).limit(1))
-      ]);
+        const [stdData, bigFiveData, caasData, workValuesData] = await Promise.all([
+          fetchSafe(supabase.from("assessments").select("*").eq("user_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
+          fetchSafe(supabase.from("big_five_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
+          fetchSafe(supabase.from("caas_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
+          fetchSafe(supabase.from("work_values_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false, nullsFirst: false }))
+        ]);
 
-      return normalizeAllAssessments({
-        std,
-        bigFive,
-        caas,
-        workValues: workvalues
-      });
+        return normalizeAllAssessments({
+          std: stdData,
+          bigFive: bigFiveData,
+          caas: caasData,
+          workValues: workValuesData
+        });
+      })();
+
+      return Promise.race([fetchPromise, timeoutPromise]);
     },
     enabled: !!studentId,
-    retry: false,
+    retry: 1,
+    retryDelay: 2000,
+    staleTime: 30000,
   });
 
   const { data: synthesis, isLoading: isSynthesisLoading } = useQuery({
@@ -113,6 +119,18 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
     enabled: !!normData && (normData.riasec.isComplete || normData.bigFive.isComplete),
   });
 
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center py-20 text-center">
+        <div className="text-red-500 max-w-md">
+          <AlertCircle className="w-8 h-8 mx-auto mb-4" />
+          <h3 className="text-lg font-bold mb-2">Could not load report</h3>
+          <p className="text-sm">There was an error loading your assessments. Please try again later.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -125,6 +143,36 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
 
   const { riasec, skills, bigFive, caas, workValues, eq } = normData;
   const anyCompleted = riasec.isComplete || skills.isComplete || bigFive.isComplete || caas.isComplete || workValues.isComplete || eq.isComplete;
+
+  if (!anyCompleted) {
+    return (
+      <div className="text-center py-20 bg-muted/10 rounded-3xl border border-dashed">
+        <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-bold mb-2">No completed assessments found yet</h3>
+        <p className="text-muted-foreground max-w-sm mx-auto mb-6">Please complete your assessments first.</p>
+      </div>
+    );
+  }
+
+  const allowedIds = getAllowedAssessmentsForGrade(numericGrade);
+  const completedIds = [
+    ...(riasec.isComplete ? ["riasec"] : []),
+    ...(skills.isComplete ? ["skills"] : []),
+    ...(bigFive.isComplete ? ["bigfive"] : []),
+    ...(caas.isComplete ? ["caas"] : []),
+    ...(workValues.isComplete ? ["workvalues"] : []),
+    ...(eq.isComplete ? ["eq"] : []),
+  ];
+  const missingIds = allowedIds.filter(id => !completedIds.includes(id));
+  const missingNames = missingIds.map(id => {
+    if (id === 'riasec') return 'Career Interests';
+    if (id === 'skills') return 'Employability Skills';
+    if (id === 'bigfive') return 'Learning & Working Style';
+    if (id === 'caas') return 'Career Adaptability';
+    if (id === 'workvalues') return 'Work Values';
+    if (id === 'eq') return 'Emotional Skills';
+    return id;
+  });
 
   const topInterests = getTopResults(riasec.results, 3);
   const primaryInterest = topInterests[0]?.label || "Unknown";
@@ -579,9 +627,21 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
         </div>
       </section>
 
-      {anyCompleted ? (
-        <>
-          {/* SECTION 3: Current exploration profile */}
+      {missingIds.length > 0 && !isCounselorView && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg mb-8">
+          <div className="flex gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <div>
+              <h3 className="text-amber-800 font-bold text-sm">Incomplete Report</h3>
+              <p className="text-amber-700 text-sm mt-1">
+                For a complete exploration profile, please finish: {missingNames.join(", ")}.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 3: Current exploration profile */}
           <section className="card-warm p-8 shadow-xl bg-gradient-to-br from-white to-primary/5">
             <h3 className="text-2xl font-heading font-black mb-6">Current Exploration Profile</h3>
             {riasec.isComplete ? (
@@ -933,14 +993,6 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
             </div>
           </section>
           )}
-        </>
-      ) : (
-        <div className="text-center py-20 bg-muted/10 rounded-3xl border border-dashed">
-          <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-bold mb-2">Awaiting Assessments</h3>
-          <p className="text-muted-foreground max-w-sm mx-auto mb-6">Complete at least one assessment to generate your comprehensive reflection report.</p>
-        </div>
-      )}
     </div>
   );
 };

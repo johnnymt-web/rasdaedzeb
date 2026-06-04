@@ -54,7 +54,7 @@ export default function AdminInsights() {
       
       // Calculate basic stats for AI context
       const total = studentIds.length;
-      const completed = (assessments || []).filter(a => a.completed_at).length;
+      const completed = (assessments || []).filter(a => a.completed_at || a.created_at).length;
       const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
       
       return { total, completed, completionRate, assessments, profiles };

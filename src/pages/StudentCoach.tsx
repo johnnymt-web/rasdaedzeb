@@ -127,50 +127,18 @@ export default function StudentCoach() {
         body: { messages: history }
       });
 
-      if (!invokeError && data?.content) {
-        setMessages((prev) => [
-          ...prev,
-          { id: Math.random().toString(36).substring(2, 15), role: "assistant", content: data.content }
-        ]);
-        setIsLoading(false);
-        return;
+      if (invokeError) {
+        console.error("Edge Function Error:", invokeError);
+        throw new Error(invokeError.message || "Coach service unavailable");
       }
 
-      console.warn("Edge Function failed or returned no content, trying direct fallback...");
-      
-      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      if (!apiKey) throw new Error("No API key configured");
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { 
-              role: 'system', 
-              content: `You are the Pathfinder Career Coach — a warm, supportive, and encouraging AI assistant that helps students explore careers, interests, and school subjects. 
-              IMPORTANT: Always respond in the language the user is speaking in. The user's current interface language is ${i18n.language === 'ka' ? 'Georgian (ka)' : 'English (en)'}.` 
-            },
-            ...history
-          ],
-        })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error?.message || `OpenAI API Error ${response.status}`);
+      if (!data?.content) {
+        throw new Error("Coach service returned no content");
       }
-
-      const aiData = await response.json();
-      const content = aiData.choices[0].message.content;
 
       setMessages((prev) => [
         ...prev,
-        { id: Math.random().toString(36).substring(2, 15), role: "assistant", content }
+        { id: Math.random().toString(36).substring(2, 15), role: "assistant", content: data.content }
       ]);
 
     } catch (err: any) {

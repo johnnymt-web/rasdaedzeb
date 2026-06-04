@@ -157,11 +157,8 @@ const CounselorDashboard = () => {
         if (scopedIds.length === 0) return { students: [], totalStudents: 0, counselorSchoolName };
 
         // Fetch all assessments to normalize
-        const [stdAss, bigFiveAss, caasAss, workValuesAss, parentLinks] = await Promise.all([
+        const [stdAss, parentLinks] = await Promise.all([
           supabase.from("assessments").select("*").in("user_id", scopedIds).order("created_at", { ascending: false }),
-          supabase.from("big_five_assessments").select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
-          supabase.from("caas_assessments").select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
-          supabase.from("work_values_assessments").select("*").in("student_id", scopedIds).order("completed_at", { ascending: false }),
           supabase.from("parent_students").select("parent_id, student_id").in("student_id", scopedIds)
         ]);
 
@@ -182,11 +179,8 @@ const CounselorDashboard = () => {
 
         const students: StudentData[] = scopedProfiles.map((p) => {
           const sStd = stdAss.data?.filter(a => a.user_id === p.id) || [];
-          const sB5 = bigFiveAss.data?.filter(a => a.student_id === p.id) || [];
-          const sCaas = caasAss.data?.filter(a => a.student_id === p.id) || [];
-          const sWv = workValuesAss.data?.filter(a => a.student_id === p.id) || [];
           
-          const normData = normalizeAllAssessments({ std: sStd, bigFive: sB5, caas: sCaas, workValues: sWv });
+          const normData = normalizeAllAssessments(sStd);
           
           // Get latest activity
           let latest = null;

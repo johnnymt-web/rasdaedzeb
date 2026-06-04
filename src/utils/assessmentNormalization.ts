@@ -104,19 +104,21 @@ export function normalizeSkillsAssessment(raw: any): NormalizedAssessment {
 }
 
 export function normalizeBigFiveAssessment(raw: any): NormalizedAssessment {
-  const hasItemResponses = raw && raw.item_responses && typeof raw.item_responses === 'object' && Object.keys(raw.item_responses).length > 0;
-  const hasFlatScores = raw && raw.openness !== undefined && raw.openness !== null;
+  const resultsObj = (raw && !Array.isArray(raw.results) && typeof raw.results === 'object') ? raw.results : null;
+  const itemResponses = raw?.answers || raw?.item_responses;
+  const hasItemResponses = itemResponses && typeof itemResponses === 'object' && Object.keys(itemResponses).length > 0;
+  const hasFlatScores = raw && (raw.openness !== undefined || resultsObj?.openness !== undefined);
   const hasResultArray = !!(raw && Array.isArray(raw.results) && raw.results.length > 0);
   const isComplete = hasFlatScores || hasResultArray || hasItemResponses;
   
   let results: NormalizedAssessmentResult[] = [];
   
   if (isComplete && raw) {
-    let openness = Number(raw.openness) || 0;
-    let conscientiousness = Number(raw.conscientiousness) || 0;
-    let extraversion = Number(raw.extraversion) || 0;
-    let agreeableness = Number(raw.agreeableness) || 0;
-    let neuroticism = Number(raw.neuroticism) || 0;
+    let openness = Number(raw.openness ?? resultsObj?.openness) || 0;
+    let conscientiousness = Number(raw.conscientiousness ?? resultsObj?.conscientiousness) || 0;
+    let extraversion = Number(raw.extraversion ?? resultsObj?.extraversion) || 0;
+    let agreeableness = Number(raw.agreeableness ?? resultsObj?.agreeableness) || 0;
+    let neuroticism = Number(raw.neuroticism ?? resultsObj?.neuroticism) || 0;
 
     const allZero = openness === 0 && conscientiousness === 0 && extraversion === 0 && agreeableness === 0 && neuroticism === 0;
 
@@ -145,7 +147,7 @@ export function normalizeBigFiveAssessment(raw: any): NormalizedAssessment {
         o1: 1, o2: -1, o3: 1, o4: -1, o5: 1, o6: -1, o7: 1, o8: 1, o9: 1, o10: 1,
       };
 
-      Object.entries(raw.item_responses).forEach(([qid, val]: [string, any]) => {
+      Object.entries(itemResponses).forEach(([qid, val]: [string, any]) => {
         const prefix = qid.charAt(0);
         const trait = TRAIT_MAP[prefix];
         const sign = SIGN_MAP[qid];
@@ -211,15 +213,21 @@ export function normalizeBigFiveAssessment(raw: any): NormalizedAssessment {
 }
 
 export function normalizeCaasAssessment(raw: any): NormalizedAssessment {
-  const isComplete = !!(raw && raw.concern !== undefined);
+  const resultsObj = (raw && !Array.isArray(raw.results) && typeof raw.results === 'object') ? raw.results : null;
+  const isComplete = !!(raw && (raw.concern !== undefined || resultsObj?.concern !== undefined));
   
   let results: NormalizedAssessmentResult[] = [];
   if (isComplete && raw) {
+    const concern = raw.concern ?? resultsObj?.concern;
+    const control = raw.control ?? resultsObj?.control;
+    const curiosity = raw.curiosity ?? resultsObj?.curiosity;
+    const confidence = raw.confidence ?? resultsObj?.confidence;
+
     results = [
-      { key: "concern", label: "Concern", score: raw.concern, pct: scoreToPct(raw.concern, "1-5"), scale: "1-5", source: "caas" },
-      { key: "control", label: "Control", score: raw.control, pct: scoreToPct(raw.control, "1-5"), scale: "1-5", source: "caas" },
-      { key: "curiosity", label: "Curiosity", score: raw.curiosity, pct: scoreToPct(raw.curiosity, "1-5"), scale: "1-5", source: "caas" },
-      { key: "confidence", label: "Confidence", score: raw.confidence, pct: scoreToPct(raw.confidence, "1-5"), scale: "1-5", source: "caas" },
+      { key: "concern", label: "Concern", score: concern, pct: scoreToPct(concern, "1-5"), scale: "1-5", source: "caas" },
+      { key: "control", label: "Control", score: control, pct: scoreToPct(control, "1-5"), scale: "1-5", source: "caas" },
+      { key: "curiosity", label: "Curiosity", score: curiosity, pct: scoreToPct(curiosity, "1-5"), scale: "1-5", source: "caas" },
+      { key: "confidence", label: "Confidence", score: confidence, pct: scoreToPct(confidence, "1-5"), scale: "1-5", source: "caas" },
     ];
   }
 
@@ -235,19 +243,27 @@ export function normalizeCaasAssessment(raw: any): NormalizedAssessment {
 }
 
 export function normalizeWorkValuesAssessment(raw: any): NormalizedAssessment {
+  const resultsObj = (raw && !Array.isArray(raw.results) && typeof raw.results === 'object') ? raw.results : null;
   let results: NormalizedAssessmentResult[] = [];
   let isComplete = false;
 
   if (raw) {
-    if (raw.achievement !== undefined) {
+    if (raw.achievement !== undefined || resultsObj?.achievement !== undefined) {
       isComplete = true;
+      const achievement = raw.achievement ?? resultsObj?.achievement;
+      const independence = raw.independence ?? resultsObj?.independence;
+      const recognition = raw.recognition ?? resultsObj?.recognition;
+      const relationships = raw.relationships ?? resultsObj?.relationships;
+      const support = raw.support ?? resultsObj?.support;
+      const working_conditions = raw.working_conditions ?? resultsObj?.working_conditions;
+
       results = [
-        { key: "achievement", label: "Achievement", score: raw.achievement, pct: scoreToPct(raw.achievement, "1-5"), scale: "1-5", source: "work_values" },
-        { key: "independence", label: "Independence", score: raw.independence, pct: scoreToPct(raw.independence, "1-5"), scale: "1-5", source: "work_values" },
-        { key: "recognition", label: "Recognition", score: raw.recognition, pct: scoreToPct(raw.recognition, "1-5"), scale: "1-5", source: "work_values" },
-        { key: "relationships", label: "Relationships", score: raw.relationships, pct: scoreToPct(raw.relationships, "1-5"), scale: "1-5", source: "work_values" },
-        { key: "support", label: "Support", score: raw.support, pct: scoreToPct(raw.support, "1-5"), scale: "1-5", source: "work_values" },
-        { key: "working_conditions", label: "Working Conditions", score: raw.working_conditions, pct: scoreToPct(raw.working_conditions, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "achievement", label: "Achievement", score: achievement, pct: scoreToPct(achievement, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "independence", label: "Independence", score: independence, pct: scoreToPct(independence, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "recognition", label: "Recognition", score: recognition, pct: scoreToPct(recognition, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "relationships", label: "Relationships", score: relationships, pct: scoreToPct(relationships, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "support", label: "Support", score: support, pct: scoreToPct(support, "1-5"), scale: "1-5", source: "work_values" },
+        { key: "working_conditions", label: "Working Conditions", score: working_conditions, pct: scoreToPct(working_conditions, "1-5"), scale: "1-5", source: "work_values" },
       ];
     } else if (Array.isArray(raw.results)) {
       isComplete = true;
@@ -316,13 +332,46 @@ export function normalizeAllAssessments(rawData: {
   caas?: any[];
   workValues?: any[];
   eq?: any[];
-}) {
-  const riasecRaw = rawData.std?.find((a: any) => a.assessment_type === 'riasec' || !a.assessment_type || a.assessment_type === 'std');
-  const skillsRaw = rawData.std?.find((a: any) => a.assessment_type === 'skills');
-  const bigFiveRaw = rawData.bigFive?.[0] || rawData.std?.find((a: any) => a.assessment_type === 'bigfive');
-  const caasRaw = rawData.caas?.[0] || rawData.std?.find((a: any) => a.assessment_type === 'caas');
-  const workValuesRaw = rawData.workValues?.[0] || rawData.std?.find((a: any) => a.assessment_type === 'workvalues');
-  const eqRaw = rawData.eq?.[0] || rawData.std?.find((a: any) => a.assessment_type === 'eq');
+} | any[]) {
+  let stdRows: any[] = [];
+  let bigFiveRows: any[] = [];
+  let caasRows: any[] = [];
+  let workValuesRows: any[] = [];
+  let eqRows: any[] = [];
+
+  if (Array.isArray(rawData)) {
+    // New flat structure: group by resolved type
+    for (const row of rawData) {
+      const type = row.assessment_type ?? row.type ?? 'unknown';
+      if (type === 'riasec' || type === 'std') {
+        stdRows.push(row);
+      } else if (type === 'skills') {
+        stdRows.push(row);
+      } else if (type === 'bigfive') {
+        bigFiveRows.push(row);
+      } else if (type === 'caas') {
+        caasRows.push(row);
+      } else if (type === 'workvalues') {
+        workValuesRows.push(row);
+      } else if (type === 'eq') {
+        eqRows.push(row);
+      }
+    }
+  } else {
+    // Legacy object structure
+    stdRows = rawData.std || [];
+    bigFiveRows = rawData.bigFive || [];
+    caasRows = rawData.caas || [];
+    workValuesRows = rawData.workValues || [];
+    eqRows = rawData.eq || [];
+  }
+
+  const riasecRaw = stdRows.find((a: any) => a.assessment_type === 'riasec' || !a.assessment_type || a.assessment_type === 'std' || a.type === 'riasec' || a.type === 'std');
+  const skillsRaw = stdRows.find((a: any) => a.assessment_type === 'skills' || a.type === 'skills');
+  const bigFiveRaw = bigFiveRows[0] || stdRows.find((a: any) => a.assessment_type === 'bigfive' || a.type === 'bigfive');
+  const caasRaw = caasRows[0] || stdRows.find((a: any) => a.assessment_type === 'caas' || a.type === 'caas');
+  const workValuesRaw = workValuesRows[0] || stdRows.find((a: any) => a.assessment_type === 'workvalues' || a.type === 'workvalues');
+  const eqRaw = eqRows[0] || stdRows.find((a: any) => a.assessment_type === 'eq' || a.type === 'eq');
 
   return {
     riasec: normalizeRiasecAssessment(riasecRaw),

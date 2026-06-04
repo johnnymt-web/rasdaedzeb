@@ -14,7 +14,8 @@ import {
   normalizeCaasAssessment, 
   normalizeWorkValuesAssessment,
   normalizeRiasecAssessment,
-  normalizeSkillsAssessment
+  normalizeSkillsAssessment,
+  normalizeEqAssessment
 } from "@/utils/assessmentNormalization";
 
 interface Assessment {
@@ -68,8 +69,8 @@ export default function AssessmentHistory() {
 
       const [stdData, bigFiveData, caasData, workValuesData] = await Promise.all([
         fetchSafe(supabase.from("assessments").select("*").eq("user_id", user.id)),
-        fetchSafe((supabase.from("big_five_assessments" as any) as any).select("*").eq("student_id", user.id)),
-        fetchSafe((supabase.from("caas_assessments" as any) as any).select("*").eq("student_id", user.id)),
+        fetchSafe(supabase.from("big_five_assessments").select("*").eq("student_id", user.id)),
+        fetchSafe(supabase.from("caas_assessments").select("*").eq("student_id", user.id)),
         fetchSafe(supabase.from("work_values_assessments").select("*").eq("student_id", user.id))
       ]);
 
@@ -92,16 +93,30 @@ export default function AssessmentHistory() {
 
       const riasecHistory = processHistory(stdData.filter((a: any) => a.assessment_type === 'riasec' || a.assessment_type === 'std' || !a.assessment_type), 'riasec', normalizeRiasecAssessment);
       const skillsHistory = processHistory(stdData.filter((a: any) => a.assessment_type === 'skills'), 'skills', normalizeSkillsAssessment);
-      const bigFiveHistory = processHistory(bigFiveData, 'bigfive', normalizeBigFiveAssessment);
-      const caasHistory = processHistory(caasData, 'caas', normalizeCaasAssessment);
-      const workValuesHistory = processHistory(workValuesData, 'workvalues', normalizeWorkValuesAssessment);
+      const eqHistory = processHistory(stdData.filter((a: any) => a.assessment_type === 'eq'), 'eq', normalizeEqAssessment);
+      
+      const bigFiveHistory = processHistory([
+        ...stdData.filter((a: any) => a.assessment_type === 'bigfive'),
+        ...bigFiveData
+      ], 'bigfive', normalizeBigFiveAssessment);
+      
+      const caasHistory = processHistory([
+        ...stdData.filter((a: any) => a.assessment_type === 'caas'),
+        ...caasData
+      ], 'caas', normalizeCaasAssessment);
+      
+      const workValuesHistory = processHistory([
+        ...stdData.filter((a: any) => a.assessment_type === 'workvalues'),
+        ...workValuesData
+      ], 'workvalues', normalizeWorkValuesAssessment);
 
       return [
         ...riasecHistory,
         ...skillsHistory,
         ...bigFiveHistory, 
         ...caasHistory,
-        ...workValuesHistory
+        ...workValuesHistory,
+        ...eqHistory
       ].sort((a: any, b: any) => 
         new Date(b.completed_at || b.created_at).getTime() - new Date(a.completed_at || a.created_at).getTime()
       );

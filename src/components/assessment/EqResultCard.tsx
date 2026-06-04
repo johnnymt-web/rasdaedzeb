@@ -103,7 +103,7 @@ export default function EqResultCard({ result: initialResult }: { result?: any }
       </div>
 
       <p className="text-[10px] text-muted-foreground text-center pt-2 italic">
-        {t("assessment_results.eq.footer", { date: new Date((result as any).completed_at).toLocaleDateString() })}
+        {t("assessment_results.eq.footer", { date: new Date((result as any).completed_at || (result as any).created_at).toLocaleDateString() })}
       </p>
     </div>
   );

@@ -163,6 +163,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Safety timeout: guarantee loading resolves even if all other paths fail
+    const safetyTimer = setTimeout(() => {
+      setLoading(prev => {
+        if (prev) {
+          console.warn("Auth - Safety timeout reached (10s). Forcing loading=false to prevent stuck UI.");
+        }
+        return false;
+      });
+    }, 10000);
+
     // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -205,9 +215,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fetchUserData(session.user.id, session.user);
       }
       setLoading(false);
+    }).catch((err) => {
+      console.error("Auth - getSession promise rejected:", err);
+      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {

@@ -16,6 +16,7 @@ export type Database = {
         Row: {
           id: string
           user_id: string
+          type: string | null
           assessment_type: string | null
           answers: Json
           results: Json | null
@@ -26,6 +27,7 @@ export type Database = {
         Insert: {
           id?: string
           user_id: string
+          type?: string | null
           assessment_type?: string | null
           answers?: Json
           results?: Json | null
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           id?: string
           user_id?: string
+          type?: string | null
           assessment_type?: string | null
           answers?: Json
           results?: Json | null

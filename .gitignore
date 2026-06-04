@@ -34,6 +34,9 @@ dist-ssr
 supabase/.temp/
 scratch/
 heal-*.cjs
+test-*.cjs
+test_*.js
+test_*.mjs
 test-supabase*.cjs
 supabase/migrations/_apply_*.cjs
 supabase/migrations/push_migrations.cjs

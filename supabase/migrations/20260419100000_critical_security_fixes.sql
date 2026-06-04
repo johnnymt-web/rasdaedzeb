@@ -102,13 +102,14 @@ $$;
 -- Set a default placeholder (MUST be changed in production)
 -- In production, set this via Supabase Dashboard or:
 --   ALTER DATABASE postgres SET app.encryption_key = 'your-actual-secret-key-here';
-DO $$ 
-BEGIN
-    -- Only set if not already configured
-    IF current_setting('app.encryption_key', true) IS NULL THEN
-        EXECUTE 'ALTER DATABASE ' || current_database() || $q$ SET app.encryption_key = 'CHANGE_ME_IN_PRODUCTION'$q$;
-    END IF;
-END $$;
+-- NOTE: ALTER DATABASE requires superuser on Supabase cloud.
+-- Set app.encryption_key manually via Supabase Dashboard > Database > Settings > Configuration.
+-- DO $$
+-- BEGIN
+--     IF current_setting('app.encryption_key', true) IS NULL THEN
+--         EXECUTE 'ALTER DATABASE ' || current_database() || $q$ SET app.encryption_key = 'CHANGE_ME_IN_PRODUCTION'$q$;
+--     END IF;
+-- END $$;
 
 -- Replace the encryption functions to read key from config, not parameters
 CREATE OR REPLACE FUNCTION public.encrypt_note(content TEXT)
