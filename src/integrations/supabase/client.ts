@@ -19,5 +19,10 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    // Add a custom dummy lock to prevent the 'Lock was released because another request stole it' error
+    // which happens frequently in React StrictMode due to concurrent session refreshes.
+    lock: async (name, acquireTimeout, fn) => {
+      return await fn();
+    }
   }
 });
