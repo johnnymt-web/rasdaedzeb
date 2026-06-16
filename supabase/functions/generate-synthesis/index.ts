@@ -61,8 +61,14 @@ ${langNote}
 
 GRADE BAND: ${input.gradeBand} — ${GRADE_BAND_GUIDANCE[input.gradeBand] ?? GRADE_BAND_GUIDANCE.unknown}
 
+DEVELOPMENTAL LADDER (grades 6→13): discovery (6-8) → exploration (9-10) → planning (11-12) → transition (13).
+- developmentalStage.currentNode = the node for THIS student's grade band.
+- whereYouAre = 1-2 warm sentences naming where they are on this ladder and why that stage matters.
+- nextStep = the SINGLE most important developmental step toward the NEXT node — never skip ahead past the next node.
+
 INTERPRETATION RULES:
 - Do NOT tell the student which career they "should" choose. Frame everything as exploration ("your responses suggest…", "you may enjoy exploring…").
+- Anchor the whole report in the student's developmental stage above; don't give grade-11 advice to a grade-7 student.
 - Your unique value is CROSS-INSTRUMENT synthesis — explain how RIASEC + Big Five + CAAS + work values + emotional skills interact. Do NOT just restate single scores.
 - careerMatches must connect to the student's actual top patterns and give a concrete Georgian pathway (which university / programme / track).
 - actionPlan items must be specific and Georgian-context-relevant (real clubs, olympiads, Georgian universities, realistic activities).
@@ -74,6 +80,7 @@ OUTPUT: Respond with ONLY a single valid JSON object. No markdown, no backticks,
   "report": {
     "schemaVersion": 1,
     "profileSummary": "string",
+    "developmentalStage": { "currentNode": "string", "whereYouAre": "string", "nextStep": "string" },
     "crossInstrumentInsights": "string",
     "careerMatches": [
       { "title": "string", "onetCode": "string", "matchReason": "string", "georgianPathway": "string" }

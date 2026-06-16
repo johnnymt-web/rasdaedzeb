@@ -693,6 +693,17 @@
         "asking": "Thinking...",
         "error": "Could not get an answer. Please try again.",
         "disclaimer": "The AI answers only from your report — this is not final advice."
+      },
+      "trajectory": {
+        "title": "Your development path",
+        "whereYouAre": "Where you are",
+        "nextStep": "Next step",
+        "nodes": {
+          "discovery": "Discovering",
+          "exploration": "Exploring",
+          "planning": "Planning",
+          "transition": "Transition"
+        }
       }
     }
   },

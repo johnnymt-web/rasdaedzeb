@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { normalizeAllAssessments, getTopResults, getLowResults } from "@/utils/assessmentNormalization";
 import { parseGrade, isAssessmentVisible, getAllowedAssessmentsForGrade } from "@/utils/gradeLogic";
 import { getGradeBand, getReportToneForGradeBand, GradeBand } from "@/utils/gradeBands";
+import { TRAJECTORY_NODES, getTrajectoryNode } from "@/utils/gradeTrajectory";
 import { generateSynthesisV2, buildSynthesisInput, askAboutReport, type ReportQAMessage } from "@/services/aiService";
 import type { SynthesisLang, SynthesisV2Response } from "@/services/synthesisTypes";
 import OnetCareerSection from "./OnetCareerSection";
@@ -804,6 +805,44 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
               </div>
             ) : synthesis ? (
               <div className="space-y-8 relative z-10">
+                {/* Developmental sequencing — where the student is on the 6→13 ladder */}
+                {getTrajectoryNode(gradeBand) && (
+                  <div className="p-5 bg-white/70 rounded-2xl border border-secondary/20">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-secondary mb-4 flex items-center gap-1.5">
+                      <ArrowRight className="w-3.5 h-3.5" /> {t("report.synthesis.trajectory.title", "Your development path")}
+                    </div>
+                    <div className="relative flex justify-between mb-5">
+                      <div className="absolute top-3.5 left-3 right-3 h-0.5 bg-muted" />
+                      {TRAJECTORY_NODES.map((node) => {
+                        const currentOrder = getTrajectoryNode(gradeBand)?.order ?? -1;
+                        const isCurrent = node.band === gradeBand;
+                        const isDone = node.order < currentOrder;
+                        return (
+                          <div key={node.band} className="relative z-10 flex flex-col items-center" style={{ width: `${100 / TRAJECTORY_NODES.length}%` }}>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${isCurrent ? "bg-secondary text-white ring-4 ring-secondary/20" : isDone ? "bg-secondary/30 text-secondary" : "bg-muted text-muted-foreground"}`}>
+                              {node.order + 1}
+                            </div>
+                            <span className={`mt-1.5 text-[9px] font-bold text-center leading-tight ${isCurrent ? "text-secondary" : "text-muted-foreground"}`}>
+                              {t(`report.synthesis.trajectory.nodes.${node.i18nKey}`, node.i18nKey)}
+                              <br />{node.grades}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {synthesis.developmentalStage && (
+                      <div className="space-y-1.5 pt-1">
+                        <p className="text-sm text-secondary-900 leading-relaxed">
+                          <strong>{t("report.synthesis.trajectory.whereYouAre", "Where you are")}:</strong> {synthesis.developmentalStage.whereYouAre}
+                        </p>
+                        <p className="text-sm text-secondary-900 leading-relaxed">
+                          <strong>{t("report.synthesis.trajectory.nextStep", "Next step")}:</strong> {synthesis.developmentalStage.nextStep}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Profile summary */}
                 <div className="prose prose-sm max-w-none">
                   <p className="text-foreground leading-relaxed text-lg italic">

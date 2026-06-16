@@ -5,7 +5,7 @@ import type { GradeBand } from "@/utils/gradeBands";
  * invalidate every cached report. It is part of the cache key, so a bump forces
  * a one-time regeneration for each student on next view.
  */
-export const SYNTHESIS_SCHEMA_VERSION = 2;
+export const SYNTHESIS_SCHEMA_VERSION = 3;
 
 export type SynthesisLang = "ka" | "en";
 
@@ -45,6 +45,15 @@ export interface SynthesisInputV2 {
 export interface SynthesisReportV2 {
   schemaVersion: number;
   profileSummary: string;
+  /**
+   * Developmental sequencing: where the student is on the grades 6→13 ladder
+   * and the immediate next step (no jumping ahead).
+   */
+  developmentalStage?: {
+    currentNode: string;
+    whereYouAre: string;
+    nextStep: string;
+  };
   crossInstrumentInsights: string;
   careerMatches: Array<{
     title: string;
