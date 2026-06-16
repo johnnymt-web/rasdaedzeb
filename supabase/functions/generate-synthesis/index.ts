@@ -66,6 +66,7 @@ INTERPRETATION RULES:
 - Your unique value is CROSS-INSTRUMENT synthesis — explain how RIASEC + Big Five + CAAS + work values + emotional skills interact. Do NOT just restate single scores.
 - careerMatches must connect to the student's actual top patterns and give a concrete Georgian pathway (which university / programme / track).
 - actionPlan items must be specific and Georgian-context-relevant (real clubs, olympiads, Georgian universities, realistic activities).
+- swot is a GENTLE, growth-oriented self-reflection for the student: "growthAreas" and "considerations" must be framed as developable and encouraging, never as deficits or judgements.
 - counselorNotes is clinical and specific (follow-up flags, not generic praise) and is NEVER shown to the student.
 
 OUTPUT: Respond with ONLY a single valid JSON object. No markdown, no backticks, no preamble. Keep each narrative field between 60 and 120 words. Never return null or empty strings. Use this exact shape:
@@ -81,6 +82,12 @@ OUTPUT: Respond with ONLY a single valid JSON object. No markdown, no backticks,
       "extracurriculars": ["string", "string", "string"],
       "skillsToBuild": ["string", "string", "string"],
       "nextSteps": ["string", "string", "string"]
+    },
+    "swot": {
+      "strengths": ["string", "string"],
+      "growthAreas": ["string", "string"],
+      "opportunities": ["string", "string"],
+      "considerations": ["string", "string"]
     }
   },
   "counselorNotes": {

@@ -28,7 +28,20 @@ serve(async (req: Request) => {
     const openaiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openaiKey) throw new Error("Missing OPENAI_API_KEY")
 
-    const { messages } = await req.json()
+    const { messages, reportContext, lang } = await req.json()
+
+    // Report-grounded Q&A: when a report is supplied, restrict answers to it.
+    let systemContent = SYSTEM_PROMPT
+    if (reportContext) {
+      const reportText = typeof reportContext === 'string' ? reportContext : JSON.stringify(reportContext)
+      systemContent += `
+
+The student is asking about THEIR OWN career exploration report. Ground every answer ONLY in the report data below — never invent scores, careers, or facts that are not present. If the report does not cover the question, say so warmly and suggest discussing it with their counselor.
+${lang === 'ka' ? 'Answer in Georgian (ქართული).' : 'Answer in English.'}
+
+STUDENT REPORT (JSON):
+${reportText}`
+    }
 
     console.log("Sending request to OpenAI...")
 
@@ -41,7 +54,7 @@ serve(async (req: Request) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemContent },
           ...messages
         ],
         stream: false,

@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { normalizeAllAssessments, getTopResults, getLowResults } from "@/utils/assessmentNormalization";
 import { parseGrade, isAssessmentVisible, getAllowedAssessmentsForGrade } from "@/utils/gradeLogic";
 import { getGradeBand, getReportToneForGradeBand, GradeBand } from "@/utils/gradeBands";
-import { generateSynthesisV2, buildSynthesisInput } from "@/services/aiService";
+import { generateSynthesisV2, buildSynthesisInput, askAboutReport, type ReportQAMessage } from "@/services/aiService";
 import type { SynthesisLang, SynthesisV2Response } from "@/services/synthesisTypes";
 import OnetCareerSection from "./OnetCareerSection";
 import { useState } from "react";
@@ -35,6 +35,9 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
   const [reflectionText, setReflectionText] = useState("");
   const [isSavingReflection, setIsSavingReflection] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [qaInput, setQaInput] = useState("");
+  const [qaThread, setQaThread] = useState<ReportQAMessage[]>([]);
+  const [qaLoading, setQaLoading] = useState(false);
 
   const REFLECTION_MIN = 20;
   const REFLECTION_MAX = 1000;
@@ -140,6 +143,23 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
       toast.error(t("report.synthesis.regenerateError", "Could not regenerate the report. Please try again."));
     } finally {
       setIsRegenerating(false);
+    }
+  };
+
+  const handleAsk = async () => {
+    const q = qaInput.trim();
+    if (!q || !synthesis || qaLoading) return;
+    const next: ReportQAMessage[] = [...qaThread, { role: "user", content: q }];
+    setQaThread(next);
+    setQaInput("");
+    setQaLoading(true);
+    try {
+      const answer = await askAboutReport(synthesis, next, lang);
+      setQaThread((prev) => [...prev, { role: "assistant", content: answer }]);
+    } catch {
+      toast.error(t("report.synthesis.qa.error", "Could not get an answer. Please try again."));
+    } finally {
+      setQaLoading(false);
     }
   };
 
@@ -854,6 +874,34 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
                   </div>
                 )}
 
+                {/* SWOT (gentle, growth-oriented) */}
+                {synthesis.swot && (
+                  <div>
+                    <div className="text-sm font-heading font-bold mb-3 flex items-center gap-2">
+                      <Target className="w-4 h-4 text-secondary" /> {t("report.synthesis.swot.title", "Strengths & growth map")}
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {([
+                        { key: "strengths", label: t("report.synthesis.swot.strengths", "Strengths"), items: synthesis.swot.strengths, cls: "bg-emerald-50 border-emerald-200 text-emerald-900" },
+                        { key: "growthAreas", label: t("report.synthesis.swot.growthAreas", "Areas to grow"), items: synthesis.swot.growthAreas, cls: "bg-violet-50 border-violet-200 text-violet-900" },
+                        { key: "opportunities", label: t("report.synthesis.swot.opportunities", "Opportunities"), items: synthesis.swot.opportunities, cls: "bg-blue-50 border-blue-200 text-blue-900" },
+                        { key: "considerations", label: t("report.synthesis.swot.considerations", "Things to consider"), items: synthesis.swot.considerations, cls: "bg-amber-50 border-amber-200 text-amber-900" },
+                      ] as const).map((q) => (
+                        <div key={q.key} className={`p-4 rounded-2xl border ${q.cls}`}>
+                          <div className="text-[10px] font-bold uppercase tracking-wider mb-2 opacity-80">{q.label}</div>
+                          <ul className="space-y-1.5">
+                            {(q.items || []).map((item, i) => (
+                              <li key={i} className="text-xs leading-snug flex gap-2 items-start">
+                                <span className="opacity-50 mt-0.5">•</span><span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Counselor-only notes */}
                 {isCounselorView && counselorNotes && (
                   <div className="p-5 bg-amber-50 rounded-2xl border border-amber-200">
@@ -889,6 +937,40 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
                     )}
                   </div>
                 )}
+                {/* Report-grounded Q&A */}
+                <div className="pt-6 border-t border-secondary/15">
+                  <div className="text-sm font-heading font-bold mb-3 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-secondary" /> {t("report.synthesis.qa.title", "Ask your report")}
+                  </div>
+                  {qaThread.length > 0 && (
+                    <div className="space-y-3 mb-4">
+                      {qaThread.map((m, i) => (
+                        <div key={i} className={`text-xs leading-relaxed p-3 rounded-xl ${m.role === "user" ? "bg-secondary/10 text-secondary-900 ml-8" : "bg-white border border-secondary/15 mr-8"}`}>
+                          {m.content}
+                        </div>
+                      ))}
+                      {qaLoading && (
+                        <div className="text-xs text-muted-foreground flex items-center gap-2 mr-8 p-3">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("report.synthesis.qa.asking", "Thinking...")}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={qaInput}
+                      onChange={(e) => setQaInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleAsk(); }}
+                      placeholder={t("report.synthesis.qa.placeholder", "e.g. Based on my results, which subjects should I choose?")}
+                      className="flex-1 p-3 rounded-xl border bg-white/70 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/40"
+                    />
+                    <Button onClick={handleAsk} disabled={qaLoading || !qaInput.trim()} className="bg-secondary text-white">
+                      {qaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("report.synthesis.qa.ask", "Ask")}
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic mt-2">{t("report.synthesis.qa.disclaimer", "The AI answers only from your report — this is not final advice.")}</p>
+                </div>
               </div>
             ) : (
               <div className="p-4 bg-muted/20 rounded-xl border border-dashed text-center">

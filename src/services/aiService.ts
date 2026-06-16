@@ -219,3 +219,25 @@ export const triggerSynthesisIfReady = async (
     console.warn("triggerSynthesisIfReady skipped:", err);
   }
 };
+
+export interface ReportQAMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/**
+ * Report-grounded Q&A: ask the career coach a question answered strictly from
+ * the student's own synthesis report. Reuses the existing career-coach Edge Function.
+ */
+export const askAboutReport = async (
+  reportContext: unknown,
+  messages: ReportQAMessage[],
+  lang: SynthesisLang = "ka",
+): Promise<string> => {
+  const { data, error } = await supabase.functions.invoke("career-coach", {
+    body: { messages, reportContext, lang },
+  });
+  if (error) throw error;
+  if (!data || (data as any).error) throw new Error((data as any)?.error || "No answer returned");
+  return (data as any).content as string;
+};

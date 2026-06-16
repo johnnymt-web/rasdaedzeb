@@ -678,7 +678,22 @@
       "flags": "Flags",
       "intervention": "Recommended intervention",
       "parentTalkingPoints": "Parent talking points",
-      "empty": "Complete more assessments to generate a cross-domain interpretation."
+      "empty": "Complete more assessments to generate a cross-domain interpretation.",
+      "swot": {
+        "title": "Strengths & growth map",
+        "strengths": "Strengths",
+        "growthAreas": "Areas to grow",
+        "opportunities": "Opportunities",
+        "considerations": "Things to consider"
+      },
+      "qa": {
+        "title": "Ask your report",
+        "placeholder": "e.g. Based on my results, which subjects should I choose?",
+        "ask": "Ask",
+        "asking": "Thinking...",
+        "error": "Could not get an answer. Please try again.",
+        "disclaimer": "The AI answers only from your report — this is not final advice."
+      }
     }
   },
   "portfolio": {

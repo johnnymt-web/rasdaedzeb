@@ -5,7 +5,7 @@ import type { GradeBand } from "@/utils/gradeBands";
  * invalidate every cached report. It is part of the cache key, so a bump forces
  * a one-time regeneration for each student on next view.
  */
-export const SYNTHESIS_SCHEMA_VERSION = 1;
+export const SYNTHESIS_SCHEMA_VERSION = 2;
 
 export type SynthesisLang = "ka" | "en";
 
@@ -56,6 +56,16 @@ export interface SynthesisReportV2 {
     extracurriculars: string[];
     skillsToBuild: string[];
     nextSteps: string[];
+  };
+  /**
+   * Gently-framed SWOT, age-appropriate:
+   * strengths, growthAreas (weaknesses), opportunities, considerations (threats).
+   */
+  swot?: {
+    strengths: string[];
+    growthAreas: string[];
+    opportunities: string[];
+    considerations: string[];
   };
 }
 
