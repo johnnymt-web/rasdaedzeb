@@ -14,6 +14,7 @@ import RiasecRadarChart from "@/components/assessment/RiasecRadarChart";
 import { normalizeRiasecResults } from "@/utils/riasec";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
+import ParentInsightReport from "@/components/parent/ParentInsightReport";
 
 const SURFACE_COLORS = ["surface-sage", "surface-amber", "surface-sky"];
 
@@ -150,8 +151,8 @@ const ParentDashboard = () => {
     return (
       <div className="text-center py-16">
         <UserPlus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h1 className="text-2xl font-heading font-bold text-foreground mb-2">{t("parent.no_linked")}</h1>
-        <p className="text-muted-foreground max-w-md mx-auto">{t("parent.no_linked_desc")}</p>
+        <h1 className="text-2xl font-heading font-bold text-foreground mb-2">No linked student found.</h1>
+        <p className="text-muted-foreground max-w-md mx-auto">Please contact the school administrator.</p>
       </div>
     );
   }
@@ -233,10 +234,10 @@ const ParentDashboard = () => {
                   <div className="card-warm p-12 text-center">
                     <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <h2 className="text-xl font-bold mb-2">{t("parent.pending")}</h2>
-                    <p className="text-muted-foreground max-w-md mx-auto">{t("parent.pending_desc", { name: firstName })}</p>
                   </div>
                 ) : (
-                  <div className="grid lg:grid-cols-2 gap-6">
+                  <>
+                    <div className="grid lg:grid-cols-2 gap-6">
                     <div className="card-warm p-8">
                       <h2 className="font-heading font-bold text-xl mb-6">{t("parent.noticed", { name: firstName })}</h2>
                       <div className="space-y-6">
@@ -272,6 +273,16 @@ const ParentDashboard = () => {
                       />
                     </div>
                   </div>
+
+                  {selectedStudentId && (
+                    <div className="card-warm p-8">
+                      <ParentInsightReport
+                        studentId={selectedStudentId}
+                        studentName={firstName}
+                      />
+                    </div>
+                  )}
+                  </>
                 )}
               </div>
             )}

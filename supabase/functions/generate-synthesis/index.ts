@@ -1,4 +1,4 @@
-// @ts-ignore - Deno imports will show as errors in a Node/React TS project
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -7,82 +7,104 @@ const corsHeaders = {
 }
 
 serve(async (req: Request) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const { profileData } = await req.json()
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set')
 
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not set')
-    }
+    const { primaryInterest, traits, adapt, values, eqResults, gradeBand, reportTone } = profileData;
 
-    const { primaryInterest, traits, adapt, values, eqResults } = profileData;
+    const gradeBandInstructions: Record<string, string> = {
+      "7-8": `This student is in grades 7-8 (age ~12-14). 
+- Use simple, encouraging language. Avoid jargon.
+- Focus on self-discovery and curiosity, not career decisions.
+- Recommendations should involve school activities, hobbies, and exploration games/projects.
+- Keep sentences short. Maximum 2 career-adjacent suggestions.`,
+      "9-10": `This student is in grades 9-10 (age ~15-16).
+- Use clear, motivating language appropriate for a teenager making early academic choices.
+- Connect interests to school subjects and extracurricular pathways.
+- Recommendations can include volunteer work, electives, and informational conversations with adults in fields of interest.
+- Begin introducing the concept of strengths-based career exploration.`,
+      "11-12": `This student is in grades 11-12 (age ~17-18).
+- Use mature, direct language. The student is approaching real decisions.
+- Connect profile data to university majors, vocational pathways, or entry-level opportunities.
+- Recommendations should include concrete next steps: applications, shadowing, specific research.
+- Be specific about how their traits and values translate to career fit.`
+    };
 
-    // Construct the prompt context
-    const systemPrompt = `You are an experienced school career guidance specialist. 
-You will be provided with a student's self-reflection and career exploration data spanning RIASEC interests, learning styles, Work Values, Emotional Skills reflection (EQ), and Career Adaptability (CAAS).
-Your goal is to synthesize these domains into a highly actionable, cohesive, and supportive brief for the student and counselor.
+    const gradeBandKeyMap: Record<string, string> = {
+      "discovery": "7-8",
+      "exploration": "9-10",
+      "planning": "11-12",
+      "7-8": "7-8",
+      "9-10": "9-10",
+      "11-12": "11-12",
+    };
 
-CRITICAL INSTRUCTIONS:
+    const resolvedBand = gradeBandKeyMap[gradeBand || ""] || "9-10";
+    const bandInstruction = gradeBandInstructions[resolvedBand];
+
+    const systemPrompt = `You are an experienced school career guidance specialist working with Georgian school students.
+You will be provided with a student's self-reflection and career exploration data spanning RIASEC interests, Big Five personality traits, Work Values, Emotional Skills (EQ), and Career Adaptability (CAAS).
+Your goal is to synthesize these domains into a highly actionable, cohesive, and supportive brief.
+
+GRADE BAND CONTEXT — apply strictly:
+${bandInstruction}
+
+UNIVERSAL INSTRUCTIONS:
 - Do not tell the student what career they should choose. Suggest exploration areas and next actions.
 - Use non-deterministic, student-friendly language (e.g., "Your responses suggest...", "You may enjoy exploring...").
 - Do not use diagnostic, clinical, or overly psychological language.
-- Ensure the tone is encouraging, age-appropriate, and growth-oriented.
+- Tone must be encouraging, growth-oriented, and appropriate for the grade band above.
 
-Provide your response strictly as a JSON object with two keys:
-1. "summary": A short, empathetic paragraph (max 4 sentences) synthesizing their profile. Focus on how their interests and strengths work together.
-2. "recommendations": An array of exactly 3 actionable strings (max 1 sentence each) tailored to their specific needs, focusing on exploration, reflection, and skill-building.
-
-Example JSON output format:
+Respond with ONLY a valid JSON object, no preamble, no markdown:
 {
-  "summary": "Your responses suggest a strong interest in working with people and leading teams, paired with a preference for dynamic environments. Your exploration profile indicates you may enjoy taking initiative on projects while maintaining a focus on cooperation and empathy. Given your growing career adaptability, it's a great time to explore various fields to see what aligns best with your values.",
+  "summary": "A short empathetic paragraph (max 4 sentences) synthesizing how their interests and strengths work together.",
   "recommendations": [
-    "Consider joining a school club or community group where you can practice your leadership skills.",
-    "Schedule a meeting with your counselor to discuss subjects that involve communication and teamwork.",
-    "Research two or three career areas related to social support and leadership to see what daily tasks appeal to you."
+    "Actionable string 1 (max 1 sentence, grade-appropriate)",
+    "Actionable string 2 (max 1 sentence, grade-appropriate)",
+    "Actionable string 3 (max 1 sentence, grade-appropriate)"
   ]
-}`
+}`;
 
-    const userPrompt = `
+    const userPrompt = `Student Grade Band: ${gradeBand || 'Unknown'}
 Student Data:
 - Primary RIASEC Interest: ${primaryInterest || 'Unknown'}
-- Big Five Traits: ${traits ? JSON.stringify(traits) : 'Unknown'}
-- Work Values: ${values ? JSON.stringify(values) : 'Unknown'}
-- Emotional Intelligence: ${eqResults ? JSON.stringify(eqResults) : 'Unknown'}
-- Career Adaptability (CAAS) Score: ${adapt?.total_score || 'Unknown'} / 5.0
-`
+- Big Five Traits: ${traits ? JSON.stringify(traits) : 'Not completed'}
+- Work Values: ${values ? JSON.stringify(values) : 'Not completed'}
+- Emotional Intelligence: ${eqResults ? JSON.stringify(eqResults) : 'Not completed'}
+- Career Adaptability (CAAS) Score: ${adapt?.total_score || 'Not completed'} / 5.0`;
 
-    // Call OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: systemPrompt,
         messages: [
-          { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        response_format: { type: "json_object" },
-        temperature: 0.7,
       }),
     })
 
     const data = await response.json()
-
     if (!response.ok) {
-      console.error('OpenAI API error:', data)
+      console.error('Anthropic API error:', data)
       throw new Error('Failed to generate AI synthesis')
     }
 
-    const resultText = data.choices[0].message.content
-    const parsedResult = JSON.parse(resultText)
+    const resultText = data.content[0].text
+    const clean = resultText.replace(/```json|```/g, '').trim()
+    const parsedResult = JSON.parse(clean)
 
     return new Response(JSON.stringify(parsedResult), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

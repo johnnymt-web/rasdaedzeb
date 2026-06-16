@@ -42,6 +42,10 @@ export function scoreToPct(score: number, scale: string): number {
   return score;
 }
 
+function clampPct(pct: number): number {
+  return Math.min(100, Math.max(0, Math.round(pct)));
+}
+
 export function isAssessmentComplete(assessment: NormalizedAssessment | null | undefined): boolean {
   if (!assessment) return false;
   return assessment.isComplete && assessment.results && assessment.results.length > 0;
@@ -297,10 +301,10 @@ export function normalizeEqAssessment(raw: any): NormalizedAssessment {
     if (raw.self_awareness !== undefined) {
       isComplete = true;
       results = [
-        { key: "self_awareness", label: "Self-Awareness", score: raw.self_awareness, pct: raw.self_awareness_pct ?? scoreToPct(raw.self_awareness, "1-5"), scale: "1-5", source: "eq" },
-        { key: "self_management", label: "Self-Management", score: raw.self_management, pct: raw.self_management_pct ?? scoreToPct(raw.self_management, "1-5"), scale: "1-5", source: "eq" },
-        { key: "social_awareness", label: "Social Awareness", score: raw.social_awareness, pct: raw.social_awareness_pct ?? scoreToPct(raw.social_awareness, "1-5"), scale: "1-5", source: "eq" },
-        { key: "relationship_management", label: "Relationship Management", score: raw.relationship_management, pct: raw.relationship_management_pct ?? scoreToPct(raw.relationship_management, "1-5"), scale: "1-5", source: "eq" },
+        { key: "self_awareness", label: "Self-Awareness", score: raw.self_awareness, pct: clampPct(raw.self_awareness_pct ?? scoreToPct(raw.self_awareness, "1-5")), scale: "1-5", source: "eq" },
+        { key: "self_management", label: "Self-Management", score: raw.self_management, pct: clampPct(raw.self_management_pct ?? scoreToPct(raw.self_management, "1-5")), scale: "1-5", source: "eq" },
+        { key: "social_awareness", label: "Social Awareness", score: raw.social_awareness, pct: clampPct(raw.social_awareness_pct ?? scoreToPct(raw.social_awareness, "1-5")), scale: "1-5", source: "eq" },
+        { key: "relationship_management", label: "Relationship Management", score: raw.relationship_management, pct: clampPct(raw.relationship_management_pct ?? scoreToPct(raw.relationship_management, "1-5")), scale: "1-5", source: "eq" },
       ];
     } else if (Array.isArray(raw.results)) {
       isComplete = true;
@@ -308,7 +312,7 @@ export function normalizeEqAssessment(raw: any): NormalizedAssessment {
         key: (r.category || r.key || r.label).toLowerCase().replace(/\s+/g, '_'),
         label: r.category || r.label,
         score: r.score,
-        pct: r.pct || (r.score ? scoreToPct(r.score, "1-5") : undefined),
+        pct: r.pct !== undefined ? clampPct(r.pct) : (r.score ? clampPct(scoreToPct(r.score, "1-5")) : undefined),
         scale: "1-5",
         source: "eq" as const
       }));

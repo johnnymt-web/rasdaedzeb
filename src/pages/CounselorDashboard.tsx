@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { normalizeAllAssessments } from "@/utils/assessmentNormalization";
 
 import { getGradeBand } from "@/utils/gradeBands";
+import CounselorNotifications from "@/components/counselor/CounselorNotifications";
 
 interface StudentData {
   id: string;
@@ -111,50 +112,46 @@ const CounselorDashboard = () => {
     queryKey: ["counselor-dashboard-enhanced", user?.id],
     queryFn: async () => {
       try {
-        // 1. Get all student IDs from user_roles
-        const { data: allStudentRoles, error: rolesErr } = await supabase
-          .from("user_roles")
-          .select("user_id")
-          .eq("role", "student");
+        // 1. Get assigned students directly from counselor_assignments
+        const { data: assignments, error: assignErr } = await supabase
+          .from("counselor_assignments")
+          .select("student_id")
+          .eq("counselor_id", user!.id)
+          .eq("active", true);
         
-        if (rolesErr) throw rolesErr;
-
-        const allStudentIds = (allStudentRoles || []).map(r => r.user_id);
-        if (allStudentIds.length === 0) {
-          return { students: [], totalStudents: 0 };
-        }
-
-        // 2. Determine Counselor Scope
-        const [{ data: counselorProfile }, { data: assignments }] = await Promise.all([
-          supabase.from("profiles").select("school_id").eq("id", user!.id).single(),
-          supabase.from("counselor_students").select("student_id").eq("counselor_id", user!.id)
-        ]);
+        if (assignErr) throw assignErr;
 
         const assignedIds = (assignments || []).map(a => a.student_id);
         
-        // 3. Fetch Profiles for ALL students
+        // 2. Determine Counselor Scope & School Name
+        const { data: counselorProfile } = await supabase
+          .from("profiles")
+          .select("school_id")
+          .eq("id", user!.id)
+          .single();
+
+        let counselorSchoolName = t("counselor.global_dashboard");
+        if (counselorProfile?.school_id) {
+          const { data: schoolData } = await supabase.from("schools").select("name").eq("id", counselorProfile.school_id).single();
+          if (schoolData) counselorSchoolName = schoolData.name;
+        }
+
+        if (assignedIds.length === 0) {
+          return { students: [], totalStudents: 0, counselorSchoolName, emptyState: true };
+        }
+
+        // 3. Fetch Profiles for ASSIGNED students ONLY
         const { data: profiles, error: profErr } = await supabase
           .from("profiles")
           .select("id, full_name, grade, school_id, is_archived")
-          .in("id", allStudentIds);
+          .in("id", assignedIds);
 
         if (profErr) throw profErr;
 
-        const { data: allSchools } = await supabase.from("schools").select("id, name");
-        const schoolMap = new Map((allSchools || []).map(s => [s.id, s.name]));
-
-        const scopedProfiles = (profiles || []).filter(p => {
-          if (assignedIds.includes(p.id)) return true;
-          if (counselorProfile?.school_id && p.school_id === counselorProfile.school_id) return true;
-          if (!counselorProfile?.school_id && assignedIds.length === 0) return true;
-          if (!p.school_id) return true;
-          return false;
-        }).filter(p => !p.is_archived);
-
+        const scopedProfiles = (profiles || []).filter(p => !p.is_archived);
         const scopedIds = scopedProfiles.map(p => p.id);
-        const counselorSchoolName = counselorProfile?.school_id ? schoolMap.get(counselorProfile.school_id) || t("counselor.global_dashboard") : t("counselor.global_dashboard");
 
-        if (scopedIds.length === 0) return { students: [], totalStudents: 0, counselorSchoolName };
+        if (scopedIds.length === 0) return { students: [], totalStudents: 0, counselorSchoolName, emptyState: true };
 
         // Fetch all assessments to normalize
         const [stdAss, parentLinks] = await Promise.all([
@@ -239,7 +236,9 @@ const CounselorDashboard = () => {
               </p>
             </div>
             
-            <div className="flex flex-col gap-2 items-start md:items-end p-4 bg-muted/30 rounded-xl border border-border/50">
+            <div className="flex items-center gap-3">
+              <CounselorNotifications />
+              <div className="flex flex-col gap-2 items-start md:items-end p-4 bg-muted/30 rounded-xl border border-border/50">
               <span className="text-sm font-medium text-muted-foreground">{t("counselor.tracking")}</span>
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-md font-medium">
@@ -250,11 +249,18 @@ const CounselorDashboard = () => {
                 </span>
               </div>
             </div>
+            </div>
           </div>
 
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : data?.emptyState ? (
+            <div className="text-center py-20 card-warm">
+              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-xl font-heading font-semibold text-foreground mb-2">No assigned students yet.</h2>
+              <p className="text-muted-foreground">A school administrator must assign students to your counseling roster.</p>
             </div>
           ) : (
             <>

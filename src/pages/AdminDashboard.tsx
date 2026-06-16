@@ -62,7 +62,7 @@ const AdminDashboard = () => {
         const { data: studentRoles, error: rolesErr } = await supabase
           .from("user_roles")
           .select("user_id, role")
-          .in("role", ["student", "Student"] as any[]);
+          .eq("role", "student");
 
         if (rolesErr) throw rolesErr;
         

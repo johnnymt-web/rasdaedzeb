@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { Info, Sparkles, Target, Users, Loader2, BookOpen, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, Heart, ArrowRight, Save } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -31,9 +32,17 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
   const [reflectionText, setReflectionText] = useState("");
   const [isSavingReflection, setIsSavingReflection] = useState(false);
 
+  const REFLECTION_MIN = 20;
+  const REFLECTION_MAX = 1000;
+
   const handleSaveReflection = async () => {
-    if (!reflectionText.trim()) {
-      toast.error("Please write something before saving.");
+    const trimmed = reflectionText.trim();
+    if (trimmed.length < REFLECTION_MIN) {
+      toast.error(`Please write at least ${REFLECTION_MIN} characters before saving.`);
+      return;
+    }
+    if (trimmed.length > REFLECTION_MAX) {
+      toast.error(`Reflection must be under ${REFLECTION_MAX} characters.`);
       return;
     }
     setIsSavingReflection(true);
@@ -95,11 +104,11 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
     enabled: !!studentId,
     retry: 1,
     retryDelay: 2000,
-    staleTime: 30000,
+    staleTime: 0,
   });
 
   const { data: synthesis, isLoading: isSynthesisLoading } = useQuery({
-    queryKey: ["ai-report-synthesis", studentId],
+    queryKey: ["ai-report-synthesis", studentId, gradeBand, "v2"],
     queryFn: async () => {
       if (!normData) return null;
       
@@ -113,10 +122,13 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
         traits: normData.bigFive.isComplete ? normData.bigFive.results.reduce((acc: any, r) => ({ ...acc, [r.key]: r.pct }), {}) : null,
         adapt: normData.caas.isComplete ? { total_score: normData.caas.results.reduce((sum, r) => sum + (r.score || 0), 0) / 4 } : null,
         values: normData.workValues.isComplete ? normData.workValues.results.reduce((acc: any, r) => ({ ...acc, [r.key]: r.score }), {}) : null,
-        eqResults: normData.eq.isComplete ? eqResults : null
+        eqResults: normData.eq.isComplete ? eqResults : null,
+        gradeBand,
+        reportTone,
       });
     },
     enabled: !!normData && (normData.riasec.isComplete || normData.bigFive.isComplete),
+    staleTime: 0,
   });
 
   if (isError) {
@@ -133,8 +145,21 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          <Skeleton className="h-64 rounded-2xl" />
+          <Skeleton className="h-64 rounded-2xl" />
+        </div>
+        <Skeleton className="h-48 rounded-2xl" />
+        <div className="grid md:grid-cols-3 gap-4">
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+        </div>
       </div>
     );
   }
@@ -723,9 +748,10 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
             </h3>
             
             {isSynthesisLoading ? (
-              <div className="flex items-center gap-3 py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-secondary" />
-                <span className="text-sm text-muted-foreground animate-pulse">Correlating your assessment results...</span>
+              <div className="space-y-3 p-8">
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-5 w-4/5" />
+                <Skeleton className="h-5 w-3/5" />
               </div>
             ) : synthesis ? (
               <div className="space-y-6 relative z-10">
@@ -975,13 +1001,22 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
               <textarea 
                 className="w-full p-4 rounded-xl border bg-muted/20 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" 
                 rows={4} 
-                placeholder="Write your thoughts here..."
+                placeholder="Write your thoughts here... (minimum 20 characters)"
                 value={reflectionText}
+                maxLength={REFLECTION_MAX}
                 onChange={(e) => setReflectionText(e.target.value)}
               />
+              <div className="flex justify-between items-center text-xs text-muted-foreground">
+                <span>
+                  {reflectionText.trim().length < REFLECTION_MIN
+                    ? `Minimum ${REFLECTION_MIN} characters (${reflectionText.trim().length} so far)`
+                    : `✓ Ready to save`}
+                </span>
+                <span>{reflectionText.length} / {REFLECTION_MAX}</span>
+              </div>
               <Button 
                 onClick={handleSaveReflection} 
-                disabled={isSavingReflection || !reflectionText.trim()}
+                disabled={isSavingReflection || reflectionText.trim().length < REFLECTION_MIN}
                 className="bg-primary text-white"
               >
                 {isSavingReflection ? (

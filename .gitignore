@@ -40,3 +40,10 @@ test_*.mjs
 test-supabase*.cjs
 supabase/migrations/_apply_*.cjs
 supabase/migrations/push_migrations.cjs
+.vercel
+
+# Local ad-hoc DB scripts (may contain credentials — keep out of git)
+compare_tables*.cjs
+query_*.cjs
+query_*.mjs
+test_setup.sql

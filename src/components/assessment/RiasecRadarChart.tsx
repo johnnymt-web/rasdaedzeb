@@ -26,10 +26,10 @@ interface RiasecRadarChartProps {
 }
 
 const COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--secondary))",
-  "hsl(var(--accent))",
-  "hsl(215, 60%, 55%)",
+  "#7C3AED",
+  "#0EA5E9",
+  "#F59E0B",
+  "#10B981",
 ];
 
 const DEFAULT_CATEGORIES = ["Realistic", "Investigative", "Artistic", "Social", "Enterprising", "Conventional"];
@@ -64,16 +64,16 @@ const RiasecRadarChart = ({ assessments, maxOverlays = 3, categories = DEFAULT_C
     <div className="w-full h-[340px]">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="72%" data={data}>
-          <PolarGrid stroke="hsl(var(--border))" />
+          <PolarGrid stroke="currentColor" strokeOpacity={0.15} />
           <PolarAngleAxis
             dataKey="category"
-            tick={{ fill: "hsl(var(--foreground))", fontSize: 12, fontWeight: 500 }}
+            tick={{ fill: "currentColor", fontSize: 12, fontWeight: 600 }}
           />
           <PolarRadiusAxis
             angle={90}
             domain={[0, 100]}
             tickCount={5}
-            tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+            tick={{ fontSize: 10, fill: "currentColor", opacity: 0.5 }}
           />
           {visible.map((_, i) => (
             <Radar
@@ -82,7 +82,7 @@ const RiasecRadarChart = ({ assessments, maxOverlays = 3, categories = DEFAULT_C
               dataKey={`a${i}`}
               stroke={COLORS[i]}
               fill={COLORS[i]}
-              fillOpacity={i === 0 ? 0.25 : 0.08}
+              fillOpacity={i === 0 ? 0.35 : 0.12}
               strokeWidth={i === 0 ? 2.5 : 1.5}
               strokeDasharray={i === 0 ? undefined : "5 3"}
             />

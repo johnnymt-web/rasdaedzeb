@@ -6,6 +6,8 @@ export interface StudentProfileData {
   adapt: any;
   values: any;
   eqResults: Record<string, number> | null;
+  gradeBand?: string;
+  reportTone?: string;
 }
 
 export interface SynthesisResponse {
