@@ -405,3 +405,59 @@ export const getCareerDetail = async (onetCode: string): Promise<OnetCareer> => 
     throw new Error("O*NET service unavailable and no cache exists.");
   }
 };
+
+// ===========================================================================
+// AI-localized career titles (ESCO has no Georgian; we translate O*NET instead)
+// ===========================================================================
+
+const stableHash = (s: string): string => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; }
+  return Math.abs(h).toString(36);
+};
+
+/**
+ * Translate an ordered list of short career strings into `lang`, cached in
+ * onet_cache. Falls back to the originals (English) on any failure.
+ */
+export const localizeTexts = async (texts: string[], lang: string): Promise<string[]> => {
+  if (texts.length === 0 || lang === "en") return texts;
+  const cacheKey = `i18n:${lang}:${stableHash(texts.join(""))}`;
+  try {
+    const cached = await getCachedOnetData(cacheKey);
+    if (cached && Array.isArray(cached) && cached.length === texts.length) {
+      return cached as string[];
+    }
+    const { data, error } = await supabase.functions.invoke("localize-careers", {
+      body: { texts, lang },
+    });
+    if (error || !data) return texts;
+    const translations = (data as any).translations;
+    if (Array.isArray(translations) && translations.length === texts.length) {
+      await cacheOnetData(translations, cacheKey);
+      return translations as string[];
+    }
+    return texts;
+  } catch {
+    return texts;
+  }
+};
+
+export const getLocalizedCareersByRiasec = async (riasecCode: string, lang: string): Promise<OnetCareer[]> => {
+  const careers = await getCareersByRiasec(riasecCode);
+  if (lang === "en" || careers.length === 0) return careers;
+  const localizedTitles = await localizeTexts(careers.map((c) => c.title), lang);
+  return careers.map((c, i) => ({ ...c, title: localizedTitles[i] ?? c.title }));
+};
+
+export const getLocalizedCareerDetail = async (onetCode: string, lang: string): Promise<OnetCareer> => {
+  const detail = await getCareerDetail(onetCode);
+  if (lang === "en") return detail;
+  const parts: string[] = [detail.title || "", detail.description || "", ...(detail.tasks || [])];
+  const localized = await localizeTexts(parts, lang);
+  let idx = 0;
+  const title = localized[idx++] || detail.title;
+  const description = localized[idx++] || detail.description;
+  const localizedTasks = (detail.tasks || []).map(() => localized[idx++] || "");
+  return { ...detail, title, description, tasks: localizedTasks.length ? localizedTasks : detail.tasks };
+};

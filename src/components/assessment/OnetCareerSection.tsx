@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getCareersByRiasec, getCareerDetail, OnetCareer } from "@/services/onetService";
+import { getLocalizedCareersByRiasec, getLocalizedCareerDetail, OnetCareer } from "@/services/onetService";
 import { 
   Briefcase, TrendingUp, GraduationCap, 
   ChevronRight, ExternalLink, Loader2,
@@ -22,18 +22,19 @@ interface OnetCareerSectionProps {
 }
 
 export default function OnetCareerSection({ riasecCode }: OnetCareerSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language?.startsWith("ka") ? "ka" : "en";
   const [selectedCareerCode, setSelectedCareerCode] = useState<string | null>(null);
 
   const { data: careers, isLoading, error } = useQuery({
-    queryKey: ["onet-careers", riasecCode],
-    queryFn: () => getCareersByRiasec(riasecCode),
+    queryKey: ["onet-careers", riasecCode, lang],
+    queryFn: () => getLocalizedCareersByRiasec(riasecCode, lang),
     enabled: !!riasecCode && riasecCode.length === 3,
   });
 
   const { data: careerDetail, isLoading: isLoadingDetail } = useQuery({
-    queryKey: ["onet-career-detail", selectedCareerCode],
-    queryFn: () => getCareerDetail(selectedCareerCode!),
+    queryKey: ["onet-career-detail", selectedCareerCode, lang],
+    queryFn: () => getLocalizedCareerDetail(selectedCareerCode!, lang),
     enabled: !!selectedCareerCode,
   });
 
