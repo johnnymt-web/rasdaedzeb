@@ -708,7 +708,14 @@
     },
     "mentors": {
       "title": "Connect with a mentor",
-      "subtitle": "Professionals whose interests align with yours. Reach out to learn about their path.",
+      "subtitle": "Professionals matched to your assessment profile. Reach out to learn about their path.",
+      "reasons": {
+        "interest": "Your interests",
+        "skill": "Builds your skills",
+        "need": "The support you need",
+        "values": "Your values",
+        "style": "Matching style"
+      },
       "request": "Request a chat",
       "send": "Send",
       "messagePlaceholder": "Introduce yourself and say what you'd like to learn…",

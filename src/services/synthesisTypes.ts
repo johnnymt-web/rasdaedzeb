@@ -5,7 +5,7 @@ import type { GradeBand } from "@/utils/gradeBands";
  * invalidate every cached report. It is part of the cache key, so a bump forces
  * a one-time regeneration for each student on next view.
  */
-export const SYNTHESIS_SCHEMA_VERSION = 3;
+export const SYNTHESIS_SCHEMA_VERSION = 4;
 
 export type SynthesisLang = "ka" | "en";
 

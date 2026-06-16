@@ -65,6 +65,7 @@ DEVELOPMENTAL LADDER (grades 6→13): discovery (6-8) → exploration (9-10) →
 - developmentalStage.currentNode = the node for THIS student's grade band.
 - whereYouAre = 1-2 warm sentences naming where they are on this ladder and why that stage matters.
 - nextStep = the SINGLE most important developmental step toward the NEXT node — never skip ahead past the next node.
+- Ground whereYouAre and nextStep in the assessments APPROPRIATE TO THIS GRADE BAND: discovery weighs interests (RIASEC) + skills; exploration also weighs Big Five + work values; planning/transition also weigh CAAS career-adaptability + emotional skills (EQ). Treat low CAAS scores (concern/control/curiosity/confidence) as concrete readiness gaps that shape the next step. Do not lean on instruments the student's grade band does not use.
 
 INTERPRETATION RULES:
 - Do NOT tell the student which career they "should" choose. Frame everything as exploration ("your responses suggest…", "you may enjoy exploring…").

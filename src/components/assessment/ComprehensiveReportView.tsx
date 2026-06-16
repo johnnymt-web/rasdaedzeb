@@ -15,6 +15,7 @@ import { generateSynthesisV2, buildSynthesisInput, askAboutReport, type ReportQA
 import type { SynthesisLang, SynthesisV2Response } from "@/services/synthesisTypes";
 import OnetCareerSection from "./OnetCareerSection";
 import MentorMatchSection from "./MentorMatchSection";
+import { buildStudentMatchProfile } from "@/services/mentorService";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -1192,11 +1193,11 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
             )}
           </section>
 
-          {/* SECTION 9b: Mentor matching (Holland-code based) */}
+          {/* SECTION 9b: Mentor matching (grade-aware, multi-instrument) */}
           {riasec.isComplete && (
             <MentorMatchSection
               studentId={studentId}
-              hollandCode={topInterests.map(i => i.key[0].toUpperCase()).join("").slice(0, 3)}
+              profile={buildStudentMatchProfile(normData, gradeBand)}
               isCounselorView={isCounselorView}
             />
           )}

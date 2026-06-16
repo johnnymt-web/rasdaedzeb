@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getMatchedMentors, getMyMentorRequests, requestMentor } from "@/services/mentorService";
+import {
+  getMatchedMentors,
+  getMyMentorRequests,
+  requestMentor,
+  type StudentMatchProfile,
+  type MatchFactor,
+} from "@/services/mentorService";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, Send, Loader2, CheckCircle2, Clock, XCircle, Sparkles } from "lucide-react";
@@ -9,21 +15,31 @@ import { toast } from "sonner";
 
 interface Props {
   studentId: string;
-  hollandCode: string;
+  profile: StudentMatchProfile;
   isCounselorView?: boolean;
 }
 
-export default function MentorMatchSection({ studentId, hollandCode, isCounselorView }: Props) {
+export default function MentorMatchSection({ studentId, profile, isCounselorView }: Props) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [openId, setOpenId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
+  // Stable key from the grade-aware profile (re-matches when results change).
+  const profileKey = [
+    profile.gradeBand,
+    profile.hollandCode,
+    profile.skillGaps.join("."),
+    profile.needs.join("."),
+    profile.topValues.join("."),
+    profile.styleTags.join("."),
+  ].join("|");
+
   const { data: mentors, isLoading } = useQuery({
-    queryKey: ["mentor-matches", hollandCode],
-    queryFn: () => getMatchedMentors(hollandCode),
-    enabled: !!hollandCode,
+    queryKey: ["mentor-matches", profileKey],
+    queryFn: () => getMatchedMentors(profile),
+    enabled: profile.availableFactors.length > 0,
   });
 
   const { data: myRequests } = useQuery({
@@ -33,6 +49,14 @@ export default function MentorMatchSection({ studentId, hollandCode, isCounselor
   });
 
   const statusOf = (mentorId: string) => myRequests?.find((r) => r.mentor_id === mentorId)?.status;
+
+  const reasonLabel = (r: MatchFactor) => ({
+    interest: t("report.mentors.reasons.interest", "Your interests"),
+    skill: t("report.mentors.reasons.skill", "Builds your skills"),
+    need: t("report.mentors.reasons.need", "The support you need"),
+    values: t("report.mentors.reasons.values", "Your values"),
+    style: t("report.mentors.reasons.style", "Matching style"),
+  }[r]);
 
   const handleSend = async (mentorId: string) => {
     setSending(true);
@@ -71,7 +95,7 @@ export default function MentorMatchSection({ studentId, hollandCode, isCounselor
         <Users className="w-6 h-6 text-secondary" /> {t("report.mentors.title", "Connect with a mentor")}
       </h3>
       <p className="text-muted-foreground text-sm mb-6">
-        {t("report.mentors.subtitle", "Professionals whose interests align with yours. Reach out to learn about their path.")}
+        {t("report.mentors.subtitle", "Professionals matched to your assessment profile. Reach out to learn about their path.")}
       </p>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -93,10 +117,13 @@ export default function MentorMatchSection({ studentId, hollandCode, isCounselor
 
               {m.bio && <p className="text-xs text-foreground/75 leading-snug mt-2">{m.bio}</p>}
 
-              {m.fields && m.fields.length > 0 && (
+              {/* Why this mentor matches (explainable, multi-instrument) */}
+              {m.reasons.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
-                  {m.fields.map((f, i) => (
-                    <Badge key={i} variant="outline" className="text-[10px] font-medium">{f}</Badge>
+                  {m.reasons.map((r) => (
+                    <Badge key={r} className="bg-secondary/5 text-secondary text-[10px] font-medium border border-secondary/15">
+                      {reasonLabel(r)}
+                    </Badge>
                   ))}
                 </div>
               )}
