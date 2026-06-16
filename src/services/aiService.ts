@@ -1,4 +1,22 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  normalizeAllAssessments,
+  getAssessmentCompletionStatus,
+  type NormalizedAssessment,
+  type NormalizedAssessmentResult,
+} from "@/utils/assessmentNormalization";
+import {
+  getGradeBand,
+  getRecommendedAssessmentsForGradeBand,
+  type GradeBand,
+} from "@/utils/gradeBands";
+import {
+  buildSynthesisCacheKey,
+  type SynthesisInputV2,
+  type SynthesisLang,
+  type SynthesisV2Response,
+  type SynthesisOnetCareer,
+} from "./synthesisTypes";
 
 export interface StudentProfileData {
   primaryInterest: string;
@@ -94,4 +112,110 @@ const generateLocalSynthesis = (data: StudentProfileData): SynthesisResponse => 
   }
 
   return { summary, recommendations };
+};
+
+// ===========================================================================
+// V2 — Deep, cached, cross-instrument synthesis (Claude Sonnet via Edge fn)
+// ===========================================================================
+
+const mapDims = (a: NormalizedAssessment): { key: string; label: string; pct?: number; score?: number }[] =>
+  (a?.isComplete ? a.results : []).map((r: NormalizedAssessmentResult) => ({
+    key: r.key,
+    label: r.label,
+    pct: r.pct,
+    score: r.score,
+  }));
+
+/** Fetch + normalize a student's assessments the same way the report view does. */
+const fetchNormalizedAssessments = async (studentId: string) => {
+  const fetchSafe = async (query: any) => {
+    try {
+      const { data, error } = await query;
+      return error ? [] : (data || []);
+    } catch {
+      return [];
+    }
+  };
+
+  const [stdData, bigFiveData, caasData, workValuesData] = await Promise.all([
+    fetchSafe(supabase.from("assessments").select("*").eq("user_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
+    fetchSafe(supabase.from("big_five_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
+    fetchSafe(supabase.from("caas_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
+    fetchSafe(supabase.from("work_values_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
+  ]);
+
+  return normalizeAllAssessments({ std: stdData, bigFive: bigFiveData, caas: caasData, workValues: workValuesData });
+};
+
+/** Build the structured V2 input from normalized assessment data. */
+export const buildSynthesisInput = (
+  studentId: string,
+  gradeBand: GradeBand,
+  lang: SynthesisLang,
+  normData: ReturnType<typeof normalizeAllAssessments>,
+  onetCareers?: SynthesisOnetCareer[],
+): SynthesisInputV2 => ({
+  studentId,
+  gradeBand,
+  lang,
+  riasec: mapDims(normData.riasec),
+  bigFive: mapDims(normData.bigFive),
+  caas: mapDims(normData.caas),
+  workValues: mapDims(normData.workValues),
+  eq: mapDims(normData.eq),
+  skills: mapDims(normData.skills),
+  onetCareers,
+});
+
+/**
+ * Generate (or fetch from cache) the deep V2 synthesis report via the Edge Function.
+ * Throws on failure so callers can decide whether to show a fallback.
+ */
+export const generateSynthesisV2 = async (
+  input: SynthesisInputV2,
+  opts: { forceRegenerate?: boolean } = {},
+): Promise<SynthesisV2Response> => {
+  const cacheKey = buildSynthesisCacheKey(input);
+  const { data, error } = await supabase.functions.invoke("generate-synthesis", {
+    body: { input, cacheKey, forceRegenerate: opts.forceRegenerate ?? false },
+  });
+  if (error) throw error;
+  if (!data || (data as any).error) throw new Error((data as any)?.error || "No data from synthesis service");
+  return data as SynthesisV2Response;
+};
+
+/**
+ * Eager pre-generation: called after an assessment is saved. If the student has
+ * completed all assessments recommended for their grade band, warm the cache in
+ * the background. Fire-and-forget — never throws into the save flow.
+ */
+export const triggerSynthesisIfReady = async (
+  studentId: string,
+  grade?: string | number | null,
+  lang: SynthesisLang = "ka",
+): Promise<void> => {
+  try {
+    let resolvedGrade = grade;
+    if (resolvedGrade == null) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("grade")
+        .eq("id", studentId)
+        .maybeSingle();
+      resolvedGrade = (prof as any)?.grade ?? null;
+    }
+    const gradeBand = getGradeBand(resolvedGrade != null ? String(resolvedGrade) : undefined);
+    const recommended = getRecommendedAssessmentsForGradeBand(gradeBand);
+    const normData = await fetchNormalizedAssessments(studentId);
+    const status = getAssessmentCompletionStatus(normData, recommended);
+
+    // Only pre-generate once the recommended set is fully complete.
+    if (status.completed < status.total) return;
+
+    const input = buildSynthesisInput(studentId, gradeBand, lang, normData);
+    await generateSynthesisV2(input); // warms cache (forceRegenerate=false)
+  } catch (err) {
+    // Background optimization only — the report view will lazily generate on demand.
+    console.warn("triggerSynthesisIfReady skipped:", err);
+  }
 };

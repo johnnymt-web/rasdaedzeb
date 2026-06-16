@@ -660,7 +660,26 @@
       "2": "Talk to your counselor about subject choices",
       "3": "Write a short reflection below about what surprised you"
     },
-    "disclaimer": "This report is for exploration and discussion only. It reflects your current responses and is not a fixed diagnosis or prediction. Your interests, strengths, and goals will evolve over time. Talk to your counselor for more personalized guidance."
+    "disclaimer": "This report is for exploration and discussion only. It reflects your current responses and is not a fixed diagnosis or prediction. Your interests, strengths, and goals will evolve over time. Talk to your counselor for more personalized guidance.",
+    "synthesis": {
+      "title": "Discovery Synthesis & Interpretation",
+      "regenerate": "Regenerate",
+      "regenerating": "Regenerating...",
+      "regenerated": "Report regenerated",
+      "regenerateError": "Could not regenerate the report. Please try again.",
+      "crossInstrument": "How your results connect",
+      "careerMatches": "Career directions to explore",
+      "pathway": "Pathway",
+      "actionPlan": "Your action plan",
+      "extracurriculars": "Activities to join",
+      "skillsToBuild": "Skills to build",
+      "nextSteps": "Next steps",
+      "counselorOnly": "Counselor-only notes",
+      "flags": "Flags",
+      "intervention": "Recommended intervention",
+      "parentTalkingPoints": "Parent talking points",
+      "empty": "Complete more assessments to generate a cross-domain interpretation."
+    }
   },
   "portfolio": {
     "goal_saved_locally": "Goal saved locally (Offline Mode)",

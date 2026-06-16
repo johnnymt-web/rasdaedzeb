@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
-import { Info, Sparkles, Target, Users, Loader2, BookOpen, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, Heart, ArrowRight, Save } from "lucide-react";
+import { Info, Sparkles, Target, Users, Loader2, BookOpen, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, Heart, ArrowRight, Save, RefreshCw, Briefcase, GraduationCap, ClipboardList } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -10,7 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { normalizeAllAssessments, getTopResults, getLowResults } from "@/utils/assessmentNormalization";
 import { parseGrade, isAssessmentVisible, getAllowedAssessmentsForGrade } from "@/utils/gradeLogic";
 import { getGradeBand, getReportToneForGradeBand, GradeBand } from "@/utils/gradeBands";
-import { generateAiSynthesis, SynthesisResponse } from "@/services/aiService";
+import { generateSynthesisV2, buildSynthesisInput } from "@/services/aiService";
+import type { SynthesisLang, SynthesisV2Response } from "@/services/synthesisTypes";
 import OnetCareerSection from "./OnetCareerSection";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -23,14 +24,17 @@ interface Props {
 }
 
 const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView }: Props) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, profile: authProfile } = useAuth();
+  const queryClient = useQueryClient();
   const numericGrade = parseGrade(propGrade || authProfile?.grade || user?.user_metadata?.grade);
   const gradeBand = getGradeBand(String(numericGrade));
   const reportTone = getReportToneForGradeBand(gradeBand);
-  
+  const lang: SynthesisLang = i18n.language?.startsWith("ka") ? "ka" : "en";
+
   const [reflectionText, setReflectionText] = useState("");
   const [isSavingReflection, setIsSavingReflection] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const REFLECTION_MIN = 20;
   const REFLECTION_MAX = 1000;
@@ -107,29 +111,37 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
     staleTime: 0,
   });
 
-  const { data: synthesis, isLoading: isSynthesisLoading } = useQuery({
-    queryKey: ["ai-report-synthesis", studentId, gradeBand, "v2"],
+  const synthesisQueryKey = ["ai-synthesis-v2", studentId, gradeBand, lang];
+
+  const { data: synthesisV2, isLoading: isSynthesisLoading } = useQuery<SynthesisV2Response | null>({
+    queryKey: synthesisQueryKey,
     queryFn: async () => {
       if (!normData) return null;
-      
-      const eqResults: Record<string, number> = {};
-      normData.eq.results.forEach(r => {
-        if (r.label) eqResults[r.label] = r.score || 0;
-      });
-
-      return generateAiSynthesis({
-        primaryInterest: getTopResults(normData.riasec.results, 1)[0]?.label || "Unknown",
-        traits: normData.bigFive.isComplete ? normData.bigFive.results.reduce((acc: any, r) => ({ ...acc, [r.key]: r.pct }), {}) : null,
-        adapt: normData.caas.isComplete ? { total_score: normData.caas.results.reduce((sum, r) => sum + (r.score || 0), 0) / 4 } : null,
-        values: normData.workValues.isComplete ? normData.workValues.results.reduce((acc: any, r) => ({ ...acc, [r.key]: r.score }), {}) : null,
-        eqResults: normData.eq.isComplete ? eqResults : null,
-        gradeBand,
-        reportTone,
-      });
+      const input = buildSynthesisInput(studentId, gradeBand, lang, normData);
+      return generateSynthesisV2(input);
     },
     enabled: !!normData && (normData.riasec.isComplete || normData.bigFive.isComplete),
-    staleTime: 0,
+    staleTime: 1000 * 60 * 60, // results are cached server-side; avoid refetch churn
+    retry: 0,
   });
+
+  const synthesis = synthesisV2?.report ?? null;
+  const counselorNotes = synthesisV2?.counselorNotes ?? null;
+
+  const handleRegenerate = async () => {
+    if (!normData) return;
+    setIsRegenerating(true);
+    try {
+      const input = buildSynthesisInput(studentId, gradeBand, lang, normData);
+      const fresh = await generateSynthesisV2(input, { forceRegenerate: true });
+      queryClient.setQueryData(synthesisQueryKey, fresh);
+      toast.success(t("report.synthesis.regenerated", "Report regenerated"));
+    } catch {
+      toast.error(t("report.synthesis.regenerateError", "Could not regenerate the report. Please try again."));
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   if (isError) {
     return (
@@ -740,41 +752,147 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
             )}
           </section>
 
-          {/* SECTION 4: Exploration Synthesis & Correlation */}
+          {/* SECTION 4: Exploration Synthesis & Correlation (AI, cross-instrument) */}
           <section className="card-warm p-8 shadow-xl bg-secondary/5 border-l-4 border-l-secondary relative overflow-hidden">
-            <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-secondary" />
-              Discovery Synthesis & Interpretation
-            </h3>
-            
-            {isSynthesisLoading ? (
+            <div className="flex items-center justify-between mb-6 gap-4">
+              <h3 className="text-xl font-heading font-bold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-secondary" />
+                {t("report.synthesis.title", "Discovery Synthesis & Interpretation")}
+              </h3>
+              {synthesis && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={handleRegenerate}
+                  disabled={isRegenerating}
+                >
+                  {isRegenerating ? (
+                    <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> {t("report.synthesis.regenerating", "Regenerating...")}</>
+                  ) : (
+                    <><RefreshCw className="w-3.5 h-3.5 mr-1.5" /> {t("report.synthesis.regenerate", "Regenerate")}</>
+                  )}
+                </Button>
+              )}
+            </div>
+
+            {(isSynthesisLoading || isRegenerating) ? (
               <div className="space-y-3 p-8">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-4/5" />
                 <Skeleton className="h-5 w-3/5" />
               </div>
             ) : synthesis ? (
-              <div className="space-y-6 relative z-10">
+              <div className="space-y-8 relative z-10">
+                {/* Profile summary */}
                 <div className="prose prose-sm max-w-none">
                   <p className="text-foreground leading-relaxed text-lg italic">
-                    "{synthesis.summary}"
+                    "{synthesis.profileSummary}"
                   </p>
                 </div>
-                
-                <div className="grid md:grid-cols-3 gap-4 mt-6">
-                  {synthesis.recommendations.map((rec, i) => (
-                    <div key={i} className="p-4 bg-white/60 rounded-xl border border-secondary/20 flex gap-3 items-start">
-                      <div className="w-6 h-6 rounded-full bg-secondary/10 text-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      </div>
-                      <p className="text-xs font-medium text-secondary-900 leading-snug">{rec}</p>
+
+                {/* Cross-instrument insights */}
+                {synthesis.crossInstrumentInsights && (
+                  <div className="p-5 bg-white/70 rounded-2xl border border-secondary/20">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+                      <BarChart3 className="w-3.5 h-3.5" /> {t("report.synthesis.crossInstrument", "How your results connect")}
                     </div>
-                  ))}
-                </div>
+                    <p className="text-sm text-secondary-900 leading-relaxed">{synthesis.crossInstrumentInsights}</p>
+                  </div>
+                )}
+
+                {/* Career matches */}
+                {synthesis.careerMatches?.length > 0 && (
+                  <div>
+                    <div className="text-sm font-heading font-bold mb-3 flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-secondary" /> {t("report.synthesis.careerMatches", "Career directions to explore")}
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {synthesis.careerMatches.map((c, i) => (
+                        <div key={i} className="p-4 bg-white rounded-2xl border border-secondary/15 shadow-sm flex flex-col">
+                          <h5 className="font-bold text-sm text-secondary-900 mb-1">{c.title}</h5>
+                          <p className="text-xs text-foreground/75 leading-snug mb-3">{c.matchReason}</p>
+                          {c.georgianPathway && (
+                            <div className="mt-auto p-2.5 bg-secondary/5 rounded-lg border border-secondary/10">
+                              <div className="text-[9px] font-bold uppercase tracking-wider text-secondary mb-0.5 flex items-center gap-1">
+                                <GraduationCap className="w-3 h-3" /> {t("report.synthesis.pathway", "Pathway")}
+                              </div>
+                              <p className="text-[10px] text-secondary-900/80 leading-snug">{c.georgianPathway}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action plan */}
+                {synthesis.actionPlan && (
+                  <div>
+                    <div className="text-sm font-heading font-bold mb-3 flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4 text-secondary" /> {t("report.synthesis.actionPlan", "Your action plan")}
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {([
+                        { key: "extracurriculars", label: t("report.synthesis.extracurriculars", "Activities to join"), items: synthesis.actionPlan.extracurriculars },
+                        { key: "skillsToBuild", label: t("report.synthesis.skillsToBuild", "Skills to build"), items: synthesis.actionPlan.skillsToBuild },
+                        { key: "nextSteps", label: t("report.synthesis.nextSteps", "Next steps"), items: synthesis.actionPlan.nextSteps },
+                      ] as const).map((col) => (
+                        <div key={col.key} className="p-4 bg-white/60 rounded-xl border border-secondary/15">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-secondary mb-3">{col.label}</div>
+                          <ul className="space-y-2">
+                            {(col.items || []).map((item, i) => (
+                              <li key={i} className="flex gap-2 items-start text-xs text-secondary-900 leading-snug">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-secondary flex-shrink-0 mt-0.5" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Counselor-only notes */}
+                {isCounselorView && counselorNotes && (
+                  <div className="p-5 bg-amber-50 rounded-2xl border border-amber-200">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-3 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" /> {t("report.synthesis.counselorOnly", "Counselor-only notes")}
+                    </div>
+                    {counselorNotes.flags?.length > 0 && (
+                      <div className="mb-3">
+                        <div className="text-[10px] font-bold text-amber-800 mb-1">{t("report.synthesis.flags", "Flags")}</div>
+                        <ul className="space-y-1">
+                          {counselorNotes.flags.map((f, i) => (
+                            <li key={i} className="text-xs text-amber-900 flex gap-2 items-start">
+                              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {counselorNotes.recommendedIntervention && (
+                      <p className="text-xs text-amber-900 mb-3"><strong>{t("report.synthesis.intervention", "Recommended intervention")}:</strong> {counselorNotes.recommendedIntervention}</p>
+                    )}
+                    {counselorNotes.parentTalkingPoints?.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-bold text-amber-800 mb-1">{t("report.synthesis.parentTalkingPoints", "Parent talking points")}</div>
+                        <ul className="space-y-1">
+                          {counselorNotes.parentTalkingPoints.map((p, i) => (
+                            <li key={i} className="text-xs text-amber-900 flex gap-2 items-start">
+                              <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{p}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-4 bg-muted/20 rounded-xl border border-dashed text-center">
-                <p className="text-sm text-muted-foreground">Complete more assessments to generate a cross-domain interpretation.</p>
+                <p className="text-sm text-muted-foreground">{t("report.synthesis.empty", "Complete more assessments to generate a cross-domain interpretation.")}</p>
               </div>
             )}
           </section>

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { triggerSynthesisIfReady } from "./aiService";
 
 export interface BigFiveResult {
   openness: number;
@@ -106,8 +107,10 @@ export const saveBigFiveAssessment = async (studentId: string, responses: Record
     .single();
 
   const { data, error } = await withTimeout(query);
- 
+
   if (error) throw error;
+  // Background: warm the deep-synthesis cache if all recommended assessments are done.
+  void triggerSynthesisIfReady(studentId);
   return data;
 };
 
@@ -166,5 +169,7 @@ export const saveCaasAssessment = async (studentId: string, responses: Record<st
   const { data, error } = await withTimeout(query);
 
   if (error) throw error;
+  // Background: warm the deep-synthesis cache if all recommended assessments are done.
+  void triggerSynthesisIfReady(studentId);
   return data;
 };
