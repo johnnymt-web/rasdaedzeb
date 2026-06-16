@@ -705,6 +705,20 @@
           "transition": "Transition"
         }
       }
+    },
+    "mentors": {
+      "title": "Connect with a mentor",
+      "subtitle": "Professionals whose interests align with yours. Reach out to learn about their path.",
+      "request": "Request a chat",
+      "send": "Send",
+      "messagePlaceholder": "Introduce yourself and say what you'd like to learn…",
+      "requestSent": "Request sent!",
+      "requestError": "Could not send request. You may have already requested this mentor.",
+      "pending": "Request pending",
+      "accepted": "Connected",
+      "declined": "Declined",
+      "studentOnly": "Students can request a connection here.",
+      "disclaimer": "Mentors are volunteers. A counselor or the mentor will follow up on your request."
     }
   },
   "portfolio": {

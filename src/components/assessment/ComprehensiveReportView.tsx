@@ -14,6 +14,7 @@ import { TRAJECTORY_NODES, getTrajectoryNode } from "@/utils/gradeTrajectory";
 import { generateSynthesisV2, buildSynthesisInput, askAboutReport, type ReportQAMessage } from "@/services/aiService";
 import type { SynthesisLang, SynthesisV2Response } from "@/services/synthesisTypes";
 import OnetCareerSection from "./OnetCareerSection";
+import MentorMatchSection from "./MentorMatchSection";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -1190,6 +1191,15 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
               <p className="text-muted-foreground italic">Complete your Career Interests assessment to see suggested fields.</p>
             )}
           </section>
+
+          {/* SECTION 9b: Mentor matching (Holland-code based) */}
+          {riasec.isComplete && (
+            <MentorMatchSection
+              studentId={studentId}
+              hollandCode={topInterests.map(i => i.key[0].toUpperCase()).join("").slice(0, 3)}
+              isCounselorView={isCounselorView}
+            />
+          )}
 
           {/* SECTION 10: Recommended next actions */}
           <section className="card-warm p-8 shadow-sm bg-gradient-to-br from-background to-secondary/5">
