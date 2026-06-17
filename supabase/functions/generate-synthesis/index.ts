@@ -263,6 +263,17 @@ serve(async (req: Request) => {
       }
     }
 
+    // --- rate limit (only real generations count; cache hits above are free) ---
+    const { data: { user: caller } } = await userClient.auth.getUser()
+    if (caller) {
+      const { data: allowed } = await userClient.rpc('check_and_increment_ai_usage', {
+        _user_id: caller.id, _daily_limit: 40,
+      })
+      if (allowed === false) {
+        return json({ error: 'Daily AI report limit reached. Please try again tomorrow.' }, 429)
+      }
+    }
+
     // --- generate -----------------------------------------------------------
     const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

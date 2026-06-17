@@ -28,28 +28,40 @@ export default function PortfolioExportButton({ studentName, targetElementId }: 
         logging: false,
       });
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const margin = 10;
+      const usableWidthMm = pdf.internal.pageSize.getWidth() - margin * 2;
+      const usableHeightMm = pdf.internal.pageSize.getHeight() - margin * 2;
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Slice the tall capture into page-height chunks so each PDF page only
+      // embeds ITS slice as a compressed JPEG — instead of re-embedding the full
+      // high-res PNG on every page (which produced ~85MB files).
+      const pxPerMm = canvas.width / usableWidthMm;
+      const pageHeightPx = Math.floor(usableHeightMm * pxPerMm);
 
-      let yPosition = 10;
-      let remainingHeight = imgHeight;
+      let renderedPx = 0;
+      let pageIndex = 0;
+      while (renderedPx < canvas.height) {
+        const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
 
-      while (remainingHeight > 0) {
-        pdf.addImage(imgData, "PNG", 10, yPosition, imgWidth, imgHeight);
-        remainingHeight -= pageHeight - 20;
-        if (remainingHeight > 0) {
-          pdf.addPage();
-          yPosition = -(imgHeight - remainingHeight) + 10;
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeightPx;
+        const ctx = pageCanvas.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
         }
+
+        const imgData = pageCanvas.toDataURL("image/jpeg", 0.85);
+        const sliceHeightMm = sliceHeightPx / pxPerMm;
+
+        if (pageIndex > 0) pdf.addPage();
+        pdf.addImage(imgData, "JPEG", margin, margin, usableWidthMm, sliceHeightMm);
+
+        renderedPx += sliceHeightPx;
+        pageIndex++;
       }
 
       const fileName = `${studentName.replace(/\s+/g, "_")}_Career_Portfolio.pdf`;

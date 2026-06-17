@@ -31,9 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserData = async (userId: string, currentUser?: User) => {
     try {
-      const overrideRole = localStorage.getItem("pathfinder_role_override");
+      // Dev-only staff impersonation — never active in production builds.
+      const overrideRole = import.meta.env.DEV ? localStorage.getItem("pathfinder_role_override") : null;
       if (overrideRole === "counselor" || overrideRole === "admin" || overrideRole === "superadmin") {
-        console.log(`Auth - ${overrideRole} role override active.`);
         setRole(overrideRole as AppRole);
         setProfile({
           full_name: overrideRole === "counselor" ? "Counselor Maria" : overrideRole === "admin" ? "Admin Johnny" : "Super Administrator",
@@ -139,7 +139,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setRole(currentUser.user_metadata.role as AppRole);
         }
       } else if (roleData) {
-        console.log("Auth Debug - Role found:", roleData.role);
         setRole(roleData.role as AppRole);
       } else if (currentUser?.user_metadata?.role) {
         setRole(currentUser.user_metadata.role as AppRole);
@@ -150,13 +149,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       if (profileData) {
-        console.log("Auth Debug - Profile resolved:", profileData);
         setProfile(profileData);
-      } else {
-        console.warn("Auth Debug - No profile found in DB for user:", userId);
       }
-
-      console.log("Auth Debug - Full User Metadata:", currentUser?.user_metadata);
     } catch (err) {
       console.error("Critical Auth Data Fetch Error:", err);
     }
