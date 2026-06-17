@@ -9,7 +9,10 @@ const corsHeaders = {
 }
 
 const MODEL = 'claude-sonnet-4-6'
-const MAX_TOKENS = 2500
+// Ceiling only — the model stops when the JSON is complete, so a high cap does
+// NOT increase latency; it just prevents the Georgian (token-heavy) JSON from
+// being truncated mid-string (which caused "Unterminated string in JSON").
+const MAX_TOKENS = 8000
 
 // --- types kept in sync with src/services/synthesisTypes.ts -----------------
 interface Dimension { key: string; label: string; pct?: number; score?: number }
@@ -76,7 +79,7 @@ INTERPRETATION RULES:
 - swot is a GENTLE, growth-oriented self-reflection for the student: "growthAreas" and "considerations" must be framed as developable and encouraging, never as deficits or judgements.
 - counselorNotes is clinical and specific (follow-up flags, not generic praise) and is NEVER shown to the student.
 
-OUTPUT: Respond with ONLY a single valid JSON object. No markdown, no backticks, no preamble. Keep each narrative field between 60 and 120 words. Never return null or empty strings. Use this exact shape:
+OUTPUT: Respond with ONLY a single valid JSON object. No markdown, no backticks, no preamble. Keep each narrative field concise — 40 to 80 words; be substantive but not verbose. Never return null or empty strings. Use this exact shape:
 {
   "report": {
     "schemaVersion": 1,
@@ -285,7 +288,14 @@ serve(async (req: Request) => {
 
     const rawText = aiData.content?.[0]?.text ?? ''
     const clean = rawText.replace(/```json|```/g, '').trim()
-    const parsed = JSON.parse(clean)
+    let parsed: any
+    try {
+      parsed = JSON.parse(clean)
+    } catch (_e) {
+      // stop_reason 'max_tokens' here means the JSON was truncated — raise MAX_TOKENS.
+      console.error(`JSON parse failed. stop_reason=${aiData.stop_reason}, output_len=${clean.length}`)
+      throw new Error('AI returned malformed JSON (possibly truncated)')
+    }
     const report = parsed.report ?? parsed
     const counselorNotes = parsed.counselorNotes ?? null
 
