@@ -40,11 +40,14 @@ serve(async (req) => {
       
       try {
         // Create the user in Auth
+        // NOTE: role is intentionally NOT passed here. Since the S1 hardening,
+        // handle_new_user() sources the role ONLY from the pre_boarding table
+        // (written by BulkTools before this call). Metadata role is ignored.
         const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
           email,
           password,
           email_confirm: true,
-          user_metadata: { full_name, role, grade, school }
+          user_metadata: { full_name, grade, school }
         });
 
         if (createError) {

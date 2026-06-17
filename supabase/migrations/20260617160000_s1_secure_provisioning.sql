@@ -1,23 +1,16 @@
 -- =========================================================================
--- ⛔ DO NOT APPLY YET — S1 secure role provisioning (auth-critical)
+-- S1 secure role provisioning (auth-critical) — APPLIED 2026-06-17
 -- =========================================================================
--- Prerequisites before applying:
---   1. Run the signup test (does role=admin self-signup currently fail or succeed?).
---   2. Apply & test on a Supabase BRANCH / staging DB first, not production.
---   3. Confirm a real signup still: assigns student by default, links parent/
---      counselor from pre_boarding, and that admin BulkTools onboarding still
---      produces counselor/admin accounts.
+-- Role now comes ONLY from the admin-managed pre_boarding table; signup
+-- metadata role is ignored; self-signup defaults to 'student'. Also restores
+-- school resolution + parent/counselor auto-linking (I1) that the prior
+-- stripped-down trigger had dropped.
 --
--- What this fixes:
---   • S1: active handle_new_user assigns admin/counselor from USER METADATA
---     (self-signup escalation surface). This restores the secure design:
---     role comes ONLY from the admin-managed pre_boarding table; metadata role
---     is ignored; self-signup defaults to 'student'.
---   • I1: restores school resolution + parent/counselor auto-linking that the
---     current stripped-down trigger dropped.
---   • Adjusts enforce_role_assignment so a privileged role provisioned via
---     pre_boarding (admin-managed) is trusted even when auth.uid() is NULL
---     (i.e. during admin.createUser), while self-signup still cannot escalate.
+-- Verified compatible with the live admin BulkTools flow: BulkTools.tsx writes
+-- the pre_boarding row BEFORE invoking bulk-onboard-users -> admin.createUser,
+-- so handle_new_user reads the correct role; enforce_role_assignment trusts the
+-- pre_boarding row (auth.uid() is NULL during admin.createUser) while still
+-- blocking non-admin self-escalation.
 -- =========================================================================
 
 -- 1) Secure autolinker: role from pre_boarding ONLY, never from metadata.
@@ -56,7 +49,7 @@ BEGIN
   );
 
   -- SECURITY: role comes ONLY from pre_boarding. Metadata role is ignored.
-  -- Self-signup (no pre_boarding row) → 'student'.
+  -- Self-signup (no pre_boarding row) -> 'student'.
   INSERT INTO public.user_roles (user_id, role)
   VALUES (NEW.id, COALESCE(pre_role, 'student'::public.app_role));
 
@@ -108,6 +101,3 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
--- Note: keep AuthPage.tsx signup from sending privileged role in metadata is
--- harmless now (metadata role is ignored), but should be cleaned up separately.

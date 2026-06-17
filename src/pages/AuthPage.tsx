@@ -99,7 +99,10 @@ export default function AuthPage() {
           email: email.trim(),
           password,
           options: {
-            data: { full_name: fullName, role, grade: role === "student" ? grade : undefined },
+            // NOTE: role is intentionally omitted. Post-S1, self-signup always
+            // provisions as 'student'; privileged roles come only from
+            // admin-managed pre_boarding. The role picker below is informational.
+            data: { full_name: fullName, grade: role === "student" ? grade : undefined },
             emailRedirectTo: window.location.origin,
           },
         });
