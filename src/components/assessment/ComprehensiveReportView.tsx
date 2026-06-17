@@ -16,6 +16,54 @@ import type { SynthesisLang, SynthesisV2Response } from "@/services/synthesisTyp
 import OnetCareerSection from "./OnetCareerSection";
 import MentorMatchSection from "./MentorMatchSection";
 import { buildStudentMatchProfile } from "@/services/mentorService";
+
+/**
+ * Reframes declarative trait statements ("You are X") into developmental,
+ * non-labelling language ("Your responses suggest you may be X"). Applied to
+ * every static interpretation so the report never states personality as fact
+ * about a child. Order matters — more specific openers first.
+ */
+function softenInterpretation(text: string): string {
+  const rules: Array<[RegExp, string]> = [
+    [/^You are highly /, "Your responses suggest you may be quite "],
+    [/^You are exceptionally /, "Your responses suggest you may be highly "],
+    [/^You are extremely /, "Your responses suggest you may be very "],
+    [/^You are very /, "Your responses suggest you may be quite "],
+    [/^You are also /, "Your responses also suggest you may be "],
+    [/^You are a /, "Your responses suggest you may be a "],
+    [/^You are an /, "Your responses suggest you may be an "],
+    [/^You are more /, "Your responses suggest you may be more "],
+    [/^You are /, "Your responses suggest you may be "],
+    [/^You have a /, "Your responses suggest a "],
+    [/^You have /, "Your responses suggest you may have "],
+    [/^You love /, "Your responses suggest you may enjoy "],
+    [/^You thrive /, "Your responses suggest you may thrive "],
+    [/^You excel /, "Your responses suggest you may excel "],
+    [/^You gain /, "Your responses suggest you may gain "],
+    [/^You take /, "Your responses suggest you may take "],
+    [/^You believe /, "Your responses suggest you may believe "],
+    [/^You highly value /, "Your responses suggest you may value "],
+    [/^You value /, "Your responses suggest you may value "],
+    [/^You desire /, "Your responses suggest you may desire "],
+    [/^You place /, "Your responses suggest you may place "],
+    [/^You strongly /, "Your responses suggest you may strongly "],
+    [/^You respond /, "Your responses suggest you may respond "],
+    [/^You generally prefer /, "Your responses suggest you may prefer "],
+    [/^You prefer /, "Your responses suggest you may prefer "],
+    [/^You feel /, "Your responses suggest you may feel "],
+    [/^You enjoy /, "Your responses suggest you may enjoy "],
+    [/^You appreciate /, "Your responses suggest you may appreciate "],
+    [/^You tend /, "Your responses suggest you tend "],
+    [/^You live /, "Your responses suggest you may live "],
+    [/^You often /, "Your responses suggest you may often "],
+    [/^You rarely /, "Your responses suggest you may rarely "],
+    [/^You focus /, "Your responses suggest you may focus "],
+  ];
+  for (const [re, rep] of rules) {
+    if (re.test(text)) return text.replace(re, rep);
+  }
+  return text;
+}
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -598,7 +646,7 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
     const explanation = isHigh ? item.high : isLow ? item.low : item.med;
     const guidance = item.guidance[activeBand] || item.guidance.unknown;
 
-    return { level, explanation, guidance };
+    return { level, explanation: softenInterpretation(explanation), guidance };
   };
 
   const DESCRIPTIONS: Record<string, string> = {
