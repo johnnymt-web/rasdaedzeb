@@ -9,6 +9,7 @@
 -- =========================================================================
 
 -- Big Five: each trait is a 0-100 normalized score; raw responses required.
+ALTER TABLE public.big_five_assessments DROP CONSTRAINT IF EXISTS chk_bigfive_ranges;
 ALTER TABLE public.big_five_assessments
   ADD CONSTRAINT chk_bigfive_ranges CHECK (
     openness BETWEEN 0 AND 100 AND
@@ -18,11 +19,13 @@ ALTER TABLE public.big_five_assessments
     neuroticism BETWEEN 0 AND 100
   ) NOT VALID;
 
+ALTER TABLE public.big_five_assessments DROP CONSTRAINT IF EXISTS chk_bigfive_has_responses;
 ALTER TABLE public.big_five_assessments
   ADD CONSTRAINT chk_bigfive_has_responses CHECK (item_responses IS NOT NULL) NOT VALID;
 
 -- CAAS: subscale means + total are on a 1-5 scale (allow 0 for defensiveness);
 -- percentile is 0-100; raw responses required.
+ALTER TABLE public.caas_assessments DROP CONSTRAINT IF EXISTS chk_caas_ranges;
 ALTER TABLE public.caas_assessments
   ADD CONSTRAINT chk_caas_ranges CHECK (
     concern BETWEEN 0 AND 5 AND
@@ -33,5 +36,6 @@ ALTER TABLE public.caas_assessments
     percentile BETWEEN 0 AND 100
   ) NOT VALID;
 
+ALTER TABLE public.caas_assessments DROP CONSTRAINT IF EXISTS chk_caas_has_responses;
 ALTER TABLE public.caas_assessments
   ADD CONSTRAINT chk_caas_has_responses CHECK (item_responses IS NOT NULL) NOT VALID;
