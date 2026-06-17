@@ -13,6 +13,9 @@ const MODEL = 'claude-sonnet-4-6'
 // NOT increase latency; it just prevents the Georgian (token-heavy) JSON from
 // being truncated mid-string (which caused "Unterminated string in JSON").
 const MAX_TOKENS = 8000
+// Resilience fallback: if Sonnet errors/truncates, retry once with the faster,
+// cheaper Haiku before failing (E2/E3). The legacy path already uses this model.
+const FALLBACK_MODEL = 'claude-haiku-4-5-20251001'
 
 // --- types kept in sync with src/services/synthesisTypes.ts -----------------
 interface Dimension { key: string; label: string; pct?: number; score?: number }
@@ -148,6 +151,23 @@ function json(body: unknown, status = 200) {
   })
 }
 
+// Calls Anthropic with a given model and parses the JSON body. Throws on a
+// non-2xx response or malformed/truncated JSON so the caller can fall back.
+async function callAnthropic(model: string, system: string, userPrompt: string, apiKey: string): Promise<any> {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      model, max_tokens: MAX_TOKENS, temperature: 0.4,
+      system, messages: [{ role: 'user', content: userPrompt }],
+    }),
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(`Anthropic ${model} error ${resp.status}`)
+  const clean = (data.content?.[0]?.text ?? '').replace(/```json|```/g, '').trim()
+  return JSON.parse(clean) // throws on truncated/malformed JSON
+}
+
 // --- legacy path (backward compatibility) -----------------------------------
 // Older callers send { profileData } and expect { summary, recommendations }.
 // This keeps existing screens working while new callers use the V2 { input } path.
@@ -274,38 +294,17 @@ serve(async (req: Request) => {
       }
     }
 
-    // --- generate -----------------------------------------------------------
-    const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        temperature: 0.4,
-        system: buildSystemPrompt(input),
-        messages: [{ role: 'user', content: buildUserPrompt(input) }],
-      }),
-    })
-
-    const aiData = await aiResp.json()
-    if (!aiResp.ok) {
-      console.error('Anthropic API error:', aiData)
-      throw new Error('Failed to generate AI synthesis')
-    }
-
-    const rawText = aiData.content?.[0]?.text ?? ''
-    const clean = rawText.replace(/```json|```/g, '').trim()
+    // --- generate (primary model, fall back to Haiku on failure) ------------
+    const systemPrompt = buildSystemPrompt(input)
+    const userPrompt = buildUserPrompt(input)
     let parsed: any
+    let usedModel = MODEL
     try {
-      parsed = JSON.parse(clean)
-    } catch (_e) {
-      // stop_reason 'max_tokens' here means the JSON was truncated — raise MAX_TOKENS.
-      console.error(`JSON parse failed. stop_reason=${aiData.stop_reason}, output_len=${clean.length}`)
-      throw new Error('AI returned malformed JSON (possibly truncated)')
+      parsed = await callAnthropic(MODEL, systemPrompt, userPrompt, ANTHROPIC_API_KEY)
+    } catch (primaryErr) {
+      console.error(`Primary model ${MODEL} failed (${(primaryErr as Error).message}); falling back to ${FALLBACK_MODEL}`)
+      parsed = await callAnthropic(FALLBACK_MODEL, systemPrompt, userPrompt, ANTHROPIC_API_KEY)
+      usedModel = FALLBACK_MODEL
     }
     const report = parsed.report ?? parsed
     const counselorNotes = parsed.counselorNotes ?? null
@@ -315,7 +314,7 @@ serve(async (req: Request) => {
       student_id: input.studentId,
       cache_key: cacheKey,
       report_json: report,
-      model: MODEL,
+      model: usedModel,
       lang: input.lang,
       grade_band: input.gradeBand,
       generated_at: new Date().toISOString(),
