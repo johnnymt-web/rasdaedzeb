@@ -40,6 +40,8 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         // Precache the built app shell + assets (Vite-hashed filenames handled by Workbox).
         globPatterns: ["**/*.{js,css,html,ico,svg,png,woff,woff2}"],
+        // Main bundle is ~3 MB; raise the 2 MiB default so it is precached for offline.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // SPA offline fallback for navigations; never intercept Supabase/API calls.
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api/, /\/auth\//, /supabase/],
