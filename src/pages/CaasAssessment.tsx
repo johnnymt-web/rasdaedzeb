@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Compass, ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { calculateCaasScores, saveCaasAssessment } from "@/services/assessmentService";
+import { calculateCaasScores, saveCaasAssessment, CAAS_SUBSCALE_BY_ID } from "@/services/assessmentService";
 import { useToast } from "@/hooks/use-toast";
 
 // CAAS-International: 24 items, 6 per subscale
@@ -89,7 +89,7 @@ export default function CaasAssessment() {
   const allAnswered = Object.keys(responses).length === CAAS_ITEMS.length;
   const pageComplete = currentItems.every((item) => responses[item.id] !== undefined);
 
-  const currentSubscale = currentItems[0]?.subscale;
+  const currentSubscale = CAAS_SUBSCALE_BY_ID[currentItems[0]?.id ?? ""];
   const subscaleInfo = SUBSCALE_INFO[currentSubscale] || { label: "", color: "", emoji: "" };
 
   const handleResponse = (itemId: string, value: number) => {

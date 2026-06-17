@@ -114,23 +114,31 @@ export const saveBigFiveAssessment = async (studentId: string, responses: Record
   return data;
 };
 
+export type CaasSubscale = "concern" | "control" | "curiosity" | "confidence";
+
+// Single source of truth for CAAS scoring: each item id -> its subscale.
+// Robust to presentation reordering and self-documenting (replaces the previous
+// fragile positional `id <= 6` logic). Must mirror CAAS_ITEMS in CaasAssessment.tsx.
+export const CAAS_SUBSCALE_BY_ID: Record<string, CaasSubscale> = {
+  q1: "concern", q2: "concern", q3: "concern", q4: "concern", q5: "concern", q6: "concern",
+  q7: "control", q8: "control", q9: "control", q10: "control", q11: "control", q12: "control",
+  q13: "curiosity", q14: "curiosity", q15: "curiosity", q16: "curiosity", q17: "curiosity", q18: "curiosity",
+  q19: "confidence", q20: "confidence", q21: "confidence", q22: "confidence", q23: "confidence", q24: "confidence",
+};
+
 export const calculateCaasScores = (responses: Record<string, number>): CaasResult => {
-  // CAAS has 24 items, 6 per subscale (Concern, Control, Curiosity, Confidence)
-  // All items are positive keyed on a 1-5 scale.
-  const scales: Record<keyof Omit<CaasResult, "total_score">, number[]> = {
+  // 24 items, 6 per subscale, all positively keyed (1-5). Score by the explicit
+  // item->subscale map so reordering items can never silently misscore.
+  const scales: Record<CaasSubscale, number[]> = {
     concern: [],
     control: [],
     curiosity: [],
     confidence: []
   };
 
-  // Simplified mapping for demonstration
   Object.entries(responses).forEach(([qid, value]) => {
-    const id = parseInt(qid.replace("q", ""));
-    if (id <= 6) scales.concern.push(value);
-    else if (id <= 12) scales.control.push(value);
-    else if (id <= 18) scales.curiosity.push(value);
-    else if (id <= 24) scales.confidence.push(value);
+    const subscale = CAAS_SUBSCALE_BY_ID[qid];
+    if (subscale) scales[subscale].push(value);
   });
 
   const mean = (vals: number[]) => vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
