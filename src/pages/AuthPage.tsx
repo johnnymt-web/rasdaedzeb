@@ -95,19 +95,6 @@ export default function AuthPage() {
 
     try {
       if (mode === "signup") {
-        const trimmedEmail = email.trim().toLowerCase();
-        if (trimmedEmail === "counselor@ug.edu.ge" || trimmedEmail === "admin@ug.edu.ge" || trimmedEmail === "superadmin@ug.edu.ge") {
-          const pwd = trimmedEmail === "superadmin@ug.edu.ge" ? "Tbilisi2028$" : "Tbilisi2027$";
-          toast({
-            title: "Account Already Registered",
-            description: `The ${trimmedEmail.split('@')[0]} account is already created! Please switch to the Sign In screen and log in with password ${pwd}.`,
-            variant: "default",
-          });
-          setMode("login");
-          setSubmitting(false);
-          return;
-        }
-
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -123,39 +110,12 @@ export default function AuthPage() {
         });
         setMode("login");
       } else {
-        const trimmedEmail = email.trim().toLowerCase();
-        if (trimmedEmail === "counselor@ug.edu.ge" && password === "Tbilisi2027$") {
-          console.log("AuthPage - Counselor login override triggered.");
-          localStorage.setItem("pathfinder_role_override", "counselor");
-          const { error } = await supabase.auth.signInWithPassword({
-            email: "j.mtsariashvili@ug.edu.ge",
-            password: "Tbilisi2027$"
-          });
-          if (error) throw error;
-        } else if (trimmedEmail === "admin@ug.edu.ge" && password === "Tbilisi2027$") {
-          console.log("AuthPage - Admin login override triggered.");
-          localStorage.setItem("pathfinder_role_override", "admin");
-          const { error } = await supabase.auth.signInWithPassword({
-            email: "j.mtsariashvili@ug.edu.ge",
-            password: "Tbilisi2027$"
-          });
-          if (error) throw error;
-        } else if (trimmedEmail === "superadmin@ug.edu.ge" && password === "Tbilisi2028$") {
-          console.log("AuthPage - Superadmin login override triggered.");
-          localStorage.setItem("pathfinder_role_override", "superadmin");
-          const { error } = await supabase.auth.signInWithPassword({
-            email: "j.mtsariashvili@ug.edu.ge",
-            password: "Tbilisi2027$"
-          });
-          if (error) throw error;
-        } else {
-          localStorage.removeItem("pathfinder_role_override");
-          const { error } = await supabase.auth.signInWithPassword({
-            email: email.trim(),
-            password: password,
-          });
-          if (error) throw error;
-        }
+        localStorage.removeItem("pathfinder_role_override");
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password,
+        });
+        if (error) throw error;
         // Auth state change will handle redirect via useAuth
       }
     } catch (err: any) {
