@@ -164,7 +164,8 @@ export function scoreMentor(profile: StudentMatchProfile, mentor: Mentor): { sco
 
 /** Active mentors ranked by grade-aware multi-instrument match. */
 export const getMatchedMentors = async (profile: StudentMatchProfile, limit = 6): Promise<MentorMatch[]> => {
-  const { data, error } = await (supabase.from("mentors" as any) as any)
+  const { data, error } = await supabase
+    .from("mentors")
     .select("id, full_name, profession, organization, holland_code, bio, fields, coachable_skills, specialties, role_values, style_tags")
     .eq("active", true);
   if (error) throw error;
@@ -179,7 +180,8 @@ export const getMatchedMentors = async (profile: StudentMatchProfile, limit = 6)
 };
 
 export const getMyMentorRequests = async (studentId: string): Promise<MentorRequest[]> => {
-  const { data, error } = await (supabase.from("mentor_requests" as any) as any)
+  const { data, error } = await supabase
+    .from("mentor_requests")
     .select("id, mentor_id, status")
     .eq("student_id", studentId);
   if (error) throw error;
@@ -187,7 +189,7 @@ export const getMyMentorRequests = async (studentId: string): Promise<MentorRequ
 };
 
 export const requestMentor = async (studentId: string, mentorId: string, message: string): Promise<void> => {
-  const { error } = await (supabase.from("mentor_requests" as any) as any).insert([
+  const { error } = await supabase.from("mentor_requests").insert([
     { student_id: studentId, mentor_id: mentorId, message: message?.trim() || null },
   ]);
   if (error) throw error;
