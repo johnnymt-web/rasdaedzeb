@@ -85,6 +85,7 @@ export default function EqAssessment() {
     console.log("Starting EQ submission for user:", user.id);
 
     try {
+      // Local compute kept for instant display/debugging; NOT persisted directly.
       const calculatedResults = calculateResults();
       const resultsArray = Object.keys(calculatedResults).map(key => ({
         category: key,
@@ -94,15 +95,16 @@ export default function EqAssessment() {
 
       console.log("Calculated EQ results:", resultsArray);
 
-      const { error } = await supabase.from("assessments").insert({
-        user_id: user.id,
-        assessment_type: "eq",
-        answers: answers as any,
-        results: resultsArray as any,
+      // Persist via the server-authoritative edge function (results recomputed server-side).
+      const { data, error } = await supabase.functions.invoke("submit-assessment", {
+        body: { assessment_type: "eq", answers },
       });
+      const fnError = error ?? ((data as { error?: string } | null)?.error
+        ? new Error((data as { error?: string }).error)
+        : null);
 
-      if (error) {
-        console.error("Supabase insert error:", error);
+      if (fnError) {
+        console.error("submit-assessment error:", fnError);
         toast.error("Cloud sync failed, but showing results locally.");
       } else {
         toast.success("Emotional Skills profile saved!");
