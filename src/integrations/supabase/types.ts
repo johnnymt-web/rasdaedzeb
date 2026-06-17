@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -11,31 +11,6 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
   }
   public: {
     Tables: {
@@ -66,6 +41,63 @@ export type Database = {
           response_content?: string | null
           tokens_estimated?: number | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      ai_report_counselor_notes: {
+        Row: {
+          cache_key: string
+          generated_at: string
+          id: string
+          notes_json: Json
+          student_id: string
+        }
+        Insert: {
+          cache_key: string
+          generated_at?: string
+          id?: string
+          notes_json: Json
+          student_id: string
+        }
+        Update: {
+          cache_key?: string
+          generated_at?: string
+          id?: string
+          notes_json?: Json
+          student_id?: string
+        }
+        Relationships: []
+      }
+      ai_reports: {
+        Row: {
+          cache_key: string
+          generated_at: string
+          grade_band: string | null
+          id: string
+          lang: string
+          model: string
+          report_json: Json
+          student_id: string
+        }
+        Insert: {
+          cache_key: string
+          generated_at?: string
+          grade_band?: string | null
+          id?: string
+          lang?: string
+          model: string
+          report_json: Json
+          student_id: string
+        }
+        Update: {
+          cache_key?: string
+          generated_at?: string
+          grade_band?: string | null
+          id?: string
+          lang?: string
+          model?: string
+          report_json?: Json
+          student_id?: string
         }
         Relationships: []
       }
@@ -646,6 +678,143 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      mentor_requests: {
+        Row: {
+          created_at: string
+          id: string
+          mentor_id: string
+          message: string | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mentor_id: string
+          message?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mentor_id?: string
+          message?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_requests_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentors: {
+        Row: {
+          active: boolean
+          bio: string | null
+          coachable_skills: string[] | null
+          contact_email: string | null
+          created_at: string
+          fields: string[] | null
+          full_name: string
+          holland_code: string
+          id: string
+          organization: string | null
+          profession: string
+          role_values: string[] | null
+          specialties: string[] | null
+          style_tags: string[] | null
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          bio?: string | null
+          coachable_skills?: string[] | null
+          contact_email?: string | null
+          created_at?: string
+          fields?: string[] | null
+          full_name: string
+          holland_code: string
+          id?: string
+          organization?: string | null
+          profession: string
+          role_values?: string[] | null
+          specialties?: string[] | null
+          style_tags?: string[] | null
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          bio?: string | null
+          coachable_skills?: string[] | null
+          contact_email?: string | null
+          created_at?: string
+          fields?: string[] | null
+          full_name?: string
+          holland_code?: string
+          id?: string
+          organization?: string | null
+          profession?: string
+          role_values?: string[] | null
+          specialties?: string[] | null
+          style_tags?: string[] | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          counselor_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          student_id: string
+          type: string
+        }
+        Insert: {
+          counselor_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          student_id: string
+          type: string
+        }
+        Update: {
+          counselor_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          student_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_counselor_id_fkey"
+            columns: ["counselor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       onet_cache: {
         Row: {
@@ -1384,16 +1553,7 @@ export type Database = {
         Args: { _daily_limit: number; _user_id: string }
         Returns: boolean
       }
-      decrypt_note:
-        | { Args: { encrypted_content: string }; Returns: string }
-        | {
-            Args: { encrypted_content: string; secret: string }
-            Returns: string
-          }
       delete_user: { Args: { target_user_id: string }; Returns: undefined }
-      encrypt_note:
-        | { Args: { content: string }; Returns: string }
-        | { Args: { content: string; secret: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1561,9 +1721,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       app_role: ["student", "parent", "counselor", "admin"],
