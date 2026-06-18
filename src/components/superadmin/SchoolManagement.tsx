@@ -68,8 +68,10 @@ const SchoolManagement = () => {
     return {
       ...s,
       name: parsed.name,
-      address: parsed.address || s.address || "",
-      contact_email: parsed.contact_email || s.contact_email || ""
+      // address + contact_email are encoded inside the school `name` string
+      // (see parseSchoolName); the schools table has no such columns.
+      address: parsed.address || "",
+      contact_email: parsed.contact_email || ""
     };
   });
 
