@@ -181,7 +181,8 @@ serve(async (req: Request) => {
     serviceClient.from("ai_logs").insert({
       user_id: authUser.id,
       feature_name: "counselor-coach",
-      prompt_summary: lastUserMsg?.content.substring(0, 500)
+      // Privacy: do not persist free-text (may contain student PII); record size only.
+      prompt_summary: `[redacted ${lastUserMsg?.content?.length ?? 0} chars]`
     }).then(({ error }: { error: any }) => {
       if (error) console.error("Failed to log AI interaction:", error);
     });
