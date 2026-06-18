@@ -35,6 +35,7 @@ serve(async (req) => {
   }
 
   try {
+    console.log("[submit] start");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -48,6 +49,7 @@ serve(async (req) => {
     });
     const { data: { user }, error: userErr } = await userClient.auth.getUser();
     if (userErr || !user) return json({ error: "Unauthorized" }, 401);
+    console.log("[submit] auth ok", user.id);
 
     // 2) Parse + validate the payload.
     let body: { assessment_type?: string; answers?: unknown };
@@ -65,26 +67,34 @@ serve(async (req) => {
     if (!answers || typeof answers !== "object" || Array.isArray(answers)) {
       return json({ error: "Invalid 'answers': expected an object of { itemId: value }" }, 400);
     }
+    console.log("[submit] payload ok", assessment_type, "keys:", Object.keys(answers).length);
 
     // 3) Derive grade_band from the AUTHORITATIVE profile, not the request.
     const admin = createClient(supabaseUrl, serviceKey);
-    const { data: profile } = await admin
+    const { data: profile, error: profErr } = await admin
       .from("profiles")
       .select("grade")
       .eq("id", user.id)
       .single();
+    if (profErr) console.log("[submit] profile fetch error:", profErr.message);
     const band = gradeToBand(profile?.grade ?? null);
+    console.log("[submit] band", band);
 
     // 4) Recompute results server-side (rejects malformed / fallback structures).
     let scored;
     try {
       scored = scoreAssessment(assessment_type, answers as Answers, band);
     } catch (e) {
-      if (e instanceof ScoringError) return json({ error: e.message }, 400);
+      if (e instanceof ScoringError) {
+        console.log("[submit] scoring rejected:", (e as Error).message);
+        return json({ error: e.message }, 400);
+      }
       throw e;
     }
+    console.log("[submit] scored", scored.questionSetVersion);
 
     // 5) Insert with the service role (bypasses RLS). user_id is the verified caller.
+    console.log("[submit] inserting...");
     const { error: insErr } = await admin.from("assessments").insert({
       user_id: user.id,
       assessment_type,
@@ -93,7 +103,11 @@ serve(async (req) => {
       grade_band: band,
       question_set_version: scored.questionSetVersion,
     });
-    if (insErr) return json({ error: insErr.message }, 500);
+    if (insErr) {
+      console.error("[submit] INSERT ERROR:", JSON.stringify(insErr));
+      return json({ error: insErr.message }, 500);
+    }
+    console.log("[submit] inserted OK");
 
     return json(
       {
@@ -105,6 +119,7 @@ serve(async (req) => {
       200,
     );
   } catch (e) {
+    console.error("[submit] CAUGHT:", (e as Error)?.stack ?? String(e));
     return json({ error: (e as Error)?.message ?? "Unexpected error" }, 400);
   }
 });
