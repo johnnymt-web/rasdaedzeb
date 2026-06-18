@@ -61,7 +61,7 @@ const CounselorStudentDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("assessments")
-        .select("id, results, completed_at, created_at, answers, assessment_type, type")
+        .select("id, results, completed_at, created_at, answers, assessment_type")
         .eq("user_id", studentId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
