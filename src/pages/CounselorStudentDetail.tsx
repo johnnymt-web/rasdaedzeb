@@ -100,18 +100,18 @@ const CounselorStudentDetail = () => {
   const normData = normalizeAllAssessments(assessments || []);
 
   const bigFive = normData.bigFive.isComplete 
-    ? (Array.isArray(normData.bigFive.results) ? normData.bigFive.results.reduce((acc, r) => ({ ...acc, [r.key]: r.pct }), {} as Record<string, number>) : {})
+    ? (Array.isArray(normData.bigFive.results) ? (normData.bigFive.results as any[]).reduce((acc, r) => ({ ...acc, [r.key]: r.pct }), {} as Record<string, number>) : ({} as Record<string, number>))
     : null;
 
   const caas = normData.caas.isComplete
     ? {
-        ...((Array.isArray(normData.caas.results) ? normData.caas.results.reduce((acc, r) => ({ ...acc, [r.key]: r.score }), {} as Record<string, number>) : {})),
-        total_score: (Array.isArray(normData.caas.results) ? normData.caas.results.reduce((sum, r) => sum + (r.score || 0), 0) / Math.max(1, normData.caas.results.length) : 0)
+        ...((Array.isArray(normData.caas.results) ? (normData.caas.results as any[]).reduce((acc, r) => ({ ...acc, [r.key]: r.score }), {} as Record<string, number>) : {})),
+        total_score: (Array.isArray(normData.caas.results) ? (normData.caas.results as any[]).reduce((sum, r) => sum + (r.score || 0), 0) / Math.max(1, normData.caas.results.length) : 0)
       }
     : null;
 
   const workValues = normData.workValues.isComplete
-    ? (Array.isArray(normData.workValues.results) ? normData.workValues.results.reduce((acc, r) => ({ ...acc, [r.key]: r.score }), {} as Record<string, number>) : {})
+    ? (Array.isArray(normData.workValues.results) ? (normData.workValues.results as any[]).reduce((acc, r) => ({ ...acc, [r.key]: r.score }), {} as Record<string, number>) : ({} as Record<string, number>))
     : null;
 
   const { data: eqAssessment, isLoading: eqLoading } = useQuery({
