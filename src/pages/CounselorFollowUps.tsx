@@ -41,8 +41,8 @@ export default function CounselorFollowUps() {
       if (error) throw error;
 
       // 4. Client-side filter for multi-school/workload logic (easier to maintain than complex OR/AND in Supabase filters without RPC)
-      return (data || []).filter((s) => 
-        schoolIds.includes(s.profiles.school_id) || 
+      return ((data || []) as any[]).filter((s) =>
+        schoolIds.includes(s.profiles.school_id) ||
         directIds.includes(s.user_id)
       );
     },
@@ -63,7 +63,7 @@ export default function CounselorFollowUps() {
         .order("created_at", { ascending: false });
         
       if (error) throw error;
-      return data || [];
+      return (data || []) as any[];
     },
     enabled: !!user?.id,
   });
@@ -82,7 +82,7 @@ export default function CounselorFollowUps() {
         .order("scheduled_at", { ascending: true });
         
       if (error) throw error;
-      return data || [];
+      return (data || []) as any[];
     },
     enabled: !!user?.id,
   });

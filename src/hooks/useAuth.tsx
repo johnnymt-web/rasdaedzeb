@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
         const { data: inserted, error: insertError } = await supabase
           .from("profiles")
-          .insert(newProfile)
+          .insert(newProfile as any)
           .select()
           .maybeSingle();
 

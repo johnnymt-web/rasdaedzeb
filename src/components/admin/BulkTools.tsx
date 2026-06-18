@@ -102,7 +102,7 @@ export default function BulkTools() {
       const schoolMap = new Map((allSchools || []).map(s => [s.id, s.name]));
 
       // 3. Fetch assessments
-      const { data: assessments, error: assErr } = await supabase.from("assessments").select("user_id, results, completed_at").in("user_id", ids);
+      const { data: assessments, error: assErr } = await supabase.from("assessments").select("user_id, results, completed_at, created_at").in("user_id", ids);
       if (assErr) throw assErr;
 
       const exportData = (profiles || []).map(p => {
@@ -199,7 +199,9 @@ export default function BulkTools() {
         let finalError = null;
 
         if (updates.length > 0) {
-          const { error } = await supabase.from("profiles").upsert(updates);
+          // Partial update-by-id of existing profiles; cast matches the adjacent
+          // roleUpdates upsert (profiles Insert type otherwise requires `email`).
+          const { error } = await supabase.from("profiles").upsert(updates as any);
           if (!error) successCount += updates.length;
           else finalError = error;
         }

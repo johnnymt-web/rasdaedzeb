@@ -174,6 +174,14 @@ const CounselorDashboard = () => {
           }
         }
 
+        // Resolve school names for the assigned students (fixes previously-undefined schoolMap)
+        const studentSchoolIds = [...new Set(scopedProfiles.map(p => p.school_id).filter(Boolean))] as string[];
+        const schoolMap = new Map<string, string>();
+        if (studentSchoolIds.length > 0) {
+          const { data: schoolRows } = await supabase.from("schools").select("id, name").in("id", studentSchoolIds);
+          (schoolRows || []).forEach(s => schoolMap.set(s.id, s.name));
+        }
+
         const students: StudentData[] = scopedProfiles.map((p) => {
           const sStd = stdAss.data?.filter(a => a.user_id === p.id) || [];
           

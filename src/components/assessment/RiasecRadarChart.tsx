@@ -8,6 +8,11 @@ import { useTranslation } from "react-i18next";
 interface AssessmentResult {
   category: string;
   pct: number;
+  // Historical/alternate result shapes are read defensively below
+  // (res.category || res.key || res.label, and r.pct || r.score).
+  key?: string;
+  label?: string;
+  score?: number;
 }
 
 interface AssessmentEntry {
