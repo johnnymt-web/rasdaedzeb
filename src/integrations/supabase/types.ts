@@ -1581,7 +1581,7 @@ export type Database = {
       request_self_deletion: { Args: never; Returns: undefined }
     }
     Enums: {
-      app_role: "student" | "parent" | "counselor" | "admin"
+      app_role: "student" | "parent" | "counselor" | "admin" | "superadmin"
       event_audience: "all" | "students" | "parents"
       event_type: "webinar" | "workshop" | "deadline" | "notice"
       follow_up_status: "pending" | "completed"
@@ -1723,7 +1723,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["student", "parent", "counselor", "admin"],
+      app_role: ["student", "parent", "counselor", "admin", "superadmin"],
       event_audience: ["all", "students", "parents"],
       event_type: ["webinar", "workshop", "deadline", "notice"],
       follow_up_status: ["pending", "completed"],
