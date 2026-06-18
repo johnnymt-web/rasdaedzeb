@@ -53,7 +53,7 @@ const ActionPlan = () => {
       const { data, error } = await supabase
         .from("student_action_plans")
         .select("*")
-        .eq("student_id", user?.id)
+        .eq("student_id", user?.id ?? "")
         .order("due_date", { ascending: true });
       
       if (error) throw error;
@@ -66,9 +66,9 @@ const ActionPlan = () => {
     mutationFn: async (newData: typeof formData) => {
       const { error } = await supabase
         .from("student_action_plans")
-        .insert([{ 
-          ...newData, 
-          student_id: user?.id, 
+        .insert([{
+          ...newData,
+          student_id: user?.id ?? "",
           status: "pending",
           assigned_by: user?.id,
           assigned_by_role: "student"
