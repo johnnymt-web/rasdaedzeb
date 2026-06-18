@@ -100,9 +100,11 @@ export default function AssessmentPage() {
 
         console.log("Attempting to sync assessment to cloud...");
         
-        // Use a timeout promise to prevent getting stuck on network/adblock hangs (increased to 15s for slower connections)
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error("Timeout")), 15000)
+        // Timeout guard against network/adblock hangs. 45s so a cold-start of the
+        // submit-assessment edge function (first call after idle: boot + module
+        // fetch can exceed 15s) still completes; warm calls return in ~2s.
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), 45000)
         );
 
         // Persist via the server-authoritative edge function. The client still
