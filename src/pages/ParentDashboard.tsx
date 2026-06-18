@@ -15,6 +15,7 @@ import { normalizeRiasecResults } from "@/utils/riasec";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import ParentInsightReport from "@/components/parent/ParentInsightReport";
+import ParentConsentControl from "@/components/consent/ParentConsentControl";
 
 const SURFACE_COLORS = ["surface-sage", "surface-amber", "surface-sky"];
 
@@ -273,6 +274,15 @@ const ParentDashboard = () => {
                       />
                     </div>
                   </div>
+
+                  {selectedStudentId && (
+                    <div className="card-warm p-8">
+                      <ParentConsentControl
+                        studentId={selectedStudentId}
+                        studentName={firstName}
+                      />
+                    </div>
+                  )}
 
                   {selectedStudentId && (
                     <div className="card-warm p-8">
