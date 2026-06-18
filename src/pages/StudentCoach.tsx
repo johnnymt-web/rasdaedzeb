@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getGradeBand, getBandMessaging } from "@/utils/gradeBands";
 import { useTranslation } from "react-i18next";
+import { AiConsentGate } from "@/components/consent/AiConsentGate";
 
 type Message = {
   id: string;
@@ -178,6 +179,10 @@ export default function StudentCoach() {
             {t("coach.back")}
           </Link>
         </div>
+
+        {/* AI-consent banner: renders only when parental consent is NOT recorded.
+            The career-coach edge function enforces consent server-side regardless. */}
+        <AiConsentGate><></AiConsentGate>
 
         {/* Chat area */}
         <div className="flex-1 flex flex-col min-h-0">
