@@ -105,14 +105,16 @@ export default function AssessmentPage() {
           setTimeout(() => reject(new Error("Timeout")), 15000)
         );
 
+        // Persist via the server-authoritative edge function. The client still
+        // computes `results` locally (above) for the instant results screen, but
+        // the STORED results are recomputed server-side from the raw answers.
         const syncPromise = (async () => {
-          const { error } = await supabase.from("assessments").insert({
-            user_id: user.id,
-            assessment_type: type || "riasec",
-            answers: sanitizedAnswers as any,
-            results: results as any,
+          const { data, error } = await supabase.functions.invoke("submit-assessment", {
+            body: { assessment_type: type || "riasec", answers: sanitizedAnswers },
           });
-          return error;
+          if (error) return error;
+          const fnError = (data as { error?: string } | null)?.error;
+          return fnError ? new Error(fnError) : null;
         })();
 
         try {
