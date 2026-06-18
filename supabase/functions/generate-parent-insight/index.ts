@@ -39,7 +39,11 @@ Respond strictly as a JSON object:
   "suggestions": ["actionable suggestion for parent 1", "actionable suggestion 2", "actionable suggestion 3"]
 }`
 
-    const userPrompt = `Student name: ${studentName}
+    // PRIVACY (data minimization): do NOT send the student's real name to the
+    // third-party AI provider. The insight is for the parent about their own
+    // child, so a neutral reference is sufficient and the name adds no value.
+    // `studentName` is intentionally not forwarded to OpenAI.
+    const userPrompt = `Student: the parent's child (name withheld for privacy)
 Completed assessments: ${completedTypes}
 Assessment data: ${JSON.stringify(assessments.slice(0, 5))}`
 
