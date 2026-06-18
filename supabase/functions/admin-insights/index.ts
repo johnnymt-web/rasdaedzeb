@@ -161,7 +161,8 @@ serve(async (req: Request) => {
     const { error: logError } = await serviceClient.from("ai_logs").insert({
       user_id: authUser.id,
       feature_name: "admin-insights",
-      prompt_summary: lastUserMsg?.content.substring(0, 500)
+      // Privacy: do not persist free-text (may contain student PII); record size only.
+      prompt_summary: `[redacted ${lastUserMsg?.content?.length ?? 0} chars]`
     });
     
     if (logError) {
