@@ -79,7 +79,7 @@ export const calculateBigFiveScores = (responses: Record<string, number>): BigFi
   };
 };
 
-const withTimeout = <T>(promise: Promise<T>, ms: number = 15000): Promise<T> => {
+const withTimeout = <T>(promise: PromiseLike<T>, ms: number = 15000): Promise<T> => {
   return Promise.race([
     promise,
     new Promise<never>((_, reject) => 
@@ -101,7 +101,7 @@ export const saveBigFiveAssessment = async (studentId: string, responses: Record
       extraversion: scores.extraversion,
       agreeableness: scores.agreeableness,
       neuroticism: scores.neuroticism,
-      facet_scores: scores
+      facet_scores: scores as any
     })
     .select()
     .single();
