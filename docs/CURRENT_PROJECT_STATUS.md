@@ -13,8 +13,11 @@ unknown**, and the **must-not-touch** list. Keep it honest (verified vs inferred
 ---
 
 **Last verified:** 2026-06-19
+**Latest `main` commit:** `b4fb008` — *Merge PR #3 (Project Knowledge System)*.
 **How verified:** live git + GitHub API queries (branches, PRs, CI check-runs, deploy runs) and live
 Supabase introspection done earlier in the session (read-only); CI status read from GitHub Actions.
+The Project Knowledge System merge was verified via `git fetch` + `git pull --ff-only` to `main`
+and `git ls-files` (all 11 docs present on `main`; working tree clean).
 
 ## ✅ Live on `main` / production (verified)
 - **Phase B `submit-assessment`** edge function — server-authoritative RIASEC/Skills/EQ scoring — **LIVE and working** (prod submissions saved for grade-11 all-3 and grade-7 RIASEC/Skills). Scoring is **inlined** in `index.ts`.
@@ -24,11 +27,11 @@ Supabase introspection done earlier in the session (read-only); CI status read f
 - **Typecheck + Test CI green** on `main`; superadmin/typecheck-debt work **completed** (merged via PR #2).
 - `notify_counselor_on_assessment` trigger **fixed live** (removed bad `NEW.type`).
 - Cold-start client timeout 15s→45s — committed to `main` (`89969bf`).
+- **Project Knowledge System** — `CLAUDE.md` + 10 `docs/*` operating docs — **merged to `main` via PR #3** (latest `main` = `b4fb008`); verified present with a clean tree.
 
 ## 🌿 Branch-only (NOT live, NOT merged)
 - **Consent/DPA system** — `feat/ai-consent-privacy` (9 commits): `ai_processing_consent` table + RLS + `has_ai_consent()`, server enforcement in 3 AI fns, `AiConsentGate`/`ParentConsentControl`/`consentService`, `DATA-PROCESSING-REGISTER.md`. **Built, not applied, not merged.**
 - **Audit document** — `docs/audit-environment-reconciliation` (`AUDIT-2026-06.md`). Not merged.
-- **This knowledge system** — `docs/project-knowledge-system`. Not merged.
 - `g5-phase-b` branch is now **behind `main`** (lacks the inline-fix + timeout-fix that are on main).
 
 ## ⛔ Gated / NOT approved
