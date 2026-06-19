@@ -17,6 +17,12 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
+      // TEMPORARY (pre-RLS-lockdown safety): ship a self-unregistering SW that
+      // purges caches on existing clients. D1 confirmed a stale pre-Phase-B
+      // cached bundle caused a false "Could not sync" save failure. This stops
+      // users from running old cached bundles. Re-enable a hardened PWA later
+      // (update prompt + version check + localStorage draft-persistence).
+      selfDestroying: true,
       registerType: "autoUpdate",
       injectRegister: "auto",
       includeAssets: ["favicon.ico", "robots.txt", "pwa-icon.svg"],
