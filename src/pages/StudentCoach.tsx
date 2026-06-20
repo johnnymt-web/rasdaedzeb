@@ -182,7 +182,7 @@ export default function StudentCoach() {
 
         {/* AI-consent banner: renders only when parental consent is NOT recorded.
             The career-coach edge function enforces consent server-side regardless. */}
-        <AiConsentGate><></AiConsentGate>
+        <AiConsentGate><></></AiConsentGate>
 
         {/* Chat area */}
         <div className="flex-1 flex flex-col min-h-0">
