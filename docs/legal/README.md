@@ -12,6 +12,9 @@ the Pathfinder (Super Riasec) platform — a school-based career-development eco
 (grades 7–12)** that processes psychometric data and sends minimized data to third-party AI
 sub-processors. The platform model is **School = data controller, Pathfinder = data processor**.
 
+## Start here for counsel/school
+- [COUNSEL_REVIEW_HANDOFF_SUMMARY.md](COUNSEL_REVIEW_HANDOFF_SUMMARY.md) — one-page handoff for legal/school review (open decisions, blockers, questions). **Not legal advice; DRAFT.**
+
 ## Documents in this pack
 | # | File | Covers |
 |---|---|---|
