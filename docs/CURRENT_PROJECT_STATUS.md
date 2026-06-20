@@ -13,7 +13,7 @@ unknown**, and the **must-not-touch** list. Keep it honest (verified vs inferred
 ---
 
 **Last verified:** 2026-06-20
-**Latest `main` commit:** `9b52143` — *Merge PR #11 (chore/capture-rls-lockdown-applied)*.
+**Latest `main` commit:** `f8388b9` — *Merge PR #12 (docs/status-after-rls-lockdown)*.
 **How verified:** live git + GitHub API queries (branches, PRs, CI check-runs, deploy/status) and live
 Supabase introspection done earlier in the session (read-only); CI status read from GitHub Actions.
 **D1 cold-start/save verification (2026-06-19):** manual production test by the owner — a fresh Skills
@@ -78,12 +78,28 @@ integrity issue, no backfill**. Repo capture: the lockdown migration is now acti
 - 🟡 **Client "Cloud sync timed out" false-negative race** — observed once during E2: the toast fired but the `public.assessments` row **was** created (server save succeeded). The 45s client timeout/UX raced ahead of the resolved `submit-assessment` call. ❗ **Not** an RLS condition / not a rollback trigger. Fold the fix into the hardened-PWA / A+B+D + draft-persistence task (e.g. confirm the saved row instead of showing a false timeout). Watch for repeats during monitoring.
 - 🟢 Two Vercel projects — intentional.
 
-## 🔭 Active monitoring (24–48h after E2 RLS lockdown — opened 2026-06-20)
-- Watch 🟢 Postgres/Edge logs + Sentry for **RLS-denied insert errors (code `42501`)** on `public.assessments` — near-zero expected (PWA `selfDestroying` cleared stale clients); a **cluster** = residual stale clients on the old direct-insert path (they just need a reload — **not** a rollback trigger).
-- Watch for **stale-client "couldn't save" reports** (resolved by a hard reload).
-- **Spot-check** recent rows carry `question_set_version` (i.e., arrived via `submit-assessment`).
-- **Keep the rollback SQL available** for the window (recreate the 4 write policies — see the lockdown migration's rollback block).
-- If the "Cloud sync timed out" toast recurs **with** a saved row → log it for the client-UX task; **without** a saved row → investigate (escalate).
+## 🔭 Monitoring — E2 RLS lockdown (opened 2026-06-20)
+**E2 RLS lockdown remains technically complete.** Status: ✅ **internal/synthetic checks PASS** · ❓ **real-user pilot monitoring PENDING** (no real pilot users active yet).
+
+### ✅ Internal / synthetic checks — PASS (2026-06-20)
+- `question_set_version` **populated** on recent assessment rows (skills `skills_v1_5` ×9, riasec `discovery`/`exploration`/`planning` `_v1_48`, eq `eq_v1_12`).
+- **No NULL/blank** `question_set_version` visible in the grouped 48h check.
+- Post-lockdown **synthetic Skills save verified** (new row via `submit-assessment`).
+- API Gateway showed **only successful 200/201** responses.
+- **No** `42501` / permission-denied / row-level-security / `public.assessments` errors observed.
+- **Rollback not needed.**
+
+### ⚠️ Scope caveat — NOT real-user production-proven
+- These are **internal/synthetic** checks only. **No real pilot users are active yet.**
+- Therefore the lockdown is **internally/synthetically stable, NOT real-user production-proven.**
+- **Real-user monitoring MUST be re-run at pilot onboarding.** During the real-user pilot window, watch:
+  - **RLS-denied insert errors (`42501`)** on `public.assessments` — a cluster = residual stale clients on the old direct-insert path (they just need a reload — **not** a rollback trigger);
+  - **stale-client "couldn't save" reports** (resolved by a hard reload);
+  - **`question_set_version` population** on real submissions (must be non-NULL → arrived via `submit-assessment`);
+  - the **"Cloud sync timed out" false-negative race** (toast with a saved row → log for the client-UX task; without a saved row → investigate/escalate).
+- **Keep the rollback SQL available** as an operational contingency **only during the real pilot monitoring window** (recreate the 4 write policies — see the lockdown migration's rollback block).
+
+> **Top open risk before real student onboarding: consent/DPA for minors (🔴)** — see Risks & the consent/DPA workstream plan.
 
 ## 🚫 Must NOT be touched without explicit approval
 RLS policies/helpers · `app_role`/role logic · production migrations · the RLS lockdown · merges to
