@@ -8,21 +8,99 @@
 -- (service role, which bypasses RLS), so stored `results` are always recomputed
 -- server-side and can never be fabricated by a modified client.
 --
--- Preserved intentionally:
---   * "Scoped select assessments" (SELECT) — students/counselors/etc. keep read access.
---   * "Delete own assessments"   (DELETE) — GDPR / self-service deletion stays.
+-- ⚠️ DRIFT — TWO GENERATIONS OF WRITE POLICIES EXIST LIVE (verified 2026-06-20):
+--   Live production `public.assessments` currently has FOUR write policies from
+--   two different migration generations that coexist (the June phase1a rewrite
+--   added a parallel set but never dropped the original April-era policies):
+--     INSERT:
+--       * "Insert own assessments"               (phase1a, 20260605210211)
+--       * "Users can create their own assessments" (original table, 20260402061517)
+--     UPDATE:
+--       * "Update own assessments"               (phase1a, 20260605210211)
+--       * "Users can update their own assessments" (original table, 20260402061517)
+--   The PREVIOUS version of this migration dropped only the two phase1a policies,
+--   which would have LEFT the two April-era policies in place — direct client
+--   INSERT/UPDATE would still have been possible. This corrected version drops
+--   ALL FOUR write policies.
+--
+-- The corrected lockdown must remove EVERY INSERT/UPDATE policy on
+-- public.assessments. After applying, there must be 0 INSERT, 0 UPDATE, and
+-- 0 ALL (write-capable) policies on the table (see verification queries below).
+--
+-- Preserved intentionally (NOT dropped here):
+--   SELECT (read access stays):
+--     * "Scoped select assessments"                  (phase1a)
+--     * "Users can view their own assessments"       (original table)
+--     * "Parents can view linked student assessments" (parent access)
+--   DELETE (GDPR / self-service deletion stays):
+--     * "Delete own assessments"                     (phase1a)
 --
 -- Phase A tables (big_five_assessments, caas_assessments, work_values_assessments)
 -- are NOT touched here — they are protected by their own recompute triggers.
 -- =========================================================================
 
+-- ---- LOCKDOWN: drop ALL FOUR write policies (both generations) ----
 DROP POLICY IF EXISTS "Insert own assessments" ON public.assessments;
 DROP POLICY IF EXISTS "Update own assessments" ON public.assessments;
+DROP POLICY IF EXISTS "Users can create their own assessments" ON public.assessments;
+DROP POLICY IF EXISTS "Users can update their own assessments" ON public.assessments;
 
 -- =========================================================================
--- ROLLBACK (uncomment + run to restore direct client insert/update):
+-- ROLLBACK (uncomment + run to restore direct client insert/update).
+-- Recreates all four write policies with their original definitions,
+-- idempotently (DROP IF EXISTS before each CREATE so it is safe to re-run).
+-- Note: public.is_self(user_id) is equivalent to (auth.uid() = user_id), so the
+-- two INSERT policies are functionally redundant; both are restored to return
+-- the table to its exact pre-lockdown state.
+-- =========================================================================
+-- DROP POLICY IF EXISTS "Insert own assessments" ON public.assessments;
 -- CREATE POLICY "Insert own assessments" ON public.assessments
 --   FOR INSERT WITH CHECK (public.is_self(user_id));
+--
+-- DROP POLICY IF EXISTS "Update own assessments" ON public.assessments;
 -- CREATE POLICY "Update own assessments" ON public.assessments
 --   FOR UPDATE USING (public.is_self(user_id)) WITH CHECK (public.is_self(user_id));
+--
+-- DROP POLICY IF EXISTS "Users can create their own assessments" ON public.assessments;
+-- CREATE POLICY "Users can create their own assessments" ON public.assessments
+--   FOR INSERT WITH CHECK (auth.uid() = user_id);
+--
+-- DROP POLICY IF EXISTS "Users can update their own assessments" ON public.assessments;
+-- CREATE POLICY "Users can update their own assessments" ON public.assessments
+--   FOR UPDATE USING (auth.uid() = user_id);
+-- =========================================================================
+
+-- =========================================================================
+-- READ-ONLY VERIFICATION (run in Supabase SQL Editor BEFORE and AFTER lockdown).
+-- NOTE: live pg_policies exposes the column `policyname` (not `polname`); these
+-- queries alias it to polname for readability. All SELECT-only — no writes.
+-- =========================================================================
+-- (a) ALL write-capable policies (includes a permissive FOR ALL policy if any).
+--     BEFORE lockdown: expect 4 rows (2 INSERT + 2 UPDATE).
+--     AFTER  lockdown: expect 0 rows.
+-- SELECT policyname AS polname, cmd, qual, with_check
+-- FROM pg_policies
+-- WHERE schemaname = 'public'
+--   AND tablename = 'assessments'
+--   AND cmd IN ('INSERT', 'UPDATE', 'ALL')
+-- ORDER BY cmd, policyname;
+--
+-- (b) Survivors that MUST remain (read + delete).
+--     BEFORE and AFTER: expect 3 SELECT + 1 DELETE.
+-- SELECT policyname AS polname, cmd
+-- FROM pg_policies
+-- WHERE schemaname = 'public'
+--   AND tablename = 'assessments'
+--   AND cmd IN ('SELECT', 'DELETE')
+-- ORDER BY cmd, policyname;
+--
+-- (c) Count assertion by command.
+--     BEFORE lockdown: INSERT = 2, UPDATE = 2, SELECT = 3, DELETE = 1.
+--     AFTER  lockdown: INSERT = 0, UPDATE = 0, ALL = 0, SELECT = 3, DELETE = 1.
+-- SELECT cmd, count(*) AS policies
+-- FROM pg_policies
+-- WHERE schemaname = 'public'
+--   AND tablename = 'assessments'
+-- GROUP BY cmd
+-- ORDER BY cmd;
 -- =========================================================================
