@@ -13,7 +13,7 @@ unknown**, and the **must-not-touch** list. Keep it honest (verified vs inferred
 ---
 
 **Last verified:** 2026-06-20
-**Latest `main` commit:** `f8388b9` — *Merge PR #12 (docs/status-after-rls-lockdown)*.
+**Latest `main` commit:** `1979ebe` — *Merge PR #13 (docs/e2-synthetic-monitoring-closure)*.
 **How verified:** live git + GitHub API queries (branches, PRs, CI check-runs, deploy/status) and live
 Supabase introspection done earlier in the session (read-only); CI status read from GitHub Actions.
 **D1 cold-start/save verification (2026-06-19):** manual production test by the owner — a fresh Skills
@@ -51,7 +51,13 @@ integrity issue, no backfill**. Repo capture: the lockdown migration is now acti
 - **PWA temporarily disabled via `selfDestroying`** — `vite.config.ts` `VitePWA({ selfDestroying: true })`, **merged via PR #8** (`d430dde`) and **verified live in production** (2026-06-20). Ships a self-unregistering service worker that purges caches on existing clients, so users stop running stale pre-Phase-B bundles **before** the RLS lockdown. Pre-lockdown safety measure; **temporary** — a hardened PWA (update prompt + version check + localStorage draft-persistence, "A+B+D") is a separate later task **before re-enabling the PWA**. No offline/install while disabled (acceptable — platform depends on Supabase cloud save).
 
 ## 🌿 Branch-only (NOT live, NOT merged)
-- **Consent/DPA system** — `feat/ai-consent-privacy` (9 commits): `ai_processing_consent` table + RLS + `has_ai_consent()`, server enforcement in 3 AI fns, `AiConsentGate`/`ParentConsentControl`/`consentService`, `DATA-PROCESSING-REGISTER.md`. **Built, not applied, not merged.**
+- **Consent/DPA system** — `ai_processing_consent` table + RLS + `has_ai_consent()`, server enforcement in 3 student-data AI fns, `AiConsentGate`/`ParentConsentControl`/`consentService`, `DATA-PROCESSING-REGISTER.md`. **Built, not applied, not merged.**
+  - **Rebased + CI-green (2026-06-20):** `chore/rebase-ai-consent-privacy-onto-main` (original `feat/ai-consent-privacy` left intact) is rebased onto current `main` and passes the full CI matrix. Latest branch commit **`0c1296a`**. **PR [#14](https://github.com/johnnymt-web/rasdaedzeb/pull/14) is CI/integration verification ONLY — must NOT be merged yet.**
+    - CI: **Typecheck ✅ · Test/vitest ✅ · Vercel Preview ✅ · Supabase Preview ✅** — the `ai_processing_consent` migration **applies cleanly in preview**.
+    - A **one-line JSX fix** in `StudentCoach.tsx` (`<AiConsentGate><></></AiConsentGate>`) resolved the only CI failure (a pre-existing branch defect never caught because the original branch had no PR). No logic/consent-behavior change.
+    - ⛔ **No production migration applied · no production SQL run · no live RLS changed · no Supabase functions deployed to prod · nothing merged.**
+  - **Real student onboarding remains BLOCKED** by consent/DPA/legal-policy items: school DPA · parental consent form · student assent text · privacy notice (ka + en) · assessment disclaimer · retention schedule · DSAR/export/delete procedure · sub-processor DPAs · consent versioning · staff-copilot gating decision. *(Legal/policy items require legal review — not legal advice.)*
+  - **Technical go-live is a separate gated task** (deploy ordering): apply migration **first** → regenerate Supabase types → remove `any` casts → deploy functions → deploy frontend → verify consent enforcement → **only then** consider pilot.
 - **Audit document** — `docs/audit-environment-reconciliation` (`AUDIT-2026-06.md`). Not merged.
 - `g5-phase-b` branch is now **behind `main`** (lacks the inline-fix + timeout-fix that are on main).
 
@@ -68,7 +74,7 @@ integrity issue, no backfill**. Repo capture: the lockdown migration is now acti
 - Full `ka` translation coverage/quality — not audited.
 
 ## 🔴 / ⚠️ Risks & drift (open)
-- 🔴 **CRITICAL: consent/DPA gap for minors** — student data still flows to third-party AI in prod with no consent gating (consent system is branch-only). DPAs unsigned.
+- 🔴 **CRITICAL: consent/DPA gap for minors** — student data still flows to third-party AI in prod with no consent gating (consent system is branch-only). DPAs unsigned. *(Technical layer is now rebased + CI-green on `chore/rebase-ai-consent-privacy-onto-main` / PR #14 — verification only, NOT live; see Branch-only. Real onboarding remains blocked by the legal/policy items.)*
 - 🟢 **Assessments tamper-proof — RESOLVED (E2, 2026-06-20).** RLS lockdown live: all direct-client INSERT/UPDATE policies on `public.assessments` dropped; `submit-assessment` (service role) is the sole writer. Direct client insert/update blocked.
 - 🟡 **Migration drift** — broader folder reproducibility still open (legacy untracked SQL: `QUICK_SETUP.sql`, etc.). *Note:* the assessments **write-policy duplication** (two generations) is now resolved by the E2 lockdown, and the `notify_counselor_on_assessment` fix was captured via PR #5; the un-HOLDed lockdown migration **passed the `Supabase Preview` check on PR #11** (applies cleanly), but a single green PR run does not prove the whole `main` history rebuilds cleanly — broader reproducibility remains to be verified.
 - 🟡 **Debug `[submit]` logs** in the live function (log `user.id`) — clean up.
