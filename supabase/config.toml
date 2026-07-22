@@ -1,1 +1,13 @@
 project_id = "sxhzxlfxfveidjrepvwe"
+
+[functions.admin-insights]
+[functions.bulk-onboard-users]
+[functions.career-coach]
+[functions.counselor-coach]
+[functions.generate-parent-insight]
+[functions.generate-synthesis]
+[functions.localize-careers]
+[functions.onet-proxy]
+[functions.parent-coach]
+[functions.refresh-onet-cache]
+[functions.submit-assessment]
