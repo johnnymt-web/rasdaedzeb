@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import SchoolManagement from "@/components/superadmin/SchoolManagement";
 import AdminAssignment from "@/components/superadmin/AdminAssignment";
+import StudentRoster from "@/components/superadmin/StudentRoster";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"overview" | "schools" | "admins" | "settings">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "students" | "schools" | "admins" | "settings">("overview");
 
   // Global Stats Fetch
   const { data: stats, isLoading } = useQuery({
@@ -37,6 +38,7 @@ const SuperAdminDashboard = () => {
 
   const menuItems = [
     { id: "overview", label: t("superadmin.menu.overview"), icon: LayoutDashboard },
+    { id: "students", label: t("superadmin.menu.students", "Students"), icon: GraduationCap },
     { id: "schools", label: t("superadmin.menu.schools"), icon: Building2 },
     { id: "admins", label: t("superadmin.menu.admins"), icon: ShieldCheck },
     { id: "settings", label: t("superadmin.menu.settings"), icon: Settings },
@@ -177,6 +179,7 @@ const SuperAdminDashboard = () => {
               </div>
             )}
 
+            {activeTab === "students" && <StudentRoster />}
             {activeTab === "schools" && <SchoolManagement />}
             {activeTab === "admins" && <AdminAssignment />}
             {activeTab === "settings" && (

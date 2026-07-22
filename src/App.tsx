@@ -23,6 +23,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminInsights from "./pages/AdminInsights";
 import SchoolAnalytics from "./pages/SchoolAnalytics";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import SuperAdminStudentDetail from "./pages/SuperAdminStudentDetail";
 import AssessmentSelection from "./pages/AssessmentSelection";
 import AssessmentPage from "./pages/AssessmentPage";
 import StudentReport from "./pages/StudentReport";
@@ -153,6 +154,7 @@ const App = () => {
             {/* SuperAdmin routes */}
             <Route element={<ProtectedRoute allowedRoles={["superadmin"]}><DashboardLayout role="superadmin"><Outlet /></DashboardLayout></ProtectedRoute>}>
               <Route path="/superadmin" element={<SuperAdminDashboard />} />
+              <Route path="/superadmin/student/:studentId" element={<SuperAdminStudentDetail />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
