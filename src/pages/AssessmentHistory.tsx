@@ -9,6 +9,18 @@ import { useQuery } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { useTranslation } from "react-i18next";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   normalizeBigFiveAssessment, 
   normalizeCaasAssessment, 
@@ -27,9 +39,10 @@ interface Assessment {
 }
 
 export default function AssessmentHistory() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
   const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+  const [isStartingNewCycle, setIsStartingNewCycle] = useState(false);
 
   const isVisible = (id: string) => {
     if (numericGrade >= 7 && numericGrade <= 8) {
@@ -46,6 +59,26 @@ export default function AssessmentHistory() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const handleConfirmRetake = async () => {
+    if (!user?.id) return;
+    setIsStartingNewCycle(true);
+    try {
+      const nextCycle = (profile?.current_assessment_cycle ?? 1) + 1;
+      const { error } = await supabase
+        .from("profiles")
+        .update({ current_assessment_cycle: nextCycle })
+        .eq("id", user.id);
+      if (error) throw error;
+      await refreshProfile();
+      navigate("/student/assessment");
+    } catch (err) {
+      console.error("Failed to start a new assessment cycle:", err);
+      toast.error("Could not start a new assessment cycle. Please try again.");
+    } finally {
+      setIsStartingNewCycle(false);
+    }
+  };
 
   const { data: allAssessments, isLoading } = useQuery({
     queryKey: ["assessments-combined-history-radar", user?.id],
@@ -148,7 +181,12 @@ export default function AssessmentHistory() {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-heading font-bold text-foreground">Assessment History</h1>
-            <p className="text-muted-foreground">Review your past explorations</p>
+            <p className="text-muted-foreground">
+              Review your past explorations
+              {profile?.current_assessment_cycle && profile.current_assessment_cycle > 1
+                ? ` · Cycle ${profile.current_assessment_cycle} in progress`
+                : ""}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex bg-muted rounded-lg p-1">
@@ -159,9 +197,29 @@ export default function AssessmentHistory() {
                 <List className="w-4 h-4" />
               </button>
             </div>
-            <Button onClick={() => navigate("/student/assessment")} className="gap-2">
-              <RotateCcw className="w-4 h-4" /> Retake Test
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button className="gap-2" disabled={isStartingNewCycle}>
+                  <RotateCcw className="w-4 h-4" /> Retake Test
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Start a new assessment cycle?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Retaking a test starts a new cycle for all your assessments. You'll need to
+                    complete every test for your grade again before your report is up to date. Your
+                    past results stay saved here as history — nothing is deleted.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isStartingNewCycle}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleConfirmRetake} disabled={isStartingNewCycle}>
+                    {isStartingNewCycle ? "Starting..." : "Yes, start over"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 

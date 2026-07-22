@@ -98,6 +98,7 @@ export default function WorkValuesAssessment() {
         relationships: scores.relationships,
         support: scores.support,
         working_conditions: scores.working_conditions,
+        cycle_number: profile?.current_assessment_cycle ?? 1,
       });
 
       if (error) throw error;

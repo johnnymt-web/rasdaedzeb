@@ -16,6 +16,13 @@ import type { SynthesisLang, SynthesisV2Response } from "@/services/synthesisTyp
 import OnetCareerSection from "./OnetCareerSection";
 import MentorMatchSection from "./MentorMatchSection";
 import { buildStudentMatchProfile } from "@/services/mentorService";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /**
  * Reframes declarative trait statements ("You are X") into developmental,
@@ -64,7 +71,7 @@ function softenInterpretation(text: string): string {
   }
   return text;
 }
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 
@@ -124,8 +131,8 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
   const isVisible = (id: string) => isAssessmentVisible(id, numericGrade);
 
 
-  const { data: normData, isLoading, isError } = useQuery({
-    queryKey: ["gold-standard-report-normalized", studentId],
+  const { data: rawAssessmentData, isLoading, isError } = useQuery({
+    queryKey: ["gold-standard-report-raw", studentId],
     queryFn: async () => {
       // Wrap in a timeout to prevent hanging indefinitely on network issues
       const timeoutPromise = new Promise<never>((_, reject) =>
@@ -142,19 +149,32 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
           }
         };
 
-        const [stdData, bigFiveData, caasData, workValuesData] = await Promise.all([
+        const [stdData, bigFiveData, caasData, workValuesData, profileRow] = await Promise.all([
           fetchSafe(supabase.from("assessments").select("*").eq("user_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
           fetchSafe(supabase.from("big_five_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
           fetchSafe(supabase.from("caas_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
-          fetchSafe(supabase.from("work_values_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false, nullsFirst: false }))
+          fetchSafe(supabase.from("work_values_assessments").select("*").eq("student_id", studentId).order("completed_at", { ascending: false, nullsFirst: false })),
+          (async () => {
+            try {
+              const { data } = await supabase.from("profiles").select("current_assessment_cycle").eq("id", studentId).single();
+              return data;
+            } catch {
+              return null;
+            }
+          })(),
         ]);
 
-        return normalizeAllAssessments({
-          std: stdData,
-          bigFive: bigFiveData,
-          caas: caasData,
-          workValues: workValuesData
-        });
+        const currentCycle = (profileRow as any)?.current_assessment_cycle ?? 1;
+        const cycleOf = (row: any) => row.cycle_number ?? 1;
+        const availableCycles = Array.from(new Set<number>([
+          ...stdData.map(cycleOf),
+          ...bigFiveData.map(cycleOf),
+          ...caasData.map(cycleOf),
+          ...workValuesData.map(cycleOf),
+          currentCycle,
+        ])).sort((a, b) => a - b);
+
+        return { stdData, bigFiveData, caasData, workValuesData, currentCycle, availableCycles };
       })();
 
       return Promise.race([fetchPromise, timeoutPromise]);
@@ -165,7 +185,28 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
     staleTime: 0,
   });
 
-  const synthesisQueryKey = ["ai-synthesis-v2", studentId, gradeBand, lang];
+  const [selectedCycle, setSelectedCycle] = useState<number | null>(null);
+
+  // Reset the cycle selection whenever we're looking at a different student
+  // (counselor/parent switching between students) so stale selections don't leak.
+  useEffect(() => {
+    setSelectedCycle(null);
+  }, [studentId]);
+
+  const effectiveCycle = selectedCycle ?? rawAssessmentData?.currentCycle ?? 1;
+
+  const normData = useMemo(() => {
+    if (!rawAssessmentData) return undefined;
+    const byCycle = (rows: any[]) => rows.filter((row: any) => (row.cycle_number ?? 1) === effectiveCycle);
+    return normalizeAllAssessments({
+      std: byCycle(rawAssessmentData.stdData),
+      bigFive: byCycle(rawAssessmentData.bigFiveData),
+      caas: byCycle(rawAssessmentData.caasData),
+      workValues: byCycle(rawAssessmentData.workValuesData),
+    });
+  }, [rawAssessmentData, effectiveCycle]);
+
+  const synthesisQueryKey = ["ai-synthesis-v2", studentId, gradeBand, lang, effectiveCycle];
 
   const { data: synthesisV2, isLoading: isSynthesisLoading } = useQuery<SynthesisV2Response | null>({
     queryKey: synthesisQueryKey,
@@ -252,12 +293,42 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
   const { riasec, skills, bigFive, caas, workValues, eq } = normData;
   const anyCompleted = riasec.isComplete || skills.isComplete || bigFive.isComplete || caas.isComplete || workValues.isComplete || eq.isComplete;
 
+  const hasMultipleCycles = (rawAssessmentData?.availableCycles.length ?? 0) > 1;
+  const isViewingCurrentCycle = effectiveCycle === (rawAssessmentData?.currentCycle ?? 1);
+
+  const cycleSelector = hasMultipleCycles ? (
+    <div className="flex items-center justify-end gap-2 mb-2">
+      <span className="text-xs text-muted-foreground">Viewing:</span>
+      <Select value={String(effectiveCycle)} onValueChange={(v) => setSelectedCycle(Number(v))}>
+        <SelectTrigger className="w-[220px] h-9 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {rawAssessmentData?.availableCycles.map((cycle) => (
+            <SelectItem key={cycle} value={String(cycle)}>
+              Cycle {cycle}{cycle === rawAssessmentData.currentCycle ? " (Current)" : ""}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  ) : null;
+
   if (!anyCompleted) {
     return (
-      <div className="text-center py-20 bg-muted/10 rounded-3xl border border-dashed">
-        <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-bold mb-2">No completed assessments found yet</h3>
-        <p className="text-muted-foreground max-w-sm mx-auto mb-6">Please complete your assessments first.</p>
+      <div className="space-y-4">
+        {cycleSelector}
+        <div className="text-center py-20 bg-muted/10 rounded-3xl border border-dashed">
+          <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-bold mb-2">
+            {hasMultipleCycles && isViewingCurrentCycle ? "New assessment cycle in progress" : "No completed assessments found yet"}
+          </h3>
+          <p className="text-muted-foreground max-w-sm mx-auto mb-6">
+            {hasMultipleCycles && isViewingCurrentCycle
+              ? "A new assessment cycle was started. Complete this cycle's tests to generate its integrated profile — your previous cycle is still available above."
+              : "Please complete your assessments first."}
+          </p>
+        </div>
       </div>
     );
   }
@@ -684,6 +755,7 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
 
   return (
     <div className="space-y-12 pb-20">
+      {cycleSelector}
       <div className="text-[10px] text-muted-foreground opacity-30 text-right">
         Grade {numericGrade}
       </div>

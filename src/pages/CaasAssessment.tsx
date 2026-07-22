@@ -100,7 +100,7 @@ export default function CaasAssessment() {
     if (!user || !allAnswered) return;
     setSubmitting(true);
     try {
-      await saveCaasAssessment(user.id, responses);
+      await saveCaasAssessment(user.id, responses, profile?.current_assessment_cycle ?? 1);
       toast({ title: "Assessment Complete!", description: "Your Career Adaptability profile has been saved." });
       navigate("/student/report");
     } catch (err) {
