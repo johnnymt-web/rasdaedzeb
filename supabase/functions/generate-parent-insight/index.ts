@@ -1,5 +1,7 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +14,32 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { studentName, assessments } = await req.json()
+    const { studentId, studentName, assessments } = await req.json()
+
+    // --- Auth: caller must be the student's linked parent (or an admin) ---
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
+    const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
+    })
+    const { data: { user } } = await userClient.auth.getUser()
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
+    const { data: link } = await admin.from('parent_students').select('student_id').eq('parent_id', user.id).eq('student_id', studentId).maybeSingle()
+    const { data: roleRow } = await admin.from('user_roles').select('role').eq('user_id', user.id).maybeSingle()
+    if (!link && roleRow?.role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // --- AI-consent gate (parental consent recorded for this student) ---
+    const { data: consentOk } = await admin.rpc('has_ai_consent', { p_student: studentId })
+    if (!consentOk) {
+      return new Response(JSON.stringify({ error: 'AI processing consent required', code: 'consent_required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set')
 
@@ -39,7 +66,11 @@ Respond strictly as a JSON object:
   "suggestions": ["actionable suggestion for parent 1", "actionable suggestion 2", "actionable suggestion 3"]
 }`
 
-    const userPrompt = `Student name: ${studentName}
+    // PRIVACY (data minimization): do NOT send the student's real name to the
+    // third-party AI provider. The insight is for the parent about their own
+    // child, so a neutral reference is sufficient and the name adds no value.
+    // `studentName` is intentionally not forwarded to OpenAI.
+    const userPrompt = `Student: the parent's child (name withheld for privacy)
 Completed assessments: ${completedTypes}
 Assessment data: ${JSON.stringify(assessments.slice(0, 5))}`
 
