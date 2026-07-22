@@ -125,6 +125,7 @@ export type Database = {
           assessment_type: string | null
           completed_at: string | null
           created_at: string
+          cycle_number: number | null
           id: string
           results: Json | null
           updated_at: string
@@ -135,6 +136,7 @@ export type Database = {
           assessment_type?: string | null
           completed_at?: string | null
           created_at?: string
+          cycle_number?: number | null
           id?: string
           results?: Json | null
           updated_at?: string
@@ -145,6 +147,7 @@ export type Database = {
           assessment_type?: string | null
           completed_at?: string | null
           created_at?: string
+          cycle_number?: number | null
           id?: string
           results?: Json | null
           updated_at?: string
@@ -188,6 +191,7 @@ export type Database = {
           completed_at: string
           conscientiousness: number | null
           created_at: string
+          cycle_number: number | null
           extraversion: number | null
           facet_scores: Json
           id: string
@@ -204,6 +208,7 @@ export type Database = {
           completed_at?: string
           conscientiousness?: number | null
           created_at?: string
+          cycle_number?: number | null
           extraversion?: number | null
           facet_scores?: Json
           id?: string
@@ -220,6 +225,7 @@ export type Database = {
           completed_at?: string
           conscientiousness?: number | null
           created_at?: string
+          cycle_number?: number | null
           extraversion?: number | null
           facet_scores?: Json
           id?: string
@@ -241,6 +247,7 @@ export type Database = {
           control: number | null
           created_at: string
           curiosity: number | null
+          cycle_number: number | null
           id: string
           item_responses: Json
           percentile: number | null
@@ -257,6 +264,7 @@ export type Database = {
           control?: number | null
           created_at?: string
           curiosity?: number | null
+          cycle_number?: number | null
           id?: string
           item_responses?: Json
           percentile?: number | null
@@ -273,6 +281,7 @@ export type Database = {
           control?: number | null
           created_at?: string
           curiosity?: number | null
+          cycle_number?: number | null
           id?: string
           item_responses?: Json
           percentile?: number | null
@@ -958,6 +967,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          current_assessment_cycle: number | null
           email: string
           full_name: string
           grade: string | null
@@ -971,6 +981,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          current_assessment_cycle?: number | null
           email: string
           full_name: string
           grade?: string | null
@@ -984,6 +995,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          current_assessment_cycle?: number | null
           email?: string
           full_name?: string
           grade?: string | null
@@ -1419,6 +1431,7 @@ export type Database = {
           achievement: number | null
           completed_at: string
           created_at: string
+          cycle_number: number | null
           id: string
           independence: number | null
           item_responses: Json
@@ -1434,6 +1447,7 @@ export type Database = {
           achievement?: number | null
           completed_at?: string
           created_at?: string
+          cycle_number?: number | null
           id?: string
           independence?: number | null
           item_responses?: Json
@@ -1449,6 +1463,7 @@ export type Database = {
           achievement?: number | null
           completed_at?: string
           created_at?: string
+          cycle_number?: number | null
           id?: string
           independence?: number | null
           item_responses?: Json
