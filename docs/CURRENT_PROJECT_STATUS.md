@@ -12,10 +12,47 @@ unknown**, and the **must-not-touch** list. Keep it honest (verified vs inferred
 
 ---
 
-**Last verified:** 2026-06-20
-**Latest `main` commit:** `1979ebe` — *Merge PR #13 (docs/e2-synthetic-monitoring-closure)*.
-**How verified:** live git + GitHub API queries (branches, PRs, CI check-runs, deploy/status) and live
-Supabase introspection done earlier in the session (read-only); CI status read from GitHub Actions.
+**Last verified:** 2026-07-22
+**Latest `main` commit:** `01895eb` — *Merge PR #24 (fix/grade-relevant-tests-single-source)*.
+**How verified:** live git + GitHub API queries (branches, PRs, CI check-runs, deploy/status) and a
+read-only production `information_schema` query run by the owner in the 🟢 Supabase SQL Editor; CI +
+Vercel deploy status read from GitHub Actions / commit-status API.
+**Assessment Cycles feature (2026-07-22):** shipped live. A student can force a full retake that starts
+a new "assessment cycle": `profiles.current_assessment_cycle` increments and every subsequent result
+row is tagged with `cycle_number`. The report filters to the selected cycle (with a cycle selector when
+>1 cycle exists) and shows an explicit "new cycle in progress" state mid-retake; history preserves all
+prior cycles. Merged via **PR #19/#20** (`feat/assessment-cycles`). The `current_assessment_cycle`
+(profiles) + `cycle_number` (assessments, big_five/caas/work_values_assessments) columns were **applied
+directly to production by the owner in the Supabase SQL Editor via a different tool (Antigravity/Gemini),
+outside this repo's normal flow**; owner-run `information_schema` verification confirmed all 5 columns
+exist, `is_nullable=YES`, `default=1` (so pre-existing rows and the still-unaware deployed code both keep
+working — no submission breakage). The columns were then **captured** as repo migration
+`20260722120000_capture_assessment_cycle_columns.sql` (IF-NOT-EXISTS no-op), and the generated
+`src/integrations/supabase/types.ts` was hand-patched to match (PR #22) after the missing update first
+broke Typecheck CI.
+**Grade-relevant test visibility fix (2026-07-22, PR #24):** `getAllowedAssessmentsForGrade` listed
+tests the assessment pages actually block by grade (bigfive/eq for grades ≤8; caas for ≤10). With the
+cycle feature this became a real defect — younger students saw irrelevant tests, and the report counted
+them as permanently "missing", which could leave a new cycle stuck as "incomplete" forever. Fixed by
+delegating to the canonical `gradeBands.ts` mapping (single source of truth; matches the per-page guards
++ aiService/mentorService), unifying `AssessmentHistory`'s duplicated inline `isVisible`, and gating the
+report's CAAS "next actions" by `isVisible`. Owner verified in production that CAAS no longer shows for
+grades 9–10. Effect — discovery(6–8): riasec,skills · exploration(9–10): +bigfive,workvalues ·
+planning(11+): +caas,eq.
+**Consent/DPA premature-merge + revert (2026-07-22):** PR #14 (`chore/rebase-ai-consent-privacy-onto-main`
+— the branch explicitly labeled "DO NOT MERGE YET") was **merged to `main` in error**, deploying the
+consent-gating frontend to production while its backing `ai_processing_consent` table/RLS/`has_ai_consent()`
+were **never applied to prod**. The `useAiConsent` hook is **fail-closed** (`.catch(() => setConsented(false))`),
+so no minor data leaked — but AI coach features silently went dark for everyone. **Reverted via PR #21**
+(`e146787`, `git revert -m 1`), restoring AI coach behavior; the consent migration file was re-captured
+(file only, no app code) via **PR #23** to resolve a Supabase-Preview migration-drift check. Consent/DPA
+remains branch-only and gated on the legal/policy prerequisites (unchanged).
+**CI infra (2026-07-22):** the `Deploy Supabase Edge Functions` Action began failing on the first push to
+`main` in ~a month; root cause was a stale/expired `SUPABASE_ACCESS_TOKEN` GitHub secret (not code/migration).
+Owner rotated the token; all four checks (Typecheck, Test, Deploy, Supabase Preview) are green on `main`
+and both ▲ Vercel projects deployed successfully at `01895eb`.
+**How verified (2026-06-20 baseline, still valid):** live git + GitHub API queries and live Supabase
+introspection (read-only); CI status read from GitHub Actions.
 **D1 cold-start/save verification (2026-06-19):** manual production test by the owner — a fresh Skills
 submission was confirmed to call `submit-assessment`, return success, and insert a new
 `public.assessments` row (`created_at = 2026-06-19 18:25:05.595441+00`). ✅ Verified by the owner in
@@ -38,6 +75,16 @@ Query A had only **harmless `max_pct_diff = 1` float-vs-decimal rounding artifac
 integrity issue, no backfill**. Repo capture: the lockdown migration is now active in the repo (PR #11).
 
 ## ✅ Live on `main` / production (verified)
+- **Assessment Cycles — LIVE (2026-07-22, PR #19/#20).** Forced full retake starts a new cycle
+  (`profiles.current_assessment_cycle`++), every result row is tagged with `cycle_number`, and the report
+  filters to the selected cycle + shows an "incomplete / new cycle in progress" state mid-retake. DB
+  columns applied to prod out-of-band (owner via Antigravity/Gemini SQL) then captured as migration
+  `20260722120000_capture_assessment_cycle_columns.sql`; `types.ts` hand-patched (PR #22). All nullable,
+  `default=1` → no submission breakage. See the verification block above.
+- **Grade-relevant test visibility — FIXED + LIVE (2026-07-22, PR #24).** Single source of truth for
+  which assessments a grade sees (`getAllowedAssessmentsForGrade` → `gradeBands.ts`). CAAS/EQ/BigFive no
+  longer shown or counted-as-missing for grades that can't take them; unblocks cycle completion for
+  younger grades. Owner-verified in prod (CAAS hidden for 9–10).
 - **Phase B RLS lockdown on `public.assessments` — LIVE (E2, 2026-06-20).** All four direct-client write policies dropped (`Insert own assessments`, `Update own assessments`, `Users can create their own assessments`, `Users can update their own assessments` — two policy generations); SELECT (3) + DELETE (1) preserved. Only the `submit-assessment` edge function (service role) can write → stored scores are tamper-proof. Captured in the repo as `supabase/migrations/20260618140000_g5_phaseb_assessments_rls_lockdown.sql` (un-HOLDed via **PR #11**, `9b52143`; rename-only 0/0; the `HOLD_`-prefixed file no longer exists). Live RLS was changed by the **owner in the SQL Editor** during E2 — Claude Code ran no SQL.
 - **Phase B `submit-assessment`** edge function — server-authoritative RIASEC/Skills/EQ scoring — **LIVE and working** (prod submissions saved for grade-11 all-3 and grade-7 RIASEC/Skills). Scoring is **inlined** in `index.ts`.
 - `assessments.grade_band` + `question_set_version` columns — applied (Migration 1).
@@ -52,10 +99,9 @@ integrity issue, no backfill**. Repo capture: the lockdown migration is now acti
 
 ## 🌿 Branch-only (NOT live, NOT merged)
 - **Consent/DPA system** — `ai_processing_consent` table + RLS + `has_ai_consent()`, server enforcement in 3 student-data AI fns, `AiConsentGate`/`ParentConsentControl`/`consentService`, `DATA-PROCESSING-REGISTER.md`. **Built, not applied, not merged.**
-  - **Rebased + CI-green (2026-06-20):** `chore/rebase-ai-consent-privacy-onto-main` (original `feat/ai-consent-privacy` left intact) is rebased onto current `main` and passes the full CI matrix. Latest branch commit **`0c1296a`**. **PR [#14](https://github.com/johnnymt-web/rasdaedzeb/pull/14) is CI/integration verification ONLY — must NOT be merged yet.**
-    - CI: **Typecheck ✅ · Test/vitest ✅ · Vercel Preview ✅ · Supabase Preview ✅** — the `ai_processing_consent` migration **applies cleanly in preview**.
-    - A **one-line JSX fix** in `StudentCoach.tsx` (`<AiConsentGate><></></AiConsentGate>`) resolved the only CI failure (a pre-existing branch defect never caught because the original branch had no PR). No logic/consent-behavior change.
-    - ⛔ **No production migration applied · no production SQL run · no live RLS changed · no Supabase functions deployed to prod · nothing merged.**
+  - **⚠️ Prematurely merged then REVERTED (2026-07-22):** PR [#14](https://github.com/johnnymt-web/rasdaedzeb/pull/14) (`chore/rebase-ai-consent-privacy-onto-main`, the branch labeled "DO NOT MERGE YET") was **merged to `main` in error** (`8801548`), shipping the consent-gating frontend to production while the backing `ai_processing_consent` table/RLS/`has_ai_consent()` were **never applied to prod**. `useAiConsent` is **fail-closed** → **no minor data leaked**, but AI coach features silently went dark for everyone. **Reverted via PR #21** (`e146787`, `git revert -m 1`) restoring AI coach; the migration file was re-captured (file only, no app code) via **PR #23** to clear a Supabase-Preview migration-drift check. **Consent/DPA is once again branch-only and NOT live.**
+    - Rebased branch (`chore/rebase-ai-consent-privacy-onto-main`, latest `0c1296a`) still passes the full CI matrix; `ai_processing_consent` migration applies cleanly in preview.
+    - ⛔ **No production migration applied · no production SQL run · no live RLS changed · no Supabase functions deployed to prod · consent-gating NOT live on `main`.**
   - **Real student onboarding remains BLOCKED** by consent/DPA/legal-policy items: school DPA · parental consent form · student assent text · privacy notice (ka + en) · assessment disclaimer · retention schedule · DSAR/export/delete procedure · sub-processor DPAs · consent versioning · staff-copilot gating decision. *(Legal/policy items require legal review — not legal advice.)*
   - **Technical go-live is a separate gated task** (deploy ordering): apply migration **first** → regenerate Supabase types → remove `any` casts → deploy functions → deploy frontend → verify consent enforcement → **only then** consider pilot.
 - **Audit document** — `docs/audit-environment-reconciliation` (`AUDIT-2026-06.md`). Not merged.
