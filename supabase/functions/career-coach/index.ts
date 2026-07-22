@@ -25,23 +25,6 @@ serve(async (req: Request) => {
   }
 
   try {
-    // --- Auth + AI-consent gate (student's own report Q&A) ---
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
-    })
-    const { data: { user }, error: authErr } = await userClient.auth.getUser()
-    if (authErr || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
-    const admin = createClient(supabaseUrl, serviceKey)
-    const { data: consentOk } = await admin.rpc('has_ai_consent', { p_student: user.id })
-    if (!consentOk) {
-      return new Response(JSON.stringify({ error: 'AI processing consent required', code: 'consent_required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
-
     const openaiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openaiKey) throw new Error("Missing OPENAI_API_KEY")
 

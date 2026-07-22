@@ -283,15 +283,6 @@ serve(async (req: Request) => {
       }
     }
 
-    // --- AI processing consent gate (minors) --------------------------------
-    // No NEW third-party AI generation without recorded parental/guardian consent
-    // (default-deny). Cache hits above are served without a third-party call.
-    // Requires the ai_processing_consent migration to be applied first.
-    const { data: consentOk } = await admin.rpc('has_ai_consent', { p_student: input.studentId })
-    if (!consentOk) {
-      return json({ error: 'AI processing consent required', code: 'consent_required' }, 403)
-    }
-
     // --- rate limit (only real generations count; cache hits above are free) ---
     const { data: { user: caller } } = await userClient.auth.getUser()
     if (caller) {
