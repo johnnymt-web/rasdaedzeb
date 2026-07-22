@@ -8,9 +8,10 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   role: AppRole | null;
-  profile: { full_name: string | null; avatar_url: string | null; grade: string | null; school_id: string | null; preferred_language?: string | null } | null;
+  profile: { full_name: string | null; avatar_url: string | null; grade: string | null; school_id: string | null; preferred_language?: string | null; current_assessment_cycle?: number | null } | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,13 +21,14 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null; grade: string | null; school_id: string | null; preferred_language?: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null; grade: string | null; school_id: string | null; preferred_language?: string | null; current_assessment_cycle?: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchUserData = async (userId: string, currentUser?: User) => {
@@ -77,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select("full_name, avatar_url, grade, school_id, preferred_language")
+          .select("full_name, avatar_url, grade, school_id, preferred_language, current_assessment_cycle")
           .eq("id", userId)
           .single();
         
@@ -86,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.warn("Auth - preferred_language column missing in profiles, falling back...");
             const fallbackRes = await supabase
               .from("profiles")
-              .select("full_name, avatar_url, grade, school_id")
+              .select("full_name, avatar_url, grade, school_id, current_assessment_cycle")
               .eq("id", userId)
               .single();
             profileData = fallbackRes.data;
@@ -103,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Auth - Profile query caught exception, trying fallback:", profileCatch);
         const fallbackRes = await supabase
           .from("profiles")
-          .select("full_name, avatar_url, grade, school_id")
+          .select("full_name, avatar_url, grade, school_id, current_assessment_cycle")
           .eq("id", userId)
           .single();
         profileData = fallbackRes.data;
@@ -229,8 +231,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   };
 
+  const refreshProfile = async () => {
+    if (!user) return;
+    await fetchUserData(user.id, user);
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, role, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, role, profile, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -88,9 +88,9 @@ const withTimeout = <T>(promise: PromiseLike<T>, ms: number = 15000): Promise<T>
   ]);
 };
 
-export const saveBigFiveAssessment = async (studentId: string, responses: Record<string, number>) => {
+export const saveBigFiveAssessment = async (studentId: string, responses: Record<string, number>, cycleNumber?: number) => {
   const scores = calculateBigFiveScores(responses);
-  
+
   const query = supabase
     .from("big_five_assessments")
     .insert({
@@ -101,7 +101,8 @@ export const saveBigFiveAssessment = async (studentId: string, responses: Record
       extraversion: scores.extraversion,
       agreeableness: scores.agreeableness,
       neuroticism: scores.neuroticism,
-      facet_scores: scores as any
+      facet_scores: scores as any,
+      ...(cycleNumber ? { cycle_number: cycleNumber } : {})
     })
     .select()
     .single();
@@ -156,9 +157,9 @@ export const calculateCaasScores = (responses: Record<string, number>): CaasResu
   };
 };
 
-export const saveCaasAssessment = async (studentId: string, responses: Record<string, number>) => {
+export const saveCaasAssessment = async (studentId: string, responses: Record<string, number>, cycleNumber?: number) => {
   const scores = calculateCaasScores(responses);
-  
+
   const query = supabase
     .from("caas_assessments")
     .insert({
@@ -169,7 +170,8 @@ export const saveCaasAssessment = async (studentId: string, responses: Record<st
       curiosity: scores.curiosity,
       confidence: scores.confidence,
       total_score: scores.total_score,
-      percentile: Math.round((scores.total_score / 5) * 100)
+      percentile: Math.round((scores.total_score / 5) * 100),
+      ...(cycleNumber ? { cycle_number: cycleNumber } : {})
     })
     .select()
     .single();

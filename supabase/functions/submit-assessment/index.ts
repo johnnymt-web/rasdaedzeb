@@ -180,7 +180,7 @@ serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceKey);
     const { data: profile, error: profErr } = await admin
       .from("profiles")
-      .select("grade")
+      .select("grade, current_assessment_cycle")
       .eq("id", user.id)
       .single();
     if (profErr) console.log("[submit] profile fetch error:", profErr.message);
@@ -207,6 +207,7 @@ serve(async (req) => {
       results: scored.results,
       grade_band: band,
       question_set_version: scored.questionSetVersion,
+      cycle_number: profile?.current_assessment_cycle ?? 1,
     });
     if (insErr) {
       console.error("[submit] INSERT ERROR:", JSON.stringify(insErr));

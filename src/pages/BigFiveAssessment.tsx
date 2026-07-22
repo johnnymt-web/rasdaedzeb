@@ -73,13 +73,12 @@ const ITEMS_PER_PAGE = 5;
 export default function BigFiveAssessment() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [responses, setResponses] = useState<Record<string, number>>({});
   const [currentPage, setCurrentPage] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [startTime] = useState(Date.now());
-  const { profile } = useAuth();
   const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
   const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
 
@@ -120,7 +119,7 @@ export default function BigFiveAssessment() {
     setSubmitting(true);
     try {
       const timeTaken = Math.round((Date.now() - startTime) / 1000);
-      await saveBigFiveAssessment(user.id, responses);
+      await saveBigFiveAssessment(user.id, responses, profile?.current_assessment_cycle ?? 1);
       toast({ 
         title: t("assessment.big_five.toast_success"), 
         description: t("assessment.big_five.toast_success_desc") 
