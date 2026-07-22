@@ -1337,13 +1337,13 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
                 <ArrowRight className="w-5 h-5 text-secondary flex-shrink-0" />
                 Discuss subject choices with your counselor or teacher.
               </li>
-              {!caas.isComplete && (
+              {isVisible("caas") && !caas.isComplete && (
                 <li className="flex gap-3 text-foreground/80 bg-white p-4 rounded-xl border shadow-sm">
                   <ArrowRight className="w-5 h-5 text-amber-500 flex-shrink-0" />
                   Complete the Career Adaptability reflection to better understand your readiness.
                 </li>
               )}
-              {caas.isComplete && (
+              {isVisible("caas") && caas.isComplete && (
                 <li className="flex gap-3 text-foreground/80 bg-white p-4 rounded-xl border shadow-sm">
                   <ArrowRight className="w-5 h-5 text-secondary flex-shrink-0" />
                   Add one project or activity to your portfolio to build your confidence.
