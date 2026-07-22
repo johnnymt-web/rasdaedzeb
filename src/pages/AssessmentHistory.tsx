@@ -21,14 +21,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { 
-  normalizeBigFiveAssessment, 
-  normalizeCaasAssessment, 
+import {
+  normalizeBigFiveAssessment,
+  normalizeCaasAssessment,
   normalizeWorkValuesAssessment,
   normalizeRiasecAssessment,
   normalizeSkillsAssessment,
   normalizeEqAssessment
 } from "@/utils/assessmentNormalization";
+import { parseGrade, isAssessmentVisible } from "@/utils/gradeLogic";
 
 interface Assessment {
   id: string;
@@ -41,21 +42,11 @@ interface Assessment {
 export default function AssessmentHistory() {
   const { user, profile, refreshProfile } = useAuth();
   const rawGrade = profile?.grade || user?.user_metadata?.grade || "7";
-  const numericGrade = parseInt(rawGrade.toString().replace(/\D/g, "")) || 7;
+  const numericGrade = parseGrade(rawGrade);
   const [isStartingNewCycle, setIsStartingNewCycle] = useState(false);
 
-  const isVisible = (id: string) => {
-    if (numericGrade >= 7 && numericGrade <= 8) {
-      return ["riasec", "skills"].includes(id);
-    }
-    if (numericGrade >= 9 && numericGrade <= 10) {
-      return ["riasec", "skills", "bigfive", "workvalues"].includes(id);
-    }
-    if (numericGrade >= 11) {
-      return true;
-    }
-    return ["riasec", "skills"].includes(id);
-  };
+  // Single source of truth for grade→test relevance (see gradeLogic.ts).
+  const isVisible = (id: string) => isAssessmentVisible(id, numericGrade);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
