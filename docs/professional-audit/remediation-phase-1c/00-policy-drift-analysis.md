@@ -4,7 +4,19 @@
 
 ## Migration decision (headline)
 
-**DEFERRED.** Per the Phase 1C evidence rule (§4), a capture migration may be written only when the exact live definition of every policy is known from production introspection (`pg_policies`) — not reconstructed from summaries, prose, or memory. **No `pg_policies` dump of these policies is available to this review.** The only artifact in hand is the *proposed* SQL drafted earlier in the session (which the owner was asked to run) — that is memory/prose, explicitly disallowed as the migration basis, and it does not confirm (a) that all five were applied, (b) their live names, (c) their target roles, (d) permissive vs restrictive mode, or (e) the exact PostgreSQL-normalized `qual`. See `01-migration-and-production-checklist.md` for the exact introspection queries required to proceed.
+**RESOLVED — migration created (Phase 1C.1, 2026-07-23).** Exact read-only production evidence was received (`pg_policies` exports A1/A2/A3 + `has_role` definition A4) and inspected directly. It confirms all five policies verbatim, so the capture migration was written from evidence:
+
+> `supabase/migrations/20260723120000_capture_superadmin_select_policies.sql`
+
+Strategy: **deterministic replacement** (`DROP POLICY IF EXISTS` + `CREATE POLICY`) — additive, SELECT-only, idempotent; normalizes a clean DB and the already-patched production DB to the same reviewed definition. **Not applied** (no SQL run; owner applies after review). The earlier deferral (below, retained for history) is superseded.
+
+### Evidence received (A1–A4)
+- **A1** — the five superadmin policies by name: **exactly 5 rows**, each `PERMISSIVE / SELECT / {public} / qual = has_role(auth.uid(), 'superadmin'::app_role) / with_check = NULL`.
+- **A3** — any policy whose `qual` references superadmin: **the same 5 rows, no others** → **A1 and A3 are consistent** (no additional superadmin policy anywhere).
+- **A2** — full policy inventory for the five tables: the five superadmin policies appear within it with identical attributes; the other rows are the pre-existing student/parent/counselor/admin/lockdown policies (and some duplicate INSERT/UPDATE/SELECT generations) — **out of scope, not touched**.
+- **A4** — `public.has_role`: `SECURITY DEFINER`, volatility `STABLE`, `search_path=public`, reads `public.user_roles`; **identical to repo migration `20260618170000`** → the helper is captured and unmodified.
+
+The live `qual` is stored unqualified (`has_role(...'superadmin'::app_role)`) because `search_path` includes `public`; the migration writes it schema-qualified (`public.has_role(...'superadmin'::public.app_role)`) — semantically identical.
 
 ## Five-policy inventory (as proposed / to be confirmed)
 
@@ -24,11 +36,11 @@ Proposed mode: PERMISSIVE (default), roles: unspecified in the draft → would d
 
 | Policy | Live definition available | Present in migrations | Equivalent migration (other name) | Drift confirmed | Action |
 |---|---|---|---|---|---|
-| Superadmin select all profiles | ❌ (proposed only) | ❌ | ❌ (no policy references `has_role(...,'superadmin')`) | Repo-side **YES**; live-side **unconfirmed** | Introspect → capture |
-| Superadmin select all assessments | ❌ | ❌ | ❌ | Repo **YES**; live unconfirmed | Introspect → capture |
-| Superadmin select all big_five | ❌ | ❌ | ❌ | Repo **YES**; live unconfirmed | Introspect → capture |
-| Superadmin select all caas | ❌ | ❌ | ❌ | Repo **YES**; live unconfirmed | Introspect → capture |
-| Superadmin select all work_values | ❌ | ❌ | ❌ | Repo **YES**; live unconfirmed | Introspect → capture |
+| Superadmin select all profiles | ✅ (A1/A2/A3) | ❌ → now captured | ❌ | **YES** | Captured in `20260723120000` |
+| Superadmin select all assessments | ✅ | ❌ → now captured | ❌ | **YES** | Captured |
+| Superadmin select all big_five | ✅ | ❌ → now captured | ❌ | **YES** | Captured |
+| Superadmin select all caas | ✅ | ❌ → now captured | ❌ | **YES** | Captured |
+| Superadmin select all work_values | ✅ | ❌ → now captured | ❌ | **YES** | Captured |
 
 **Verified facts (repository side):**
 - `grep` of `supabase/migrations/*.sql` for `Superadmin select all`, any `... FOR SELECT ... superadmin`, and `has_role(...,'superadmin')` **in a policy** → **zero matches**. No migration creates these policies or an equivalent under another name.
@@ -56,12 +68,14 @@ The five policies depend on `public.has_role(auth.uid(), 'superadmin'::public.ap
 
 At the repository level, drift is **confirmed**: the five superadmin SELECT policies are absent from all migrations and from all branches, and (if live) exist only in production. The dependency helper is captured, so only the policies themselves are missing.
 
-## Unresolved drift / evidence gaps
+## Unresolved drift / evidence gaps — resolved
 
-1. **Exact live definitions** of all five policies (name, `roles`, `permissive`, `cmd`, `qual`, `with_check`) — require `pg_policies` output.
-2. **Whether all five were actually applied** in production (the session pivoted to a UI-roster gap; no post-apply `pg_policies` confirmation was captured for these policies).
-3. **Whether any *other* production-only policy exists** on these five tables beyond the proposed superadmin ones (introspection should list all policies per table, not just the five names, to catch additional drift).
-4. **Roles binding:** the proposed `CREATE POLICY` had no `TO` clause → `public`; production may differ. Capturing the wrong role binding would be its own drift.
+1. ~~Exact live definitions~~ **Received (A1/A2/A3):** all five are `PERMISSIVE / SELECT / {public} / has_role(auth.uid(),'superadmin'::app_role) / with_check NULL`.
+2. ~~Whether all five were actually applied~~ **Confirmed applied** — A1 returns all five.
+3. ~~Other production-only superadmin policy~~ **None** — A3 shows only these five reference superadmin. (A2 does reveal unrelated duplicate INSERT/UPDATE/SELECT generations on these tables — pre-existing, **out of scope** for this phase.)
+4. ~~Roles binding~~ **Confirmed `{public}`** — matches the migration's `TO public`.
+
+**PF-006 status:** repository drift for these five policies is now **captured in code** (migration `20260723120000`). It is **not yet production-verified** — the migration has not been applied, and a clean-deploy reproduction check (Supabase Preview / `db reset`) still needs to run. Note the broader migrations-folder reproducibility caveat (legacy non-timestamped SQL) is separate and unchanged.
 
 ## Remaining PF-007 limitation (unchanged, out of scope here)
 

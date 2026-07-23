@@ -1,6 +1,8 @@
 # Phase 1C — Introspection, Migration & Production Checklist
 
-**Status:** migration **DEFERRED** pending exact production evidence. This document supplies (A) the read-only queries that must be run first, (B) how to turn their output into a safe capture migration, and (C) the review/verification/rollback procedure. **Nothing here may be applied to production until reviewed.** All queries below are **read-only** (`pg_policies` / `pg_proc` catalog reads) and change nothing.
+**Status (updated 2026-07-23, Phase 1C.1):** evidence **received** (A1–A4) and migration **created** — `supabase/migrations/20260723120000_capture_superadmin_select_policies.sql` — using **Strategy A (deterministic `DROP POLICY IF EXISTS` + `CREATE POLICY`)**. **Not applied** (no SQL run; owner applies after review). This document retains (A) the introspection queries that produced the evidence, (D) the post-application verification query, and (E) rollback. All queries below are **read-only** and change nothing.
+
+**Local validation performed on the migration file:** exactly 5 `CREATE POLICY` + 5 executable `DROP POLICY`; all `FOR SELECT`, all `TO public`, all `USING public.has_role(auth.uid(), 'superadmin'::public.app_role)`; **0** `WITH CHECK`, **0** `FOR INSERT/UPDATE/DELETE`, **0** `GRANT`/`ALTER TABLE`/function definitions; exactly the five confirmed tables; `git diff --check` clean. (No `supabase` CLI is available locally per CLAUDE.md §4, so live SQL syntax/apply validation happens in CI/Supabase Preview — not run here.)
 
 ## A. Read-only production introspection (run these first)
 
@@ -115,10 +117,11 @@ Dropping them removes only the superadmin global-read grant; all other policies 
 - The raw A1/A2/A4 output (timestamped) attached to the migration PR as the transcription source.
 - A note of any policy from the proposed five that A1/A2 shows **absent** (i.e., never applied) — that is still-open drift, not to be invented into the migration.
 
-## G. What is still required before a migration can be created
+## G. Remaining production checks (migration created, not yet applied)
 
-1. `pg_policies` output from **A1 and A2** confirming exact `policyname`, `cmd`, `permissive`, `roles`, `qual` for all five (or showing which are absent).
-2. `pg_proc` output from **A4** confirming the live `has_role` matches the repo.
-3. Owner confirmation that the intended production state is "superadmin may globally read these five tables" (product/privacy decision already taken earlier this session; re-affirm for the record).
+1. **Review** `20260723120000_capture_superadmin_select_policies.sql` against the A1/A2 evidence (already transcribed verbatim; `qual` schema-qualified but semantically identical).
+2. **Apply** in production/preview via the normal migration flow (owner). This DROP-IF-EXISTS + CREATE is idempotent — on the already-patched production DB it re-establishes the identical SELECT grant (no behavior change).
+3. **Post-apply verification** — run Section D; expect exactly the five superadmin SELECT policies unchanged, and zero superadmin write policies.
+4. **Reproducibility** — confirm a clean `db reset` / Supabase Preview now reproduces the five policies (green).
 
-**Until A1/A2/A4 are provided, no migration is written and none is applied.** PF-007 privileged-read logging remains open and is out of scope for this phase.
+**PF-006:** these five policies are now captured in code; **production-verification of the apply + clean-deploy reproduction is still pending.** PF-007 privileged-read logging remains open and out of scope.
