@@ -1,6 +1,8 @@
 # Phase 2D.2 — Preview & Production Verification (PF-007)
 
-Run in a **disposable** environment (Supabase Preview branch or local `supabase start`) with **synthetic** users only. Read-only catalog checks are safe anywhere. **Do not apply to production until these pass** and explicit human approval is given. No real student data; no secrets below.
+> **STATUS (2026-07-23): applied and runtime-verified in production — PF-007 Closed in production.** Confirmed in production: migration `20260723170000` = 1 row in `schema_migrations`; the five `Superadmin select all …` policies **removed**; the four audited RPCs **present**; no `anon`/`PUBLIC` RPC EXECUTE; direct global superadmin cross-school SELECT **removed**; audit events `READ_PLATFORM_COUNTS`, `READ_STUDENT`, `READ_STUDENT_REPORT` **observed** with **metadata-only** payloads (no psychometric/report content). See `01-implementation-summary.md` → Production evidence. The **only** matrix item NOT run against production is the **forced-audit-failure** test (C4) — validate that only in a disposable/preview DB. The steps below remain the reusable verification procedure.
+
+Run reusable checks in a **disposable** environment (Supabase Preview branch or local `supabase start`) with **synthetic** users only. Read-only catalog checks are safe anywhere. No real student data; no secrets below.
 
 ## A. Migration history / apply
 - [ ] Push branch → PR; confirm the **Supabase Preview** check applies `20260723170000_audited_superadmin_read_boundary` cleanly (or local `supabase db reset`).
@@ -76,9 +78,10 @@ Check each: `select count(*) from audit_logs` before/after differs by **exactly 
 | anon | any `superadmin_*` | **permission denied for function** (EXECUTE revoked) |
 | S / C / AD / platform-admin | any `superadmin_*` | **`Unauthorized: superadmin role required`** exception; **no** data; no data-bearing audit row |
 
-### C4 — fail-closed (disposable DB only)
+### C4 — fail-closed (disposable DB only) — **NOT run in production (by design)**
 Temporarily force the audit INSERT to fail (e.g. rename `audit_logs` or add a failing constraint in a throwaway DB), then `select public.superadmin_get_student_report_bundle('<S>')`:
 - EXPECT: function **raises**, returns **no** bundle. Restore afterward. **Never run in production.**
+- **Production status:** intentionally **not** executed against production; covered by implementation design + static review. Remains a **regression-test condition** for a disposable/preview DB — **not** an open production vulnerability, and does not downgrade PF-007 from Closed in production.
 
 ### C5 — counselor regression (no superadmin RPC needed)
 - C reads S's report through the **normal** UI path (direct scoped reads) → still works; C does **not** need any `superadmin_*` RPC.
@@ -108,10 +111,12 @@ Temporarily force the audit INSERT to fail (e.g. rename `audit_logs` or add a fa
 --   DROP FUNCTION IF EXISTS public.superadmin_platform_counts();
 ```
 
-## F. Deployment sequence
+## F. Deployment sequence — **completed 2026-07-23 (except C4, by design)**
 1. CI: `npm ci && npx vitest run src/test/privilegedReadAudit.test.ts` + `tsc` green.
 2. Apply in preview; run B1–B3 + C1–C6 + D; regenerate types.
 3. Snapshot `pg_policies` + `routine_privileges`; apply to production via the transactional migration workflow **after explicit human "go"**.
 4. Post-apply: re-run B1 (0 superadmin policies) + a synthetic superadmin detail open (expect data + audit rows) + C1 (direct select empty) + C6 (tamper denied).
+
+**Production outcome (2026-07-23):** applied; B1 (5 policies gone) + RPC presence + no anon/PUBLIC EXECUTE + C1 (direct select empty) confirmed; audit events `READ_PLATFORM_COUNTS`/`READ_STUDENT`/`READ_STUDENT_REPORT` observed with metadata-only payloads. **C4 (forced-audit-failure) intentionally not run in production** — see C4. **PF-007 Closed in production.**
 
 **Stop conditions:** any superadmin direct cross-school `select` still returns rows; any `superadmin_*` RPC returns data without an audit row; audit `details` contains psychometric payload; a non-superadmin successfully calls an RPC; counselor/scoped reads regress; PF-011/012/013 regress.

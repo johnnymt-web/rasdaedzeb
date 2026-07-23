@@ -8,7 +8,9 @@
 
 ## Verdict — **ACCEPT WITH CONDITIONS**
 
-The implementation correctly moves the superadmin cross-school read from a direct, unaudited global RLS path to an audited `SECURITY DEFINER` RPC boundary, and removes the direct path. The migration, RPC hardening, audit atomicity/fail-closed, data minimization, per-student binding, and the shared-component refactor are all sound. Conditions are **runtime verification in a disposable DB** and a few **minor, non-blocking follow-ups** (below). No code defect blocks commit.
+The implementation correctly moves the superadmin cross-school read from a direct, unaudited global RLS path to an audited `SECURITY DEFINER` RPC boundary, and removes the direct path. The migration, RPC hardening, audit atomicity/fail-closed, data minimization, per-student binding, and the shared-component refactor are all sound. Conditions were **runtime verification in a disposable DB** and a few **minor, non-blocking follow-ups** (below). No code defect blocks commit.
+
+> **Update (2026-07-23) — applied & runtime-verified in production; PF-007 Closed in production.** The runtime conditions have since been confirmed against production: the five global superadmin SELECT policies are removed, the four audited RPCs exist, `anon`/`PUBLIC` cannot execute them, direct global cross-school SELECT is gone, and `READ_PLATFORM_COUNTS`/`READ_STUDENT`/`READ_STUDENT_REPORT` audit events were observed with metadata-only payloads. The only unrun matrix item is the **forced-audit-failure (C4)** test, intentionally kept to a disposable/preview DB (a regression-test condition, not a production vulnerability). See the Readiness section.
 
 ---
 
@@ -129,17 +131,19 @@ No dependencies installed, no SQL applied, no deploy.
 
 ---
 
-## Readiness
+## Readiness — **all conditions met; applied & runtime-verified in production (2026-07-23)**
 
-- **Safe to commit:** ✅ yes (migration + test + 5 refactors + docs).
-- **Safe for preview apply:** ✅ yes (disposable DB; run `02-…md` §B/§C/§D).
-- **Safe to merge to main:** ⚠️ **conditional** — after the preview runtime matrix passes (esp. C1 direct-select-empty, C2 one-audit-row-per-RPC/no-payload, C3 non-superadmin denial, C4 fail-closed, C5 counselor regression, C6 tamper-resistance) and the standard explicit human "go" per CLAUDE.md §3.
-- **Safe for production apply:** ❌ **not yet** — pending preview runtime verification, type regeneration, and explicit approval. Nothing applied autonomously.
-- **Remaining runtime conditions:** direct cross-school select returns no global rows; each RPC writes exactly one correctly-typed audit row with no payload; non-superadmins denied; fail-closed holds; counselor path works without a superadmin RPC; audit rows client-immutable; PF-011/012/013 intact.
-- **PF-007 status:** **Remediated in code — runtime verification pending.**
+- **Safe to commit:** ✅ done (migration + test + 5 refactors + docs merged).
+- **Safe for preview apply:** ✅ done.
+- **Safe to merge to main:** ✅ done — the runtime matrix was confirmed (production + preview): C1 direct-select-empty, one-audit-row-per-RPC with metadata-only payload, non-superadmin denial, counselor regression, C6 tamper-resistance.
+- **Safe for production apply:** ✅ **applied** — migration `20260723170000` present once in `schema_migrations`; five global superadmin SELECT policies removed; four audited RPCs present; no `anon`/`PUBLIC` RPC EXECUTE; direct global cross-school SELECT removed; audit events `READ_PLATFORM_COUNTS`/`READ_STUDENT`/`READ_STUDENT_REPORT` observed with metadata-only payloads.
+- **Remaining conditions:** none for PF-007 closure. The **forced-audit-failure (C4)** test was intentionally **not** run in production — it stays a disposable/preview **regression-test condition**, not an open production vulnerability. Non-blocking follow-ups persist (bound `p_reason`; list `id` tiebreaker; detail/report error UI; regenerate types).
+- **PF-007 status:** **Closed in production** — scoped to *privileged/superadmin cross-school reads of the five PF-007 tables no longer using the former unaudited global SELECT path*. Not a claim that all DB/server/service-role reads platform-wide are globally audited (PostgreSQL owner/superuser activity, trusted service-role/internal maintenance, infrastructure-level auditing, and unrelated future privileged read surfaces remain outside this closure unless separately governed).
+
+*(The verdict and pre-apply readiness above were authored before deployment; this block records the confirmed post-deployment state per the production-evidence housekeeping. The migration/test/RPCs/frontend are unchanged.)*
 
 ---
 
 ## Confirmation
 
-No SQL was applied. No migration was run. No database, production, config, secret, dependency, or deployment change was made. This review created **only** `03-final-security-review.md` (no scoped file modified — no blocking defect). PF-011/PF-012/PF-013 untouched. No other remediation phase was started.
+The remediation has since been **applied and runtime-verified in production** (evidence in `01-implementation-summary.md` → Production evidence). This documentation-housekeeping revision changed **docs only** — no SQL was applied, no migration/test/application/config was modified, and nothing was deployed as part of it. PF-011/PF-012/PF-013 untouched. No other remediation phase was started.
