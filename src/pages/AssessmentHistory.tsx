@@ -55,11 +55,10 @@ export default function AssessmentHistory() {
     if (!user?.id) return;
     setIsStartingNewCycle(true);
     try {
-      const nextCycle = (profile?.current_assessment_cycle ?? 1) + 1;
-      const { error } = await supabase
-        .from("profiles")
-        .update({ current_assessment_cycle: nextCycle })
-        .eq("id", user.id);
+      // current_assessment_cycle is DB-protected (PF-011): a direct client
+      // UPDATE is rejected. Advance the cycle through the trusted SECURITY
+      // DEFINER RPC, which performs a controlled +1 on the caller's own row.
+      const { error } = await (supabase as any).rpc("start_new_assessment_cycle");
       if (error) throw error;
       await refreshProfile();
       navigate("/student/assessment");
