@@ -167,6 +167,14 @@ export const buildSynthesisInput = (
   onetCareers,
 });
 
+// Session-scoped memoization keyed by the (lang-inclusive) synthesis cache key.
+// Without this, an errored query (e.g. AI disabled -> fail-closed) has no
+// successful `data` for React Query to treat as fresh, so switching the report
+// language back and forth re-issues a live Edge Function round trip on every
+// single toggle. forceRegenerate (the explicit "Regenerate" action) clears the
+// entry so the user can always force a fresh attempt without a page reload.
+const synthesisMemo = new Map<string, Promise<SynthesisV2Response>>();
+
 /**
  * Generate (or fetch from cache) the deep V2 synthesis report via the Edge Function.
  * Throws on failure so callers can decide whether to show a fallback.
@@ -176,12 +184,25 @@ export const generateSynthesisV2 = async (
   opts: { forceRegenerate?: boolean } = {},
 ): Promise<SynthesisV2Response> => {
   const cacheKey = buildSynthesisCacheKey(input);
-  const { data, error } = await supabase.functions.invoke("generate-synthesis", {
-    body: { input, cacheKey, forceRegenerate: opts.forceRegenerate ?? false },
-  });
-  if (error) throw error;
-  if (!data || (data as any).error) throw new Error((data as any)?.error || "No data from synthesis service");
-  return data as SynthesisV2Response;
+
+  if (opts.forceRegenerate) {
+    synthesisMemo.delete(cacheKey);
+  } else {
+    const memoized = synthesisMemo.get(cacheKey);
+    if (memoized) return memoized;
+  }
+
+  const request = (async () => {
+    const { data, error } = await supabase.functions.invoke("generate-synthesis", {
+      body: { input, cacheKey, forceRegenerate: opts.forceRegenerate ?? false },
+    });
+    if (error) throw error;
+    if (!data || (data as any).error) throw new Error((data as any)?.error || "No data from synthesis service");
+    return data as SynthesisV2Response;
+  })();
+
+  synthesisMemo.set(cacheKey, request);
+  return request;
 };
 
 /**
