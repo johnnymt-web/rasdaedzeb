@@ -1,6 +1,6 @@
 # Phase 2C — Govern Self-Deletion / Account-Erasure Path (PF-013): Implementation Summary
 
-**Branch:** `fix/self-deletion-governance-phase2c` · **Date:** 2026-07-23 · **Scope:** contain the ungoverned client-executable self-deletion RPC. Nothing applied/deployed; no production change. Discovered during PF-012 review (`docs/professional-audit/remediation-phase-2b/02-final-security-review.md`).
+**Branch:** `fix/self-deletion-governance-phase2c` · **Date:** 2026-07-23 · **Scope:** contain the ungoverned client-executable self-deletion RPC. Discovered during PF-012 review (`docs/professional-audit/remediation-phase-2b/02-final-security-review.md`). **Status: applied and verified in production — see the Production evidence section; PF-013 Closed in production.** (This doc was authored pre-apply; the production-evidence and status sections below reflect the confirmed deployed state.)
 
 ## PF-013 confirmation — **CONFIRMED**
 
@@ -45,7 +45,7 @@ No `GRANT`/`REVOKE` for `request_self_deletion` exists anywhere in the repo → 
 | Role | Direct destructive EXECUTE (before) |
 |---|---|
 | PUBLIC / anon / authenticated / student / counselor / school admin / platform admin / superadmin | ✅ (via PUBLIC default) |
-| service_role / internal | ✅ (does not need it — uses direct/admin paths) |
+| service_role / internal | ✅ via an **explicit direct grant** (`service_role=X/postgres`, confirmed in the production ACL) — a trusted internal grant, **not** via PUBLIC |
 
 ## Cascade surface (from `auth.users` deletion)
 
@@ -83,9 +83,9 @@ REVOKE EXECUTE ON FUNCTION public.request_self_deletion() FROM authenticated;
 | school admin | ❌ revoked | n/a | ❌ |
 | platform admin | ❌ revoked (uses `delete_user`) | n/a | ✅ via governed `delete_user` |
 | superadmin | ❌ revoked (uses `delete_user`) | n/a | ✅ via governed `delete_user` |
-| service_role / internal | ❌ this RPC (not needed) | n/a | ✅ direct/admin governed paths |
+| service_role / internal | ✅ **retained** — explicit direct grant (`service_role=X/postgres`); a trusted internal database/API role, **not** an ordinary browser/student identity | n/a | ✅ direct/admin governed paths |
 
-*(No request/approval workflow rows are asserted as functional because none exists in the repo. Admin deletion capability shown reflects the pre-existing `delete_user` path, unchanged here.)*
+*(No request/approval workflow rows are asserted as functional because none exists in the repo. Admin deletion capability shown reflects the pre-existing `delete_user` path, unchanged here. `service_role` retaining EXECUTE does **not** reopen PF-013: PF-013 is ordinary-client/student direct execution, and `service_role` is never an ordinary browser/student identity — see the production-evidence section.)*
 
 ## Migration filename
 
@@ -106,10 +106,34 @@ REVOKE EXECUTE ON FUNCTION public.request_self_deletion() FROM authenticated;
 
 Structural regression (`src/test/selfDeletionGovernance.test.ts`): exact zero-arg signature; REVOKE from PUBLIC/anon/authenticated; no `GRANT EXECUTE`; every privilege statement targets only `request_self_deletion` (does not touch `delete_user`/`start_new_assessment_cycle`); no function-body/policy/trigger/scoring change; no `.rpc('request_self_deletion')` caller in `src`. **16/16 assertions pass** via the dependency-free verifier (vitest can't run locally — broken `node_modules`; CI: `npm ci && npx vitest run src/test/selfDeletionGovernance.test.ts`).
 
+## Production evidence (verified 2026-07-23)
+
+The migration has since been applied and verified in production (recorded here as documentation housekeeping; no code/SQL/migration/test was changed to record it):
+
+| Item | Verified value |
+|---|---|
+| Migration `20260723160000` in `supabase_migrations.schema_migrations` | **exactly 1 row** |
+| Function | `public.request_self_deletion()` |
+| Owner (`pg_proc.proowner`) | `postgres` |
+| `SECURITY DEFINER` (`prosecdef`) | `true` |
+| `search_path` (`proconfig`) | `search_path=public` (pinned) |
+| `pg_proc.proacl` | `{postgres=X/postgres,service_role=X/postgres}` |
+| `has_function_privilege('anon', …, 'EXECUTE')` | **false** |
+| `has_function_privilege('authenticated', …, 'EXECUTE')` | **false** |
+| `has_function_privilege('service_role', …, 'EXECUTE')` | **true** |
+| PUBLIC EXECUTE | **removed** |
+| Ordinary student/browser client can invoke the destructive RPC | **no** |
+
+**Interpretation.** The ACL `{postgres=X/postgres,service_role=X/postgres}` shows the only remaining grantees are the owner (`postgres`) and `service_role`, each via an **explicit direct grant** — there is no `=X/…` PUBLIC entry, confirming PUBLIC/anon/authenticated EXECUTE is gone. `service_role` therefore did **not** hold EXECUTE via PUBLIC; it has an independent, explicit grant that (correctly) survived the PUBLIC revoke. This **retained `service_role` EXECUTE is a trusted internal database/API capability and does not reopen PF-013**, whose confirmed vulnerability is *ordinary client/student direct execution of the destructive `request_self_deletion()` RPC* — a role `service_role` never occupies (PostgREST serves browsers as `anon`/`authenticated`, never `service_role`). **No further REVOKE from `service_role` is warranted** absent an independently justified requirement.
+
+## PF-013 status — **Closed in production**
+
+Closure applies to the confirmed vulnerability: **ordinary client/student direct execution of the destructive `request_self_deletion()` RPC**, which is now blocked at the PostgreSQL EXECUTE-privilege boundary (anon/authenticated/PUBLIC = false). The broader requirement for a **governed deletion-request / safeguarding / consent / audit workflow remains open** (separate future phase) — this closure does not claim that work is complete.
+
 ## Limitations
 
-Runtime EXECUTE-privilege behavior (anon/student rejection at the privilege boundary post-remediation, admin `delete_user` still working, cascade behavior) requires a disposable Postgres with synthetic users — **pending**; full spec in `01-…md`. This phase contains the path; it does **not** build the governed privacy-request workflow (a documented follow-up requiring minor-status, parental consent, assent, audit).
+This phase contains the direct-execution path; it does **not** build the governed privacy-request workflow (a documented follow-up requiring minor-status, parental consent, assent, safeguarding review, and audit). No claim is made about retention periods.
 
 ## Confirmation
 
-No SQL applied; nothing deployed. One migration created (not applied). No application file changed. PF-011 (profile/grade/cycle protection) and PF-012 (assessment DELETE restrictive policies) are untouched. No unrelated remediation started.
+The remediation migration has been applied and verified in production (evidence above). This documentation-housekeeping update changed **docs only** — no SQL, migration, test, application code, or configuration was modified, and nothing was deployed or applied as part of it. PF-011 (profile/grade/cycle protection) and PF-012 (assessment DELETE restrictive policies) are untouched. No unrelated remediation started.

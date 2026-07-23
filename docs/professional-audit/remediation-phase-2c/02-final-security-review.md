@@ -8,7 +8,9 @@
 
 ## Verdict — **ACCEPT WITH CONDITIONS**
 
-The containment migration is correct, minimal, and privilege-only; it closes PF-013's client entry point with no application regression and without touching the function body, RLS, scoring, or the governed admin path. Acceptance conditions are **runtime verification in a disposable DB** (privilege boundary + service_role/owner states + admin-path regression) and a documented **maintainability residual** (a future `DROP`+`CREATE` of the function would reset PUBLIC EXECUTE). No code defect was found; the only change this review made was adding missing owner/`prosecdef`/`service_role` verification queries to the `01` doc.
+The containment migration is correct, minimal, and privilege-only; it closes PF-013's client entry point with no application regression and without touching the function body, RLS, scoring, or the governed admin path. Acceptance conditions were **runtime verification in a disposable DB** (privilege boundary + service_role/owner states + admin-path regression) and a documented **maintainability residual** (a future `DROP`+`CREATE` of the function would reset PUBLIC EXECUTE). No code defect was found; the only change this review made was adding missing owner/`prosecdef`/`service_role` verification queries to the `01` doc.
+
+> **Update (2026-07-23) — applied & verified in production; PF-013 Closed in production.** The runtime conditions have since been confirmed against production: anon/authenticated EXECUTE = false, service_role EXECUTE = **true** (via an explicit direct grant — see the corrected service-role conclusion), owner `postgres`, `SECURITY DEFINER = true`, `search_path = public`, PUBLIC EXECUTE removed, migration present once in `schema_migrations`. One pre-apply reasoning error is corrected below (service_role was expected to *lose* EXECUTE; it correctly *retains* it via an explicit grant). See the Readiness and Service-role sections.
 
 ---
 
@@ -54,16 +56,18 @@ The migration `20260417233000` was applied via the Supabase SQL Editor, whose st
 | school admin | ❌ | ❌ |
 | platform admin | ❌ (not this RPC) | ✅ via `delete_user` (`has_role 'admin'` + audit) |
 | superadmin | ❌ (not this RPC) | ✅ via `delete_user` |
-| service_role / internal | ❌ (loses PUBLIC grant; **not needed**) | ✅ Admin API / direct `auth.users` DELETE / `delete_user` |
+| service_role / internal | ✅ **retained** — explicit direct grant (`service_role=X/postgres`), a trusted internal role (not an ordinary client) | ✅ Admin API / direct `auth.users` DELETE / `delete_user` |
 | function owner (`postgres`) | ✅ (ownership; not a client identity) | ✅ |
 
-Effective semantics, not assumptions: `anon`/`authenticated`/`service_role` held EXECUTE **only** through the PUBLIC default, so revoking PUBLIC removes it for all of them; the explicit per-role REVOKEs are harmless belt-and-suspenders (a REVOKE of a non-existent direct grant is a no-op notice, not an error → clean/idempotent replay).
+Effective semantics, not assumptions (**production-confirmed 2026-07-23**): `anon`/`authenticated` held EXECUTE **only** through the PUBLIC default, so revoking PUBLIC removes it for them (verified `has_function_privilege` = false). `service_role`, however, holds an **explicit direct grant** (production ACL `{postgres=X/postgres,service_role=X/postgres}`) and therefore **retains** EXECUTE (verified = true) — this is intended and safe (see the service-role conclusion). The explicit per-role REVOKEs on anon/authenticated are harmless belt-and-suspenders (a REVOKE of a non-existent direct grant is a no-op notice → clean/idempotent replay).
 
 ---
 
-## Service-role conclusion — **intended and safe (not a defect)**
+## Service-role conclusion — **retains EXECUTE via explicit grant; intended and safe (not a defect)**
 
-`service_role` does **not** retain EXECUTE after `REVOKE FROM PUBLIC`, because **function EXECUTE privilege is a separate mechanism from `bypassrls`** — `service_role` is not a superuser and holds no independent grant on this function. This is **intended and non-breaking**: no repository workflow invokes `request_self_deletion` via `service_role` (zero callers anywhere; governed erasure is `delete_user`, and service contexts can delete `auth.users` directly or via the Admin API). Per the task rule, `service_role` is **not** granted EXECUTE. Runtime confirmation query added to `01` §B5.
+**Correction (production evidence, 2026-07-23):** `service_role` **retains** EXECUTE after the PUBLIC revoke (verified `has_function_privilege('service_role', …) = true`; production ACL `{postgres=X/postgres,service_role=X/postgres}`). My pre-apply review reasoned that `service_role` would *lose* EXECUTE on the assumption it held the privilege only via PUBLIC — that assumption was **wrong**: `service_role` holds an **explicit direct grant** on this function (independent of `bypassrls`, which is indeed a separate mechanism). The migration's `REVOKE … FROM PUBLIC` does not touch that explicit grant, so it correctly survives.
+
+This is **intended and safe, not a defect and not a reopening of PF-013.** PF-013 is *ordinary client/student direct execution* of the destructive RPC; `service_role` is a **trusted internal database/API role that PostgREST never assigns to a browser/student session** (clients are served as `anon`/`authenticated`). The retained privilege is a trusted internal capability. Per the task, **no** REVOKE from `service_role` is recommended absent an independently justified requirement. Runtime confirmation query is in `01` §B5.
 
 ---
 
@@ -134,17 +138,19 @@ No incorrect signature, incomplete revoke, cross-function revocation, broken adm
 
 ---
 
-## Readiness
+## Readiness — **all conditions met; now applied & verified in production (2026-07-23)**
 
-- **Safe to commit:** ✅ yes (migration + test + docs, as corrected).
-- **Safe for preview apply:** ✅ yes (disposable DB; run `01` §B/§C/§D/§F).
-- **Safe to merge to main:** ⚠️ **conditional** — after the preview runtime matrix passes (esp. §B5 service_role=false, §C1–C2 anon/student denied, §C6 admin `delete_user` still works) and the standard explicit human "go" per CLAUDE.md §3. The migration itself does not worsen security.
-- **Safe for production apply:** ❌ **not yet** — pending preview runtime verification and explicit human approval. Nothing to be applied autonomously.
-- **Remaining runtime conditions:** anon/student/counselor/school-admin EXECUTE denied; platform-admin/superadmin denied on this RPC; **service_role EXECUTE = false confirmed**; function owner retains EXECUTE; `delete_user` admin path + audit intact; PF-011/PF-012 and login/profile/assessment flows unaffected.
-- **PF-013 status:** **Remediated in code — runtime verification pending.**
+- **Safe to commit:** ✅ done (migration + test + docs merged).
+- **Safe for preview apply:** ✅ done.
+- **Safe to merge to main:** ✅ done — the runtime privilege matrix was confirmed in production (anon/authenticated EXECUTE = false; **service_role EXECUTE = true** via its explicit direct grant; owner `postgres` retains EXECUTE; `delete_user` admin path intact).
+- **Safe for production apply:** ✅ **applied** — migration `20260723160000` present exactly once in `schema_migrations`; ACL `{postgres=X/postgres,service_role=X/postgres}`; `SECURITY DEFINER = true`; `search_path = public`; PUBLIC EXECUTE removed. Ordinary student/browser clients cannot invoke the destructive RPC.
+- **Remaining conditions:** none for PF-013 closure. The broader **governed deletion-request / safeguarding / consent / audit workflow remains open** as a separate future phase.
+- **PF-013 status:** **Closed in production** — closure scoped to *ordinary client/student direct execution of `request_self_deletion()`* (now blocked at the EXECUTE-privilege boundary). Not a claim that all future privacy/erasure governance work is complete.
+
+*(The verdict and pre-apply readiness above were authored before deployment; this block records the confirmed post-deployment state per the production-evidence housekeeping. The migration/test/function themselves are unchanged.)*
 
 ---
 
 ## Confirmation
 
-No SQL was applied. No migration was run. No database, production, config, secret, dependency, or deployment change was made. The only writes this review produced are the `01` §B4/§B5 verification-query additions and this review file. PF-011 and PF-012 are untouched. No other remediation phase was started.
+The remediation has since been **applied and verified in production** (evidence recorded in `00-implementation-summary.md` → Production evidence). This documentation-housekeeping revision changed **docs only** — no SQL was applied, no migration/test/application/config was modified, and nothing was deployed as part of it. PF-011 and PF-012 are untouched. No other remediation phase was started.
