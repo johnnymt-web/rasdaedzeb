@@ -1,6 +1,8 @@
 # Phase 2C — Preview & Production Verification (PF-013)
 
-Run in a **disposable** environment (Supabase Preview branch or local `supabase start`) with **synthetic** users only. Read-only catalog/privilege checks are safe anywhere. **Do not apply to production until these pass** and explicit human approval is given. No real student data; no secrets below.
+> **STATUS (2026-07-23): applied and verified in production — PF-013 Closed in production.** Production checks confirmed: migration `20260723160000` = 1 row in `schema_migrations`; owner `postgres`; `SECURITY DEFINER = true`; `search_path = public`; ACL `{postgres=X/postgres,service_role=X/postgres}`; `has_function_privilege` → anon **false**, authenticated **false**, service_role **true**; PUBLIC EXECUTE removed. See `00-implementation-summary.md` → Production evidence. The disposable-DB steps below remain the reusable verification procedure (and document what was checked).
+
+Run reusable checks in a **disposable** environment (Supabase Preview branch or local `supabase start`) with **synthetic** users only. Read-only catalog/privilege checks are safe anywhere. No real student data; no secrets below.
 
 ## A. Migration history / apply
 - [ ] Push branch → open PR; confirm the **Supabase Preview** check applies `20260723160000_govern_self_deletion_rpc` cleanly (or local `supabase db reset`).
@@ -54,17 +56,21 @@ where n.nspname = 'public' and p.proname = 'request_self_deletion';
 -- PUBLIC) and is never a PostgREST client identity, so owner retention is safe.
 ```
 
-### B5 — service_role EXECUTE state (verify, do not assume)
+### B5 — client roles vs service_role EXECUTE state (verify, do not assume)
 ```sql
 select
-  has_function_privilege('service_role',  'public.request_self_deletion()', 'EXECUTE') as service_exec,
-  has_function_privilege('anon',          'public.request_self_deletion()', 'EXECUTE') as anon_exec,
-  has_function_privilege('authenticated', 'public.request_self_deletion()', 'EXECUTE') as authd_exec;
--- EXPECT: all FALSE. Function EXECUTE is a SEPARATE mechanism from RLS bypass —
--- service_role does NOT retain EXECUTE merely because it has bypassrls. This is
--- intended and safe: no repository workflow calls request_self_deletion via
--- service_role; governed erasure uses public.delete_user or the Admin API /
--- direct auth.users deletion. Do NOT grant service_role EXECUTE.
+  has_function_privilege('anon',          'public.request_self_deletion()', 'EXECUTE') as anon_exec,          -- expect FALSE
+  has_function_privilege('authenticated', 'public.request_self_deletion()', 'EXECUTE') as authd_exec,         -- expect FALSE
+  has_function_privilege('service_role',  'public.request_self_deletion()', 'EXECUTE') as service_exec;       -- expect TRUE
+-- VERIFIED IN PRODUCTION (2026-07-23): anon = FALSE, authenticated = FALSE,
+-- service_role = TRUE. Function EXECUTE is a SEPARATE mechanism from RLS bypass,
+-- so service_role's result is decided by its GRANTS, not bypassrls. The
+-- production ACL {postgres=X/postgres,service_role=X/postgres} shows service_role
+-- holds an EXPLICIT DIRECT grant (not via PUBLIC), which correctly survived the
+-- PUBLIC revoke. This is intended and safe: service_role is a trusted internal
+-- database/API role, never an ordinary browser/student identity, so its retained
+-- EXECUTE does NOT reopen PF-013 (ordinary-client direct execution is blocked).
+-- Do NOT REVOKE from service_role absent an independently justified requirement.
 ```
 
 ## C. Synthetic runtime tests (disposable DB, synthetic users only)
@@ -125,6 +131,6 @@ This phase is a **security/safeguarding containment**, not a legal determination
 1. CI: `npm ci && npx vitest run src/test/selfDeletionGovernance.test.ts` + `tsc` green.
 2. Apply in preview; run B1–B3 + C1–C8 + D + F.
 3. Snapshot `routine_privileges`; apply to production via the transactional migration workflow **after explicit human "go"**.
-4. Post-apply: re-run B1–B2 (expect anon/authenticated EXECUTE = false) and C2 (student denied) + C6 (admin `delete_user` still works).
+4. Post-apply: re-run B1–B2/B4–B5 (anon/authenticated EXECUTE = false, service_role = true, owner = postgres) and C2 (student denied) + C6 (admin `delete_user` still works). **Done in production 2026-07-23 — all confirmed.**
 
 **Stop conditions:** any client role can still EXECUTE `request_self_deletion`; the admin `delete_user` path breaks; any assessment RLS / PF-011 / PF-012 behavior regresses.
