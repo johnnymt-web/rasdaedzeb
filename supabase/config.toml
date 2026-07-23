@@ -1,13 +1,38 @@
 project_id = "sxhzxlfxfveidjrepvwe"
 
+# PF-002 containment: JWT verification is enforced at the Supabase gateway for
+# every external-AI function in the repository (not left to a dashboard default).
+# A request without a valid user JWT is rejected before the function code runs;
+# the public anon key alone is NOT accepted as user authentication.
+# Every function below that calls an external AI provider carries verify_jwt = true.
+# localize-careers is included: its only caller (src/services/onetService.ts) uses
+# supabase.functions.invoke() from authenticated app sessions, which already sends
+# the user JWT — so enforcing JWT breaks no legitimate caller.
+
 [functions.admin-insights]
+verify_jwt = true
+
 [functions.bulk-onboard-users]
+
 [functions.career-coach]
+verify_jwt = true
+
 [functions.counselor-coach]
+verify_jwt = true
+
 [functions.generate-parent-insight]
+verify_jwt = true
+
 [functions.generate-synthesis]
+verify_jwt = true
+
 [functions.localize-careers]
+verify_jwt = true
+
 [functions.onet-proxy]
+
 [functions.parent-coach]
+verify_jwt = true
+
 [functions.refresh-onet-cache]
 [functions.submit-assessment]

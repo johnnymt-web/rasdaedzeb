@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 // @ts-ignore: Deno URL import
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { parseAiEnabled, AI_DISABLED_BODY, AI_DISABLED_STATUS } from "../_shared/aiFeatureFlag.ts";
 
 const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*";
 
@@ -79,6 +80,15 @@ FORMAT:
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // PF-001/PF-002 containment: fail closed before auth/body parsing or the AI
+  // gateway call. No external processing until AI_FEATURES_ENABLED=true.
+  if (!parseAiEnabled(Deno.env.get("AI_FEATURES_ENABLED"))) {
+    return new Response(JSON.stringify(AI_DISABLED_BODY), {
+      status: AI_DISABLED_STATUS,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {

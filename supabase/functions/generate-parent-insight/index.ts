@@ -1,5 +1,6 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { parseAiEnabled, AI_DISABLED_BODY, AI_DISABLED_STATUS } from "../_shared/aiFeatureFlag.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +10,15 @@ const corsHeaders = {
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+
+  // PF-001/PF-002 containment: fail closed before touching the student payload
+  // or any provider call. No external processing until AI_FEATURES_ENABLED=true.
+  if (!parseAiEnabled(Deno.env.get('AI_FEATURES_ENABLED'))) {
+    return new Response(JSON.stringify(AI_DISABLED_BODY), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: AI_DISABLED_STATUS,
+    })
   }
 
   try {

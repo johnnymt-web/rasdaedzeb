@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { parseAiEnabled, AI_DISABLED_BODY, AI_DISABLED_STATUS } from "../_shared/aiFeatureFlag.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -213,6 +214,15 @@ Respond with ONLY valid JSON, no markdown:
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+
+  // PF-001/PF-002 containment: fail closed before any body parsing or Anthropic
+  // call (including the legacy path). No external processing until AI_FEATURES_ENABLED=true.
+  if (!parseAiEnabled(Deno.env.get('AI_FEATURES_ENABLED'))) {
+    return new Response(JSON.stringify(AI_DISABLED_BODY), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: AI_DISABLED_STATUS,
+    })
   }
 
   try {
