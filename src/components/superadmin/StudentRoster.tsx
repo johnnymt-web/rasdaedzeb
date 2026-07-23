@@ -6,13 +6,15 @@ import { Search, GraduationCap, School, Calendar, Loader2, User, ArrowRight } fr
 import { format } from "date-fns";
 
 /**
- * Global student roster for the superadmin. Reads all profiles (superadmin RLS
- * read path required — see the "Superadmin select all profiles" policy). Lets the
- * superadmin search across every school and open a student's full report.
+ * Global student roster for the superadmin. PF-007: reads go through the audited
+ * SECURITY DEFINER RPC `superadmin_list_students` (writes one READ_STUDENT_LIST
+ * audit event) — NOT a direct cross-school select on profiles. Bounded to the
+ * first 500 profiles; client-side search filters the fetched page (sufficient for
+ * the pilot dataset). Lets the superadmin open a student's full report.
  *
- * NOTE: this lists every profile row (students + any staff profiles). Precise
- * student-only filtering would need a superadmin read path on user_roles; until
- * then, use the grade column / search to find students.
+ * NOTE: this lists every profile row (students + any staff profiles). Generated
+ * Supabase RPC types are regenerated post-migration, so the rpc() call is cast
+ * until then.
  */
 const StudentRoster = () => {
   const [search, setSearch] = useState("");
@@ -35,12 +37,13 @@ const StudentRoster = () => {
   const { data: profiles = [], isLoading, isError } = useQuery({
     queryKey: ["superadmin-student-roster"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, grade, school_id, created_at, is_archived")
-        .order("created_at", { ascending: false });
+      const { data, error } = await (supabase as any).rpc("superadmin_list_students", {
+        p_search: null,
+        p_limit: 500,
+        p_offset: 0,
+      });
       if (error) throw error;
-      return data || [];
+      return (data as any[]) || [];
     },
   });
 

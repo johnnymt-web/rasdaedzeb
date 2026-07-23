@@ -16,15 +16,19 @@ const AdminAssignment = () => {
   const [assigningUserId, setAssigningUserId] = useState("");
   const [assigningSchoolId, setAssigningSchoolId] = useState("");
 
-  // Fetch Users (only those with profiles)
+  // Fetch Users (PF-007: cross-school profile list via the audited superadmin RPC,
+  // not a direct profiles select). Bounded to 500; sufficient for provisioning at
+  // pilot scale. Generated RPC types are regenerated post-migration → cast for now.
   const { data: users = [], isLoading: loadingUsers } = useQuery({
     queryKey: ["superadmin-users"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, school_id");
+      const { data, error } = await (supabase as any).rpc("superadmin_list_students", {
+        p_search: null,
+        p_limit: 500,
+        p_offset: 0,
+      });
       if (error) throw error;
-      return data || [];
+      return (data as any[]) || [];
     }
   });
 
