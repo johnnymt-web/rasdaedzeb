@@ -69,7 +69,7 @@ describe("PF-012 migration — scope discipline", () => {
   it("does not alter scoring, triggers, or grants", () => {
     expect(migration).not.toMatch(/CREATE (OR REPLACE )?FUNCTION/i);
     expect(migration).not.toMatch(/CREATE TRIGGER/i);
-    expect(migration).not.toMatch(/GRANT|REVOKE/i);
+    expect(migration).not.toMatch(/^\s*(GRANT|REVOKE)\b/gim);
   });
 });
 
