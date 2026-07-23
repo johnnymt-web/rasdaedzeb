@@ -5,12 +5,15 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, User, GraduationCap, Calendar, School, Loader2, Sparkles } from "lucide-react";
 import { format } from "date-fns";
-import ComprehensiveReportView from "@/components/assessment/ComprehensiveReportView";
+import ComprehensiveReportView, { SuperadminReportBundle } from "@/components/assessment/ComprehensiveReportView";
 
 /**
  * Read-only student detail for the superadmin: profile header + the full
- * Comprehensive Report (rendered in counselor/staff mode). Relies on the
- * superadmin RLS read policies on profiles + assessment tables.
+ * Comprehensive Report. PF-007: cross-school reads go through the audited
+ * SECURITY DEFINER RPCs (superadmin_get_student_profile /
+ * superadmin_get_student_report_bundle) — each write an audit_logs event — not
+ * direct reads of the five protected tables. (Generated Supabase RPC types are
+ * regenerated post-migration, so the rpc() calls are cast until then.)
  */
 const SuperAdminStudentDetail = () => {
   const { studentId } = useParams<{ studentId: string }>();
@@ -18,22 +21,25 @@ const SuperAdminStudentDetail = () => {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["superadmin-student-profile", studentId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, grade, created_at, school_id")
-        .eq("id", studentId!)
-        .single();
+      const { data, error } = await (supabase as any).rpc("superadmin_get_student_profile", {
+        p_student_id: studentId!,
+      });
       if (error) throw error;
+      return data as
+        | { id: string; full_name: string | null; email: string | null; grade: string | null; created_at: string | null; school_id: string | null; school_name: string | null }
+        | null;
+    },
+    enabled: !!studentId,
+  });
 
-      if (data.school_id) {
-        const { data: school } = await supabase
-          .from("schools")
-          .select("name")
-          .eq("id", data.school_id)
-          .single();
-        return { ...data, school_name: school?.name };
-      }
-      return data;
+  const { data: reportBundle } = useQuery({
+    queryKey: ["superadmin-student-report-bundle", studentId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("superadmin_get_student_report_bundle", {
+        p_student_id: studentId!,
+      });
+      if (error) throw error;
+      return data as SuperadminReportBundle;
     },
     enabled: !!studentId,
   });
@@ -95,11 +101,18 @@ const SuperAdminStudentDetail = () => {
                 Discovery Profile
               </h2>
               <div className="border-t pt-6">
-                <ComprehensiveReportView
-                  studentId={studentId!}
-                  grade={profile.grade || undefined}
-                  isCounselorView={true}
-                />
+                {reportBundle ? (
+                  <ComprehensiveReportView
+                    studentId={studentId!}
+                    grade={profile.grade || undefined}
+                    isCounselorView={true}
+                    preloadedBundle={reportBundle}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                )}
               </div>
             </div>
           </div>

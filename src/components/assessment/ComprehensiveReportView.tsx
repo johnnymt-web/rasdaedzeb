@@ -75,13 +75,29 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 
+/**
+ * Pre-loaded assessment bundle for the audited superadmin read path (PF-007).
+ * When supplied, ComprehensiveReportView renders from this data and performs NO
+ * direct reads of the five protected tables. Shape matches
+ * public.superadmin_get_student_report_bundle. Counselor/student mode leaves this
+ * undefined and keeps its existing scoped direct reads.
+ */
+export interface SuperadminReportBundle {
+  std: any[];
+  big_five: any[];
+  caas: any[];
+  work_values: any[];
+  current_cycle: number;
+}
+
 interface Props {
   studentId: string;
   grade?: string;
   isCounselorView?: boolean;
+  preloadedBundle?: SuperadminReportBundle | null;
 }
 
-const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView }: Props) => {
+const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView, preloadedBundle }: Props) => {
   const { t, i18n } = useTranslation();
   const { user, profile: authProfile } = useAuth();
   const queryClient = useQueryClient();
@@ -132,8 +148,27 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView 
 
 
   const { data: rawAssessmentData, isLoading, isError } = useQuery({
-    queryKey: ["gold-standard-report-raw", studentId],
+    queryKey: ["gold-standard-report-raw", studentId, preloadedBundle ? "preloaded" : "direct"],
     queryFn: async () => {
+      // PF-007 audited superadmin path: render from the pre-loaded, server-audited
+      // bundle instead of reading the five protected tables directly.
+      if (preloadedBundle) {
+        const stdData = preloadedBundle.std || [];
+        const bigFiveData = preloadedBundle.big_five || [];
+        const caasData = preloadedBundle.caas || [];
+        const workValuesData = preloadedBundle.work_values || [];
+        const currentCycle = preloadedBundle.current_cycle ?? 1;
+        const cycleOf = (row: any) => row.cycle_number ?? 1;
+        const availableCycles = Array.from(new Set<number>([
+          ...stdData.map(cycleOf),
+          ...bigFiveData.map(cycleOf),
+          ...caasData.map(cycleOf),
+          ...workValuesData.map(cycleOf),
+          currentCycle,
+        ])).sort((a, b) => a - b);
+        return { stdData, bigFiveData, caasData, workValuesData, currentCycle, availableCycles };
+      }
+
       // Wrap in a timeout to prevent hanging indefinitely on network issues
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Report data fetch timed out after 15s")), 15000)

@@ -18,20 +18,19 @@ const SuperAdminDashboard = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"overview" | "students" | "schools" | "admins" | "settings">("overview");
 
-  // Global Stats Fetch
+  // Global Stats Fetch. PF-007: profile/assessment counts require cross-school
+  // visibility that the removed superadmin SELECT policies used to grant, so they
+  // come from the audited superadmin_platform_counts RPC (returns non-PII
+  // aggregate integers only). Generated RPC types are regenerated post-migration.
   const { data: stats, isLoading } = useQuery({
     queryKey: ["superadmin-stats"],
     queryFn: async () => {
-      const [schools, profiles, assessments] = await Promise.all([
-        supabase.from("schools").select("id", { count: "exact" }),
-        supabase.from("profiles").select("id", { count: "exact" }),
-        supabase.from("assessments").select("id", { count: "exact" })
-      ]);
-
+      const { data, error } = await (supabase as any).rpc("superadmin_platform_counts");
+      if (error) throw error;
       return {
-        schools: schools.count || 0,
-        users: profiles.count || 0,
-        assessments: assessments.count || 0
+        schools: (data?.schools as number) || 0,
+        users: (data?.users as number) || 0,
+        assessments: (data?.assessments as number) || 0,
       };
     }
   });
