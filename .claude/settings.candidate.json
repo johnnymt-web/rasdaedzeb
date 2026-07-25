@@ -1,0 +1,89 @@
+{
+  "_candidate_note": "CANDIDATE — NOT ACTIVE. Phase O2 Segment 1/1R review artifact (spec §11/§12/§13). This file is NOT read by Claude Code; the live .claude/settings.json and .claude/settings.local.json were deliberately NOT modified, so the guard is NOT armed. ACTIVATION (Human Gate, owner-only): after independent RE-review, the owner performs the transformation in _activation_reconciliation. Do not activate autonomously.",
+  "_authoritative_layer_note": "The deterministic authority is the PreToolUse guard (.claude/hooks/guard.mjs). This permissions.deny list is a best-effort defense-in-depth MIRROR — simple glob permissions cannot express package-runner unwrapping (npx/pnpm dlx), PowerShell -EncodedCommand, Start-Process, or dynamic iex. Do not treat the deny-list as complete; the guard is the layer that covers those.",
+  "_execution_boundary_note": "O2-S1R-R02 (OWNER DECISION REQUIRED before unattended L2 activation): the guard classifies COMMAND STRINGS. It cannot see inside an executed program, so `node script.js` / `powershell -File x.ps1` / `./x.sh` / `npm run <script>` can internally invoke `git push` via Git Credential Manager. Command classification alone therefore cannot guarantee the all-branch no-autonomous-push invariant. Closure requires a CAPABILITY boundary (credential-free / isolated execution), not more parsing — see docs analysis. Until the owner selects an execution-boundary model, the guard + human gates are necessary but NOT sufficient for unattended arbitrary-script autonomy.",
+  "_removed_unsafe_allows": [
+    "Bash(git add *)      -> replaced by explicit-path staging; git add . / -A denied",
+    "Bash(git push)       -> all autonomous push (and send-pack) prohibited (spec §10)",
+    "Bash(\"...git.exe\" push -u origin <branch>)  -> push prohibited",
+    "Bash(git checkout *) -> not auto-allowed",
+    "Bash(git revert *)   -> not auto-allowed",
+    "Bash(node -e ' *)    -> inline interpreter eval is a reviewed bypass (O2-S1-R02); denied"
+  ],
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" status:*)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" diff:*)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" log:*)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" branch:*)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" show:*)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" ls-files:*)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" fetch origin)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest:*)",
+      "Bash(node:*)"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git send-pack:*)",
+      "Bash(git add .)",
+      "Bash(git add -A:*)",
+      "Bash(git add --all:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -f:*)",
+      "Bash(node -e:*)",
+      "Bash(node --eval:*)",
+      "Bash(node -p:*)",
+      "Bash(python -c:*)",
+      "Bash(python3 -c:*)",
+      "Bash(supabase db push:*)",
+      "Bash(supabase migration up:*)",
+      "Bash(supabase functions deploy:*)",
+      "Bash(supabase db reset:*)",
+      "Bash(supabase secrets set:*)",
+      "Bash(vercel deploy:*)",
+      "Bash(vercel --prod:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(psql:*)",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__deploy_edge_function",
+      "mcp__supabase__create_branch"
+    ]
+  },
+  "_protected_candidate_note": "O2-S1-R12: .claude/settings.candidate.json and .claude/settings.local.candidate.json are in the guard's protected-path set so the armed design cannot autonomously pre-stage a malicious safety configuration for a later activation.",
+  "_activation_reconciliation": {
+    "_note": "O2-S1-R07/R15: activation must reconcile BOTH live settings files, not settings.json alone — a permissive entry left in settings.local.json would preserve a bypass. This block is the explicit, reviewable transformation. Perform only at the Human Activation Gate, owner-only, AFTER independent re-review.",
+    "settings_json_remove": [
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)  [narrow to explicit, or keep if acceptable]",
+      "Bash(git revert *)",
+      "Bash(\"...git.exe\" push)  and every \"...git.exe\" push -u origin <branch> entry",
+      "Bash(sed -i ... 08-master-findings-register.md / *.md)  [broad in-place edit of audit docs]"
+    ],
+    "settings_local_json_remove": [
+      "Bash(node -e ' *)   [reopens the inline-eval bypass reviewed as O2-S1-R02]"
+    ],
+    "settings_json_add": [
+      "merge permissions.allow (curated read-only + npx tsc/vitest + node) from this candidate",
+      "add permissions.deny (this candidate's deny list)",
+      "add the top-level hooks.PreToolUse registration below"
+    ],
+    "both_files_note": "Confirm neither settings.json nor settings.local.json retains: autonomous git push, git add *, git checkout *, git revert *, node -e/--eval, or broad control-plane mutation allows. defaultMode must NOT be bypassPermissions."
+  },
+  "_hooks_to_register_on_activation": {
+    "_note": "On activation, move this block to the top-level \"hooks\" key of the LIVE settings.json. Runs the deterministic guard on every tool call. HOOK CONTRACT: exit-code-2 PreToolUse blocking with stdin {tool_name, tool_input} is version-supported by Claude Code 2.1.186 (independently re-verified).",
+    "_windows_path_prerequisite": "O2-S1-R13 — ACTIVATION-TIME SMOKE-TEST PREREQUISITE: $CLAUDE_PROJECT_DIR is the intended portable token Claude Code substitutes for hook commands. Its expansion under the actual Windows hook-execution shell for 2.1.186 was NOT behaviorally confirmed (cannot be, without arming). At activation, run a one-shot smoke test (e.g., a benign tool call that must be allowed, and a `git push` that must be blocked) to confirm the guard is invoked and $CLAUDE_PROJECT_DIR resolves; if it does not resolve, substitute the Windows-correct project-dir reference before relying on the guard. Do NOT invent alternative syntax pre-activation.",
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.mjs\"" }
+        ]
+      }
+    ]
+  }
+}

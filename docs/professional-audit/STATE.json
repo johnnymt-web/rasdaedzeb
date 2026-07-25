@@ -1,0 +1,1008 @@
+{
+  "schema_version": "1.0.0",
+  "generated": "2026-07-24T00:00:00Z",
+  "source_register": "docs/professional-audit/08-master-findings-register.md",
+  "governance_note": "STATE.json is workflow governance + evidence tracking, NOT identity authentication. An actor_role value is not proof a human authorized a transition. Implementer context may advance at most to IMPLEMENTED; REVIEWED requires a reviewer artifact; PRODUCTION_VERIFIED and CLOSED are owner-controlled and require production evidence (E4-C/E4-B). Validate with docs/professional-audit/state-validator.mjs.",
+  "enums": {
+    "states": [
+      "OPEN",
+      "ARCHITECTURE_APPROVED",
+      "IMPLEMENTED",
+      "REVIEWED",
+      "PREVIEW_VERIFIED",
+      "PRODUCTION_VERIFIED",
+      "CLOSED"
+    ],
+    "evidence_levels": [
+      "E0",
+      "E1",
+      "E2",
+      "E3",
+      "E4-C",
+      "E4-B"
+    ],
+    "actor_roles": [
+      "implementer",
+      "reviewer",
+      "owner"
+    ],
+    "severities": [
+      "Critical",
+      "High",
+      "Medium",
+      "Low",
+      "Informational"
+    ]
+  },
+  "owner_only_states": [
+    "PRODUCTION_VERIFIED",
+    "CLOSED"
+  ],
+  "implementer_max_state": "IMPLEMENTED",
+  "register_notes": [
+    "ID COLLISION RESOLVED (O2-S1-R08): canonical PF-013 = 'Reports/AI syntheses not reproducible' (Open). The self-deletion-governance remediation that was NON-CANONICALLY labelled 'PF-013' inside docs/professional-audit/remediation-phase-2c/ now has a DISTINCT canonical machine id PF-033 with its own evidence_locations and a historical_labels provenance entry. Because the canonical `id` is the machine key and duplicate ids are validator-rejected, evidence for one cannot cross-attach to the other. Historical source documents are left unchanged to preserve provenance.",
+    "Seed conservatism: findings with tracked remediation (PF-006/007/011/012/033) are seeded at IMPLEMENTED with reported_production_status referencing tracked production-evidence docs. Their production closure is NOT asserted by the implementer; the owner must transition them per the governance rules. PF-006 is E1 (policy-capture migration, no automated behavioral test); PF-007/011/012/033 are E2 (tracked automated tests)."
+  ],
+  "findings": [
+    {
+      "id": "PF-001",
+      "severity": "Critical",
+      "title": "Minors' psychometric data sent to third-party AI with no live consent mechanism",
+      "risk_class": [
+        "ai",
+        "privacy",
+        "minors",
+        "consent"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-002",
+      "severity": "Critical",
+      "title": "Unauthenticated AI edge functions (career-coach, generate-parent-insight); no rate limiting",
+      "risk_class": [
+        "ai",
+        "security",
+        "authz"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-003",
+      "severity": "Critical",
+      "title": "Client-side scoring + client INSERT for big_five/caas/work_values (tamperable)",
+      "risk_class": [
+        "data-integrity",
+        "scoring",
+        "security",
+        "rls"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-004",
+      "severity": "High",
+      "title": "Cross-tenant link management via global has_role(admin)",
+      "risk_class": [
+        "security",
+        "authz",
+        "rls",
+        "tenancy"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-005",
+      "severity": "High",
+      "title": "Two competing counselor-student linkage tables (assignments vs students)",
+      "risk_class": [
+        "security",
+        "authz",
+        "db",
+        "rls"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-006",
+      "severity": "High",
+      "title": "Out-of-band production schema/RLS changes; 5 superadmin SELECT policies uncaptured",
+      "risk_class": [
+        "db",
+        "migration",
+        "rls",
+        "security"
+      ],
+      "state": "IMPLEMENTED",
+      "evidence_level": "E1",
+      "evidence_locations": [
+        "supabase/migrations/20260723120000_capture_superadmin_select_policies.sql",
+        "docs/professional-audit/remediation-phase-1c/"
+      ],
+      "reported_production_status": "reported-closed-in-production",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Owner: review tracked E4 evidence and transition (REVIEWED -> PREVIEW_VERIFIED -> PRODUCTION_VERIFIED -> CLOSED). Implementer cannot advance beyond IMPLEMENTED.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        },
+        {
+          "state": "IMPLEMENTED",
+          "evidence_level": "E1",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "policy-capture migration tracked in repo (static/source evidence, no automated behavioral test) → E1; production closure NOT asserted here"
+        }
+      ]
+    },
+    {
+      "id": "PF-007",
+      "severity": "High",
+      "title": "Superadmin global read of all minors' data with no access audit logging",
+      "risk_class": [
+        "privacy",
+        "safeguarding",
+        "rls",
+        "authz",
+        "minors"
+      ],
+      "state": "IMPLEMENTED",
+      "evidence_level": "E2",
+      "evidence_locations": [
+        "supabase/migrations/20260723170000_audited_superadmin_read_boundary.sql",
+        "src/test/privilegedReadAudit.test.ts",
+        "docs/professional-audit/remediation-phase-2d/"
+      ],
+      "reported_production_status": "reported-closed-in-production",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Owner: review tracked E4 evidence and transition (REVIEWED -> PREVIEW_VERIFIED -> PRODUCTION_VERIFIED -> CLOSED). Implementer cannot advance beyond IMPLEMENTED.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        },
+        {
+          "state": "IMPLEMENTED",
+          "evidence_level": "E2",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "remediation migration + tests tracked in repo; production closure NOT asserted here"
+        }
+      ]
+    },
+    {
+      "id": "PF-008",
+      "severity": "High",
+      "title": "CAAS/Work Values/EQ item text hard-coded English for Georgian students",
+      "risk_class": [
+        "psychometric",
+        "localization",
+        "minors"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-009",
+      "severity": "High",
+      "title": "No authorization/RLS/integration tests (suite = placeholder + scoring only)",
+      "risk_class": [
+        "testing",
+        "security"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-010",
+      "severity": "High",
+      "title": "work_values readable by any same-school counselor (role, not assignment scoped)",
+      "risk_class": [
+        "rls",
+        "authz",
+        "security"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-011",
+      "severity": "High",
+      "title": "Students can UPDATE own profiles.grade and current_assessment_cycle",
+      "risk_class": [
+        "data-integrity",
+        "rls",
+        "authz",
+        "security"
+      ],
+      "state": "IMPLEMENTED",
+      "evidence_level": "E2",
+      "evidence_locations": [
+        "supabase/migrations/20260723130000_protect_controlled_profile_fields.sql",
+        "src/test/profileFieldProtection.test.ts",
+        "docs/professional-audit/remediation-phase-2a/"
+      ],
+      "reported_production_status": "reported-closed-in-production",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Owner: review tracked E4 evidence and transition (REVIEWED -> PREVIEW_VERIFIED -> PRODUCTION_VERIFIED -> CLOSED). Implementer cannot advance beyond IMPLEMENTED.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        },
+        {
+          "state": "IMPLEMENTED",
+          "evidence_level": "E2",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "remediation migration + tests tracked in repo; production closure NOT asserted here"
+        }
+      ]
+    },
+    {
+      "id": "PF-012",
+      "severity": "High",
+      "title": "Students can DELETE own assessment rows (destroys longitudinal record)",
+      "risk_class": [
+        "data-integrity",
+        "rls",
+        "safeguarding",
+        "minors"
+      ],
+      "state": "IMPLEMENTED",
+      "evidence_level": "E2",
+      "evidence_locations": [
+        "supabase/migrations/20260723150000_block_assessment_history_deletion.sql",
+        "src/test/assessmentDeletionProtection.test.ts",
+        "docs/professional-audit/remediation-phase-2b/"
+      ],
+      "reported_production_status": "reported-closed-in-production",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Owner: review tracked E4 evidence and transition (REVIEWED -> PREVIEW_VERIFIED -> PRODUCTION_VERIFIED -> CLOSED). Implementer cannot advance beyond IMPLEMENTED.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        },
+        {
+          "state": "IMPLEMENTED",
+          "evidence_level": "E2",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "remediation migration + tests tracked in repo; production closure NOT asserted here"
+        }
+      ]
+    },
+    {
+      "id": "PF-013",
+      "severity": "High",
+      "title": "Reports/AI syntheses not reproducible (prompts/thresholds unversioned; no output validation)",
+      "risk_class": [
+        "ai",
+        "reproducibility",
+        "psychometric"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-014",
+      "severity": "Medium",
+      "title": "Free-text prompts logged to ai_logs; user.id in submit logs; retention undefined",
+      "risk_class": [
+        "privacy",
+        "ai",
+        "logging"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-015",
+      "severity": "Medium",
+      "title": "Skills instrument = 1 item per construct shown as %-scores like 48-item RIASEC",
+      "risk_class": [
+        "psychometric",
+        "minors"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-016",
+      "severity": "Medium",
+      "title": "12-item EQ self-report brevity vs reporting weight",
+      "risk_class": [
+        "psychometric"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-017",
+      "severity": "Medium",
+      "title": "Signup role self-selection via user_metadata.role (student/parent not trigger-blocked)",
+      "risk_class": [
+        "security",
+        "authz"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-018",
+      "severity": "Medium",
+      "title": "Self-registered students orphaned (school_id NULL) — invisible to staff",
+      "risk_class": [
+        "safeguarding",
+        "product",
+        "minors"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-019",
+      "severity": "Medium",
+      "title": "Migrations folder not rebuildable (legacy non-timestamped SQL + scripts)",
+      "risk_class": [
+        "db",
+        "migration",
+        "reproducibility"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-020",
+      "severity": "Medium",
+      "title": "Generated types.ts hand-patched; pervasive as-any casts",
+      "risk_class": [
+        "code-quality"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-021",
+      "severity": "Medium",
+      "title": "onet-proxy 500 in prod; endpoint unauthenticated",
+      "risk_class": [
+        "reliability",
+        "security"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-022",
+      "severity": "Medium",
+      "title": "Cloud-sync-timed-out false-negative race (toast despite saved row)",
+      "risk_class": [
+        "ux",
+        "reliability"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-024",
+      "severity": "Medium",
+      "title": "Analytics without small-group suppression (n<5 re-identify students)",
+      "risk_class": [
+        "privacy",
+        "minors"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-026",
+      "severity": "Medium",
+      "title": "No in-product DSAR/export/correction/deletion; retention undefined",
+      "risk_class": [
+        "privacy",
+        "legal",
+        "dsar"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-027",
+      "severity": "Medium",
+      "title": "Mixed-language product: report headings/dialogs hard-coded English",
+      "risk_class": [
+        "localization",
+        "ux"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-023",
+      "severity": "Low",
+      "title": "PWA disabled via selfDestroying — no offline/install",
+      "risk_class": [
+        "ux"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-025",
+      "severity": "Low",
+      "title": "No a11y conformance work (unlabeled icon buttons, charts, contrast)",
+      "risk_class": [
+        "accessibility",
+        "ux"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-028",
+      "severity": "Low",
+      "title": "Client fallback RIASEC bank would be rejected by 48-item server validation",
+      "risk_class": [
+        "dead-code"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-029",
+      "severity": "Low",
+      "title": "Client-written audit_logs (spoofable); dead ai_usage_stats schema",
+      "risk_class": [
+        "security",
+        "data-integrity"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open-live",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-031",
+      "severity": "Low",
+      "title": "Duplicated scorer (scoring.ts + inlined copy) kept in sync by hand",
+      "risk_class": [
+        "code-quality"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-030",
+      "severity": "Informational",
+      "title": "Stack is Vite/React SPA, not Next.js",
+      "risk_class": [
+        "informational"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-032",
+      "severity": "Informational",
+      "title": "Server-only pg package in frontend dependencies (unused)",
+      "risk_class": [
+        "informational"
+      ],
+      "state": "OPEN",
+      "evidence_level": "E0",
+      "evidence_locations": [
+        "docs/professional-audit/08-master-findings-register.md"
+      ],
+      "reported_production_status": "open",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "seeded from register"
+        }
+      ]
+    },
+    {
+      "id": "PF-033",
+      "severity": "High",
+      "title": "Self-deletion / account-erasure RPC governance (request_self_deletion privilege hardening)",
+      "risk_class": [
+        "security",
+        "authz",
+        "privacy",
+        "minors",
+        "safeguarding"
+      ],
+      "supplemental": true,
+      "historical_labels": [
+        "PF-013 (non-canonical; used only inside docs/professional-audit/remediation-phase-2c/)"
+      ],
+      "state": "IMPLEMENTED",
+      "evidence_level": "E2",
+      "evidence_locations": [
+        "supabase/migrations/20260723160000_govern_self_deletion_rpc.sql",
+        "src/test/selfDeletionGovernance.test.ts",
+        "docs/professional-audit/remediation-phase-2c/"
+      ],
+      "reported_production_status": "reported-closed-in-production",
+      "actor_role": "implementer",
+      "timestamp": "2026-07-24T00:00:00Z",
+      "next_action": "Owner: review tracked E4 evidence and transition (REVIEWED -> ... -> PRODUCTION_VERIFIED -> CLOSED). Implementer cannot advance beyond IMPLEMENTED. NOTE: this is the self-deletion item historically mislabeled 'PF-013'; canonical PF-013 is the AI-reproducibility finding and is a DIFFERENT record.",
+      "history": [
+        {
+          "state": "OPEN",
+          "evidence_level": "E0",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "reconciled from remediation-phase-2c self-deletion stream (was non-canonically 'PF-013')"
+        },
+        {
+          "state": "IMPLEMENTED",
+          "evidence_level": "E2",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-24T00:00:00Z",
+          "note": "privilege-hardening migration + selfDeletionGovernance.test.ts tracked in repo; production closure NOT asserted here"
+        }
+      ]
+    }
+  ]
+}

@@ -50,8 +50,9 @@ Never, without an explicit human "go":
 When in doubt: **stop and ask.** Approval in one context does not extend to the next.
 
 ## 4. Tooling reality (verified this environment)
-- ✅ **No local Node/npm/npx/supabase CLI.** Cannot run builds/tests/typecheck locally.
-  Verification happens in **CI** (GitHub Actions) and via the **GitHub API**.
+- ✅ **Node v24 + npx are present**; `tsc --noEmit` and `vitest` run **locally**. Prefer local
+  verification (tsc / vitest / dependency-free structural checks); **CI** (GitHub Actions) remains
+  the gate of record. **No Supabase / Vercel / GitHub CLI** installed.
 - ✅ Git is **not on PATH**; use `C:\Program Files\Git\cmd\git.exe`.
 - ✅ SQL is applied by the **owner in the Supabase SQL Editor** (not via CLI). Provide SQL; do not assume you can run it.
 - ✅ Deploys: **Vercel** auto-deploys `main`; **edge functions** deploy via the `Deploy Supabase Edge Functions` Action on push to `main`.
@@ -68,3 +69,14 @@ When in doubt: **stop and ask.** Approval in one context does not extend to the 
 2. Identify which competencies the task touches; read those docs.
 3. If the task touches RLS/auth/migrations/minor-data/AI → follow §3 (explain → approve → stage).
 4. Prefer the dedicated file/search tools; verify claims against source before asserting.
+
+## 7. Orchestration governance (Claude Code)
+**Controlling spec (authoritative, do not redesign):** `docs/claude-orchestration/01-approved-orchestration-architecture.md`.
+**Machine-readable finding state:** `docs/professional-audit/STATE.json` (validate with `docs/professional-audit/state-validator.mjs`).
+- ✅ **`.claude/` is the canonical** Claude Code config. `.agents/`, `.codex/`, `AGENTS.md` are **legacy/non-canonical** — leave untouched.
+- **Autonomy L0–L3:** L0 read / L1 local-reversible = autonomous. **L2** (RLS, SECURITY DEFINER, scoring, AI-authz, psychometric interpretation, consent/safeguarding, migrations) = discovery+architecture → **HUMAN GATE 1** → implement → **independent review** → stop. **L3** (merge, deploy, prod SQL, **any `git push`**, AI enablement, real-data) = **HUMAN-ONLY**. When unsure, classify **up**.
+- **Production/external mutation is human-only.** **No autonomous `git push` on any branch** (GCM makes push a live prod path). Never `git add .` / `-A` — stage explicit paths only.
+- **Evidence before closure** (E0/E1/E2/E3/E4-C/E4-B; E1/E2 are **not** production proof; E4-C ≠ E4-B). **No silent closure:** implementer max = `IMPLEMENTED`; `PRODUCTION_VERIFIED` / `CLOSED` are **owner-controlled** (an `actor:"human"` value is **not** proof of human authorization).
+- **AI stays disabled** until separately governed; enabling `AI_FEATURES_ENABLED` is human-only.
+- **PowerShell/Windows is a first-class execution surface** (safety guard + tests must cover it).
+- Changes to orchestration **safety config** (`.claude/settings*.json`, `.claude/hooks/**`, `.mcp.json`, `STATE.json` + validator) are **human-only**.
