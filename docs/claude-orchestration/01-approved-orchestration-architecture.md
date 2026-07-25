@@ -251,11 +251,29 @@ Hooks are deterministic policy **inside** tool execution; they are **not** OS sa
 
 ---
 
-## 14. Windows Near-Term + Future WSL2/Container Hardening — APPROVED
+## 14. Windows Human Workspace + Credential-Isolated WSL2 Autonomous Boundary — APPROVED (amended)
 
-- **Near term (O2): native Windows.** Permissions + deny + multi-surface guard + credential absence (env) + GCM all-push prohibition + human gates + PowerShell-compatible tooling. **Do not migrate anything.**
-- **Future hardening option (DEFERRED, separate approval):** a **dedicated WSL2/container clone** — a *fresh git clone*, **not** the OneDrive tree — for unattended high-impact autonomous runs, giving real process/filesystem/network isolation. Evaluate OneDrive/worktree/line-ending implications first. **Do not run the OneDrive repository directly through WSL2.**
-- **Worktree isolation (DEFERRED / PHASE O2 PROBE REQUIRED):** not a default until inheritance, current-branch preservation, OneDrive behavior, and cleanup are proven safe in O2.
+> **Owner amendment (incorporated).** §14 is **un-deferred for bounded/unattended L2 autonomy**: a dedicated **credential-isolated WSL2 execution environment** is **APPROVED** as the stronger capability boundary for bounded/unattended L2 autonomous execution. This supersedes the prior "DEFERRED (future hardening)" status **for credential-isolated WSL2 only**. **Actual provisioning/configuration is `PHASE O2 IMPLEMENTATION REQUIRED`. All external/production authority remains `HUMAN-ONLY`.** Rationale: a PreToolUse guard classifies command *strings* and cannot see inside an executed program (`node script.js` / `powershell -File` / `./x.sh` / `npm run`), so command classification alone cannot guarantee the all-branch no-autonomous-push invariant while a usable push credential (GCM) is present. Closure requires **capability absence**, not more parsing.
+
+- **Near term (O2), native Windows:** unchanged interim posture — permissions + deny + multi-surface guard + credential absence (env) + GCM all-push prohibition + human gates + PowerShell-compatible tooling. Adequate only for **human-attended** L2. **Do not migrate anything as part of this amendment.**
+
+**Two separate execution workspaces (APPROVED):**
+- **Windows/OneDrive human workspace (unchanged):** the owner's normal **authenticated** workspace — owner review, Git authentication, owner-controlled commit/push/PR/merge where authorized, deployment/production actions, and Human Gate decisions. **It is NOT moved into WSL2.**
+- **Credential-isolated WSL2 autonomous workspace (APPROVED; provisioning `PHASE O2 IMPLEMENTATION REQUIRED`):** a **separate clone inside the WSL2/Linux filesystem** (a *fresh clone*, **not** the OneDrive/Windows-mounted tree) for bounded autonomous implementation, local tests, typecheck, builds, validators, local scripts, and review workflows. A **container** may serve as an equivalent isolation substrate **only if** it satisfies the identical credential-isolation invariants below.
+
+**Credential-isolation invariants (APPROVED; verification `PHASE O2 IMPLEMENTATION REQUIRED` — "runs in WSL2" is NOT proof of isolation):** the autonomous environment must NOT inherit, bridge, install, configure, or expose any of — Windows Git Credential Manager access; Windows Credential Manager GitHub credentials; GitHub PATs/tokens; authenticated `gh` CLI state; GitHub SSH private keys; forwarded SSH-agent credentials; writable GitHub MCP/API credentials; Supabase/Vercel/production-DB credentials; AI-provider production secrets; or any other credential capable of external/production mutation. **Credential absence is the primary safety boundary and must be explicitly verified.**
+
+**Storage boundary (APPROVED):** the Windows OneDrive repository **must NOT** be moved into WSL2 and **must NOT** be used as the autonomous WSL2 working tree; the autonomous clone lives in the **native Linux filesystem**. Evaluate line-ending / performance / file-locking implications during provisioning. **Do not run the OneDrive repository directly through WSL2.**
+
+**External-mutation policy (unchanged):** ALL autonomous `git push` / remote mutation on ALL branches remains prohibited; deploy, production SQL, remote secret/config mutation, AI enablement, production-data mutation, and production finding closure remain **HUMAN-ONLY**. The WSL2 environment makes these unavailable by **capability absence** wherever practical.
+
+**Transfer boundary (APPROVED; mechanism = `PHASE O2 IMPLEMENTATION DECISION`):** completed changes move from the autonomous environment into the owner-controlled Git workflow via an **explicit human-controlled handoff** (e.g. owner-side patch/PR built from the reviewed diff). **Autonomous push is NOT an authorized transfer mechanism.**
+
+**Script execution inside the isolated environment (APPROVED):** arbitrary local scripts (tests, builds, typecheck, validators, normal tooling) may run inside the isolated clone precisely because external push/production capability is **absent** there — this is why the independent-review script-execution residual (in-process programs the guard cannot inspect) is contained by **capability absence** rather than by command-string parsing.
+
+**Defense-in-depth relationship (unchanged):** credential isolation does **not** replace the safety stack (§13). Ranked strongest→weakest: (1) capability/credential absence; (2) OS/process/network isolation; (3) permissions; (4) deterministic guard/hooks; (5) project instructions; (6) Human Gates. The candidate guard remains **defense-in-depth (NOT an OS sandbox)**; Human Gates remain mandatory; GitHub branch protection on `main` remains **recommended defense-in-depth, not sufficient closure** of the all-branch no-push invariant (it does not stop non-`main` pushes, ref/tag creation, or other authenticated external mutation).
+
+- **Worktree isolation (DEFERRED / `PHASE O2 PROBE REQUIRED`):** **unchanged — this amendment does NOT un-defer it.** Not a default until inheritance, current-branch preservation, OneDrive behavior, and cleanup are proven safe in O2.
 
 ---
 
@@ -386,8 +404,9 @@ Eliminated human turns: repeated test prompts, repeated debug prompts, repeated 
 | All autonomous `git push` prohibited | APPROVED; push **HUMAN-ONLY** |
 | Multi-surface guard incl. PowerShell | APPROVED |
 | Config tamper protection | APPROVED; `ConfigChange` **PHASE O2 PROBE REQUIRED** |
-| Windows near-term | APPROVED |
-| WSL2/container hardening; worktree isolation | DEFERRED |
+| Windows near-term (human-attended L2 only) | APPROVED |
+| Credential-isolated WSL2 execution boundary (bounded/unattended L2) | **APPROVED** (owner amendment §14); provisioning **PHASE O2 IMPLEMENTATION REQUIRED**; external/production authority **HUMAN-ONLY** |
+| Worktree isolation; other container hardening | DEFERRED (worktree unchanged; container only as an equivalent substrate meeting §14 invariants) |
 | `.claude/` canonical; keep `.agents/.codex/AGENTS.md` as legacy; no symlinks | APPROVED |
 | Career-science governance (3 lenses) + longitudinal versioning | APPROVED |
 | AI special-risk lane; AI disabled | APPROVED; enablement **HUMAN-ONLY** |
