@@ -49,6 +49,50 @@ Never, without an explicit human "go":
 
 When in doubt: **stop and ask.** Approval in one context does not extend to the next.
 
+## 3.1 Guard-Denial Response Contract
+
+Operative form of architecture §20.7 (its controlling authority).
+Applies to every session, base agent and skills alike.
+
+A PreToolUse guard denial ends the current autonomous turn at once.
+After a denial, do not:
+
+- retry, reword, or re-wrap the command;
+- attempt an equivalent outcome by any path;
+- use another tool or interpreter to route around the guard;
+- continue implementation autonomously.
+
+A denial is the safety boundary working, not a transient error.
+Classify each denial and stop:
+
+- Case A, expected gate denial: the rule is a gated mutation.
+  Emit the sanitized packet and STOP for owner action.
+- Case B, unexpected denial: the action was meant to be allowed.
+  Emit the packet, note a possible guard defect, request a new
+  bounded diagnostic scope, and STOP.
+- Case C, repeated or equivalent attempt: treat the retry as an
+  orchestration failure and STOP.
+
+Any further work needs a new owner-authorized continuation. It
+must not continue the denied turn autonomously.
+
+Emit this sanitized packet when you stop:
+
+```
+GUARD-DENIAL DECISION
+CASE        : A | B | C
+RULE        : guard rule tag, verbatim
+REASON      : concise, sanitized
+ATTEMPTED   : action category only
+GATE        : HUMAN GATE 1 | HUMAN GATE 2 | n/a
+OWNER DECISION REQUIRED : the human decision needed
+NEXT SAFE ACTION        : one non-mutating step, or await owner
+RETRY       : NONE
+```
+
+Never include raw commands, secrets, credentials, tokens, sensitive
+paths, or unrelated command content. Use the action category only.
+
 ## 4. Tooling reality (verified this environment)
 - ✅ **Node v24 + npx are present**; `tsc --noEmit` and `vitest` run **locally**. Prefer local
   verification (tsc / vitest / dependency-free structural checks); **CI** (GitHub Actions) remains

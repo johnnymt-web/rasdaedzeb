@@ -374,6 +374,7 @@ Guard is written and tested **before** arming; state authority exists **before**
 4. **Any reviewer-flagged blocking defect.**
 5. **Changes to orchestration safety config** (guard, settings, hooks, STATE validator, `.mcp.json`).
 6. **Genuinely ambiguous product / scientific / privacy / legal decisions.**
+7. **Any PreToolUse guard denial during autonomous execution** — the denied turn stops immediately and emits a **sanitized GUARD-DENIAL DECISION packet** (guard rule tag + concise reason + action *category* only; no raw command, secrets, tokens, or sensitive paths). Retry, rewording, re-wrapping, equivalent-outcome rerouting (another tool/interpreter/path), and autonomous continuation of the denied work are **prohibited**. A denial is the safety boundary functioning, not a transient error to work around. The operative agent-facing contract (Cases A/B/C) is `CLAUDE.md` §3.1 "Guard-Denial Response Contract"; this section is its controlling authority.
 
 ---
 
