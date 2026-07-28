@@ -111,15 +111,17 @@
         "security",
         "rls"
       ],
-      "state": "OPEN",
-      "evidence_level": "E0",
+      "state": "PRODUCTION_VERIFIED",
+      "evidence_level": "E4-B",
       "evidence_locations": [
-        "docs/professional-audit/08-master-findings-register.md"
+        "docs/professional-audit/08-master-findings-register.md",
+        "supabase/migrations/20260618120000_g5_server_side_rescoring.sql",
+        "src/test/pf003ScoringIntegrity.test.ts"
       ],
-      "reported_production_status": "open-live",
-      "actor_role": "implementer",
-      "timestamp": "2026-07-24T00:00:00Z",
-      "next_action": "Triage per docs/professional-audit/09-remediation-roadmap.md.",
+      "reported_production_status": "reported-closed-in-production",
+      "actor_role": "owner",
+      "timestamp": "2026-07-28T00:00:00Z",
+      "next_action": "Owner may authorize CLOSED (closure evidence set E1+E2+E3+E4-B complete; SEC+SCI PASS) at their discretion; CLOSED NOT authorized at this time. Keep separate non-PF-003 triage candidates (item_responses completeness/validity; CAAS percentile-label semantics; historical pre-2026-06-18 Big Five facet_scores mismatch) OUT of PF-003.",
       "history": [
         {
           "state": "OPEN",
@@ -127,6 +129,34 @@
           "actor_role": "implementer",
           "timestamp": "2026-07-24T00:00:00Z",
           "note": "seeded from register"
+        },
+        {
+          "state": "ARCHITECTURE_APPROVED",
+          "evidence_level": "E0",
+          "actor_role": "owner",
+          "timestamp": "2026-07-27T00:00:00Z",
+          "note": "HUMAN GATE 1 — owner-approved corrected PF-003 corrective Segment 2 architecture (conversational authority, not an in-repo approval artifact). Approved scope: RETIRE supabase/migrations/20260726120000_pf003_recompute_hardening.sql; REWORK src/test/pf003ScoringIntegrity.test.ts; preserve both artifacts at /tmp/pf003-segment2-backup/ before mutation. Remediation of record remains 20260618120000_g5_server_side_rescoring.sql."
+        },
+        {
+          "state": "IMPLEMENTED",
+          "evidence_level": "E2",
+          "actor_role": "implementer",
+          "timestamp": "2026-07-27T00:00:00Z",
+          "note": "Segment 2 implemented within approved scope: retired hardening migration absent from worktree (backup preserved outside repo); pf003ScoringIntegrity.test.ts converted to static Big Five/CAAS/Work Values scoring-parity regression (worktree SHA-256 6fe2288d00247f401911de3c17f9d6891439c105f071f064631939abba47c8c2; pre-edit backup SHA-256 f9d80161623f8813467478457ccd570bae567daf792bfe0340b9afc973eeb1c9; currently untracked in worktree). Local validation reported (not re-executed this session): targeted Vitest 10/10, tsc --noEmit exit 0, full Vitest 94/94 -> E1 static/source + E2 local automated. Production closure NOT asserted here."
+        },
+        {
+          "state": "REVIEWED",
+          "evidence_level": "E2",
+          "actor_role": "reviewer",
+          "timestamp": "2026-07-28T00:00:00Z",
+          "note": "Independent reviews PASS, required corrections NONE: security-db-reviewer (SEC) and career-science-reviewer (SCI). Confirmed remediation-of-record 20260618120000 enforces server-authoritative persisted scoring; NULL-bypass hypothesis falsified (item_responses JSONB NOT NULL DEFAULT '{}' on all three tables); retiring 20260726120000 removes no required control; no RLS/grant/SECURITY DEFINER/authz/schema/scoring-semantic regression. Reviewer-confirmed repository-anchored evidence tops out at E2; runtime E3/E4 acceptance is reserved to the owner."
+        },
+        {
+          "state": "PRODUCTION_VERIFIED",
+          "evidence_level": "E4-B",
+          "actor_role": "owner",
+          "timestamp": "2026-07-28T00:00:00Z",
+          "note": "Owner authorization accepting external evidence with preserved provenance (owner-provided; read-only; NOT re-executed in this session; not repository-persisted). E3 — owner-authorized disposable PostgreSQL 16.14 runtime probe (rootless, Unix-socket, hardening migration NOT applied, transaction rolled back, runtime deleted, exit 0): explicit-NULL and UPDATE-to-NULL rejected by NOT NULL; omitted/nonempty item_responses -> existing g5 rescoring trigger overwrites fabricated scores. E4-C — owner-authorized production read-only config: all three assessment tables item_responses NOT NULL DEFAULT '{}'::jsonb; g5_rescore_* triggers exist/ENABLED/BEFORE INSERT OR UPDATE mapped to correct g5_apply_* functions; six g5_score_*/g5_apply_* functions exist; security_definer=false for all six; aggregate NULL and '{}' counts 0. E4-B — owner-authorized production read-only behavioral parity: core 11/11 PASS (Big Five 4/4, CAAS 3/3, Work Values 4/4). One historical Big Five facet_scores mismatch (created_at 2026-06-09, pre-dates 2026-06-18 remediation); post-remediation facet mismatches 0. No production write; no student IDs/raw responses/individual scores retrieved. CLOSED NOT authorized at this time."
         }
       ]
     },
