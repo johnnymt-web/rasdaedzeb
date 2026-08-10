@@ -75,6 +75,12 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 
+// The persisted Big Five domain score is sum/(items*5)*100 over 1-5 items, so its
+// attainable range is 20-100 - not a percentage, a percentile, or a 0-100
+// normalisation. Keep these in sync with the scoring formula.
+const BIG_FIVE_SCALE_MIN = 20;
+const BIG_FIVE_SCALE_MAX = 100;
+
 /**
  * Pre-loaded assessment bundle for the audited superadmin read path (PF-007).
  * When supplied, ComprehensiveReportView renders from this data and performs NO
@@ -1185,32 +1191,43 @@ const ComprehensiveReportView = ({ studentId, grade: propGrade, isCounselorView,
               <p className="text-muted-foreground text-sm mb-6">This reflects how you tend to approach learning, interact with others, and manage your tasks.</p>
               <div className="grid md:grid-cols-2 gap-6">
                 {bigFive.results.map((r, i) => {
-                  const interpret = getRichInterpretation(r.key, r.pct || 0, gradeBand);
+                  // Each domain is presented on its own, in the direction it was scored
+                  // and stored. No banding, ranking, inversion, or aggregate is derived.
+                  // The shared getRichInterpretation engine is deliberately NOT used for
+                  // Big Five: its normalisation mis-bands 20-100 inputs (CRV-NORM-01).
+                  const label = t(`assessment_results.big_five.traits.${r.key}`, r.label);
+                  const score = Math.round(Number(r.pct) || 0);
+                  // Visual geometry ONLY: map the attainable 20-100 range onto 0-100%
+                  // bar width. This value is never surfaced to the student - the
+                  // displayed number and aria-valuenow are both the persisted score.
+                  const barWidth = Math.min(100, Math.max(0,
+                    ((score - BIG_FIVE_SCALE_MIN) / (BIG_FIVE_SCALE_MAX - BIG_FIVE_SCALE_MIN)) * 100));
                   return (
                     <div key={i} className="p-5 bg-white rounded-2xl border border-violet-100 shadow-sm flex flex-col transition-all hover:shadow-md hover:border-violet-200">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-bold text-sm text-foreground">{r.label}</span>
-                        <span className="text-[10px] font-bold text-violet-600 px-2 py-0.5 bg-violet-50 rounded-full">{interpret.level}</span>
+                      <div className="flex justify-between items-baseline mb-2">
+                        <span className="font-bold text-sm text-foreground">{label}</span>
+                        <span className="text-xs font-bold text-violet-600 whitespace-nowrap">{score}</span>
                       </div>
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-violet-500 rounded-full" style={{ width: `${r.pct}%` }} />
-                        </div>
-                        <span className="text-xs font-bold text-violet-600">{r.pct}%</span>
+                      <div
+                        className="h-2 bg-muted rounded-full overflow-hidden mb-3"
+                        role="meter"
+                        aria-label={label}
+                        aria-valuenow={score}
+                        aria-valuemin={BIG_FIVE_SCALE_MIN}
+                        aria-valuemax={BIG_FIVE_SCALE_MAX}
+                      >
+                        <div className="h-full bg-violet-500 rounded-full" style={{ width: `${barWidth}%` }} />
                       </div>
-                      <p className="text-xs text-foreground/80 leading-relaxed mb-4">
-                        {interpret.explanation}
+                      <p className="text-xs text-foreground/80 leading-relaxed">
+                        {t(`assessment_results.big_five.descriptions.${r.key}`, "")}
                       </p>
-                      <div className="p-3 bg-violet-50/30 rounded-xl border border-violet-100/50 mt-auto">
-                        <div className="text-[9px] font-bold uppercase tracking-wider text-violet-700 mb-1">Development Tip for Grade {numericGrade}:</div>
-                        <p className="text-[10px] text-violet-900/80 leading-snug">
-                          {interpret.guidance}
-                        </p>
-                      </div>
                     </div>
                   );
                 })}
               </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed mt-6">
+                {t("assessment_results.big_five.scale_note", { min: BIG_FIVE_SCALE_MIN, max: BIG_FIVE_SCALE_MAX })}
+              </p>
             </section>
           )}
 

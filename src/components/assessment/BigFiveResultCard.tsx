@@ -5,6 +5,12 @@ import { motion } from "framer-motion";
 import { Brain, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+// The persisted Big Five domain score is sum/(items*5)*100 over 1-5 items, so its
+// attainable range is 20-100 — not a percentage, a percentile, or a 0-100 normalisation.
+// Keep these in sync with the scoring formula, not with the width of a progress bar.
+const SCALE_MIN = 20;
+const SCALE_MAX = 100;
+
 export default function BigFiveResultCard({ result: initialResult }: { result?: any }) {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -53,11 +59,20 @@ export default function BigFiveResultCard({ result: initialResult }: { result?: 
         <h3 className="font-heading font-semibold text-lg text-foreground">{t("assessment_results.big_five.title")}</h3>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-5">
         {TRAITS.map((trait, i) => {
+          // Each domain is shown in the direction it was scored and stored.
+          // No domain is inverted, re-labelled, ranked against the others, or combined.
           const score = (result as any)[trait.key] as number || 0;
-          // For neuroticism, we invert the display to show "Emotional Stability"
-          const displayScore = trait.key === "neuroticism" ? 100 - score : score;
+          const displayScore = Math.round(score);
+          // Visual geometry ONLY: map the attainable SCALE_MIN-SCALE_MAX range onto
+          // 0-100% bar width, so a floor score reads as an empty bar rather than a
+          // partly-filled one. Never surfaced as a value - the displayed number and
+          // aria-valuenow both remain the actual persisted score.
+          const barWidth = Math.min(
+            100,
+            Math.max(0, ((displayScore - SCALE_MIN) / (SCALE_MAX - SCALE_MIN)) * 100),
+          );
 
           return (
             <motion.div
@@ -71,33 +86,39 @@ export default function BigFiveResultCard({ result: initialResult }: { result?: 
                   <span>{trait.emoji}</span> {trait.label}
                 </span>
                 <span className={`text-sm font-bold ${trait.textColor}`}>
-                  {Math.round(displayScore)}%
+                  {displayScore}
                 </span>
               </div>
-              <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-2.5 bg-muted rounded-full overflow-hidden"
+                role="meter"
+                aria-label={trait.label}
+                aria-valuenow={displayScore}
+                aria-valuemin={SCALE_MIN}
+                aria-valuemax={SCALE_MAX}
+              >
                 <motion.div
                   className={`h-full ${trait.color} rounded-full`}
                   initial={{ width: 0 }}
-                  animate={{ width: `${displayScore}%` }}
+                  animate={{ width: `${barWidth}%` }}
                   transition={{ delay: 0.3 + i * 0.08, duration: 0.6, ease: "easeOut" }}
                 />
               </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed mt-1.5">
+                {t(`assessment_results.big_five.descriptions.${trait.key}`)}
+              </p>
             </motion.div>
           );
         })}
       </div>
 
-      <div className="mt-6 p-4 bg-violet-50 rounded-xl border border-violet-100">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-violet-700 mb-2">{t("assessment_results.big_five.analytical_insight")}</h4>
-        <p className="text-xs text-violet-900 leading-relaxed italic">
-          {(() => {
-            const scores = TRAITS.map(t => ({ 
-              key: t.key,
-              score: t.key === "neuroticism" ? 100 - ((result as any)[t.key] || 0) : ((result as any)[t.key] || 0) 
-            }));
-            const topTrait = [...scores].sort((a, b) => b.score - a.score)[0];
-            return t(`assessment_results.big_five.insights.${topTrait.key}`);
-          })()}
+      <div className="mt-6 p-4 bg-violet-50 rounded-xl border border-violet-100 space-y-2">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-violet-700">{t("assessment_results.big_five.about_title")}</h4>
+        <p className="text-xs text-violet-900 leading-relaxed">
+          {t("assessment_results.big_five.scale_note", { min: SCALE_MIN, max: SCALE_MAX })}
+        </p>
+        <p className="text-xs text-violet-900 leading-relaxed">
+          {t("assessment_results.big_five.reading_note")}
         </p>
       </div>
 
