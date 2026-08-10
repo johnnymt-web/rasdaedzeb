@@ -47,6 +47,22 @@ const workValuesTsx = readFileSync(
   resolve(root, "src/pages/WorkValuesAssessment.tsx"),
   "utf8",
 );
+// Canonical questionnaire definition: BIG_FIVE_ITEMS carries the real per-item
+// factor assignment (id + trait + sign), independent of any ID convention.
+const bigFiveAssessmentTsx = readFileSync(
+  resolve(root, "src/pages/BigFiveAssessment.tsx"),
+  "utf8",
+);
+
+// The owner-approved reverse-key contract, pinned as an immutable literal so a
+// coordinated TS+SQL change to a different set of 18 cannot pass silently.
+const EXPECTED_BIG_FIVE_REVERSE_KEYS = [
+  "e2", "e4", "e6", "e8", "e10",
+  "a1", "a3", "a5", "a7",
+  "c2", "c4", "c6", "c8",
+  "n2", "n4",
+  "o2", "o4", "o6",
+];
 
 // ---- helpers -------------------------------------------------------------
 
@@ -85,6 +101,17 @@ const sorted = (a: string[]) => [...a].sort();
 
 describe("PF-003 parity — Big Five SQL scoring mirrors the canonical TS maps", () => {
   const bigFiveSql = sqlFunctionBody(rescoringSql, "g5_score_big_five");
+
+  // Parsed from the questionnaire itself: {id, trait, sign} per item.
+  const declaredItems = (() => {
+    const re = /\{\s*id:\s*"([a-z]\d+)",\s*trait:\s*"([a-z]+)",\s*sign:\s*(-?1)\s*\}/g;
+    const out: Array<{ id: string; trait: string; sign: number }> = [];
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(bigFiveAssessmentTsx)) !== null) {
+      out.push({ id: m[1], trait: m[2], sign: Number(m[3]) });
+    }
+    return out;
+  })();
 
   // Canonical TS TRAIT_MAP: first-letter prefix -> trait name.
   const tsTraitMap = (() => {
@@ -144,6 +171,45 @@ describe("PF-003 parity — Big Five SQL scoring mirrors the canonical TS maps",
   it("SQL reverse-keyed item set equals the TS SIGN_MAP negative set", () => {
     expect(tsReverse.length).toBe(18); // e/a/c/n/o reverse items
     expect(sorted(inListTokens(bigFiveSql))).toEqual(sorted(tsReverse));
+  });
+
+  it("declares exactly 10 items per factor, by ACTUAL trait assignment", () => {
+    // Counts the `trait:` field on each item, never the ID prefix, so an item
+    // reassigned to another factor while keeping its ID is caught.
+    expect(declaredItems.length).toBe(50);
+    const perTrait = declaredItems.reduce<Record<string, number>>((acc, it) => {
+      acc[it.trait] = (acc[it.trait] || 0) + 1;
+      return acc;
+    }, {});
+    expect(Object.keys(perTrait).sort()).toEqual([
+      "agreeableness", "conscientiousness", "extraversion", "neuroticism", "openness",
+    ]);
+    for (const trait of Object.keys(perTrait)) {
+      expect(perTrait[trait]).toBe(10);
+    }
+  });
+
+  it("every item's declared factor agrees with the scoring TRAIT_MAP", () => {
+    // The scorer resolves a trait from the ID prefix; the questionnaire declares
+    // it explicitly. If those ever disagree, scoring silently misattributes an
+    // item. This is the assertion an ID-prefix census cannot make.
+    for (const item of declaredItems) {
+      expect(tsTraitMap[item.id[0]]).toBe(item.trait);
+    }
+  });
+
+  it("the TS reverse-key set is exactly the approved 18 IDs", () => {
+    expect(sorted(tsReverse)).toEqual(sorted(EXPECTED_BIG_FIVE_REVERSE_KEYS));
+  });
+
+  it("the SQL reverse-key set is exactly the approved 18 IDs", () => {
+    expect(sorted(inListTokens(bigFiveSql))).toEqual(sorted(EXPECTED_BIG_FIVE_REVERSE_KEYS));
+  });
+
+  it("the questionnaire's own negative-signed items are the approved 18 IDs", () => {
+    // Third independent source: BIG_FIVE_ITEMS sign:-1, beside TS and SQL.
+    const declaredReverse = declaredItems.filter((i) => i.sign === -1).map((i) => i.id);
+    expect(sorted(declaredReverse)).toEqual(sorted(EXPECTED_BIG_FIVE_REVERSE_KEYS));
   });
 
   it("SQL normalizes sum/(n*5)*100 exactly like the TS normalize()", () => {

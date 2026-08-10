@@ -239,7 +239,9 @@
     "big_five": {
       "title": "Personality Profile (Big Five)",
       "subtitle": "IPIP-NEO-50 Big Five Assessment",
-      "analytical_insight": "Analytical Insight",
+      "about_title": "How to read this profile",
+      "scale_note": "Scores are shown on this questionnaire's {{min}}–{{max}} scale. They are not percentages, percentiles, or comparisons with other students.",
+      "reading_note": "Each area is described on its own, and the five areas are not ranked against each other. A higher or lower score is not better or worse — these are tendencies that can change as you grow.",
       "footer": "Based on the IPIP-NEO-50 assessment • Completed {{date}}",
       "traits": {
         "openness": "Curiosity & Imagination",
@@ -248,12 +250,12 @@
         "agreeableness": "Cooperation & Empathy",
         "neuroticism": "Stress Response & Sensitivity"
       },
-      "insights": {
-        "openness": "Your profile shows high cognitive flexibility and a love for complex ideas. You thrive in environments that reward innovation and non-traditional thinking.",
-        "conscientiousness": "You are highly reliable and disciplined. Your strength lies in execution, planning, and maintaining high standards in your work.",
-        "extraversion": "You draw energy from social interaction. This natural sociability makes you an effective communicator and influencer in team settings.",
-        "agreeableness": "You have a natural inclination toward cooperation and empathy. You are a 'bridge-builder' who excels in collaborative and person-centered environments.",
-        "neuroticism": "Your high emotional stability suggests exceptional resilience. You maintain clarity and composure even in high-pressure or unpredictable situations."
+      "descriptions": {
+        "openness": "Reflects curiosity, imagination, and openness to new ideas. Higher scores suggest more interest in novelty, variety, and abstract ideas; lower scores suggest a preference for the familiar, practical, and concrete. Both ends are common.",
+        "conscientiousness": "Reflects organization, planning, and follow-through. Higher scores suggest a more structured and methodical approach; lower scores suggest a more flexible and spontaneous approach. Both ends are common.",
+        "extraversion": "Reflects how much energy you tend to draw from being around other people. Higher scores suggest a preference for group settings and social activity; lower scores suggest a preference for quieter, more independent settings. Both ends are common.",
+        "agreeableness": "Reflects cooperation, trust, and consideration for others. Higher scores suggest a stronger focus on harmony and helping; lower scores suggest a stronger focus on directness, objectivity, and holding your own position. Both ends are common.",
+        "neuroticism": "Reflects how strongly you tend to notice and react to stress and pressure. Higher scores suggest greater emotional reactivity and sensitivity to stressful situations; lower scores suggest greater emotional steadiness under pressure. Both ends are common, neither is better or worse, and this is not a measure of mental health or wellbeing."
       }
     },
     "eq": {
@@ -940,7 +942,7 @@
       },
       "bigfive": {
         "title": "Personality Profile (Big Five)",
-        "desc": "Discover your personality traits across Openness, Conscientiousness, Extraversion, Agreeableness, and Emotional Stability.",
+        "desc": "Discover your personality traits across Openness, Conscientiousness, Extraversion, Agreeableness, and Stress Response & Sensitivity.",
         "duration": "12 mins"
       },
       "caas": {
