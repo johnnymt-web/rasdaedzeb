@@ -8,12 +8,12 @@ import {
 } from "../../supabase/functions/_shared/aiFeatureFlag";
 
 // Phase 1A containment tests (PF-001 / PF-002). Pure + repository-structure
-// assertions only — no Deno runtime, no provider calls.
+// assertions only â€” no Deno runtime, no provider calls.
 
 const root = process.cwd();
 const read = (rel: string) => readFileSync(resolve(root, rel), "utf8");
 
-describe("parseAiEnabled — fail-closed AI containment flag", () => {
+describe("parseAiEnabled â€” fail-closed AI containment flag", () => {
   it("blocks when the flag is missing (undefined/null)", () => {
     expect(parseAiEnabled(undefined)).toBe(false);
     expect(parseAiEnabled(null)).toBe(false);
@@ -86,7 +86,7 @@ const AUTHENTICATED_PROVIDER_FUNCTIONS = [
   "admin-insights",
 ] as const;
 
-describe("R3 — reproducible JWT enforcement in config.toml", () => {
+describe("R3 â€” reproducible JWT enforcement in config.toml", () => {
   const config = read("supabase/config.toml");
 
   for (const fn of AUTHENTICATED_PROVIDER_FUNCTIONS) {
@@ -95,12 +95,26 @@ describe("R3 — reproducible JWT enforcement in config.toml", () => {
     });
   }
 
-  it("never disables JWT verification anywhere", () => {
-    expect(config).not.toMatch(/verify_jwt\s*=\s*false/);
+  it("allows verify_jwt = false only for refresh-onet-cache", () => {
+    const disabledJwtMatches =
+      config.match(/^verify_jwt\s*=\s*false\s*$/gm) ?? [];
+
+    expect(disabledJwtMatches).toHaveLength(1);
+    expect(config).toMatch(
+      /\[functions\.refresh-onet-cache\]\s*\r?\nverify_jwt\s*=\s*false/
+    );
+  });
+
+  it("refresh-onet-cache enforces dedicated apikey authentication", () => {
+    const src = read("supabase/functions/refresh-onet-cache/index.ts");
+
+    expect(src).toMatch(/req\.headers\.get\(['"]apikey['"]\)/);
+    expect(src).toMatch(/secretKeys\[['"]automations['"]\]/);
+    expect(src).toMatch(/requestApiKey\s*!==\s*automationKey/);
   });
 });
 
-describe("R2 — fail-closed guard precedes all request/provider work in every provider function", () => {
+describe("R2 â€” fail-closed guard precedes all request/provider work in every provider function", () => {
   const guardRe = /parseAiEnabled\(Deno\.env\.get\(["']AI_FEATURES_ENABLED["']\)\)/;
   const providerFetchRe =
     /fetch\(["'`]https:\/\/(api\.openai\.com|api\.anthropic\.com|ai\.gateway\.lovable\.dev)/;

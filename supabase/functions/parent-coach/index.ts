@@ -139,7 +139,7 @@ serve(async (req: Request) => {
     }
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS")!)["default"],
       { global: { headers: { Authorization: authHeader } } }
     );
     const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser();
@@ -218,7 +218,7 @@ serve(async (req: Request) => {
     // --- 3. Log Interaction (Fire-and-forget) ---
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS")!)["default"]
     );
     serviceClient.from("ai_logs").insert({
       user_id: authUser.id,

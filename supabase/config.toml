@@ -35,4 +35,5 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.refresh-onet-cache]
+verify_jwt = false
 [functions.submit-assessment]

@@ -13,12 +13,12 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseServiceKey = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS")!)["default"];
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // 1. Verify Authorization (must be Admin)
     const authHeader = req.headers.get("Authorization")!;
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    const userClient = createClient(supabaseUrl, JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS")!)["default"], {
       global: { headers: { Authorization: authHeader } },
     });
     

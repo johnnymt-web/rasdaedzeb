@@ -1,10 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = "https://sxhzxlfxfveidjrepvwe.supabase.co";
-const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4aHp4bGZ4ZnZlaWRqcmVwdndlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgwMDM1MSwiZXhwIjoyMDkxMzc2MzUxfQ.HLTEc-JT3U6IDN2S_2_sKTFfi2jRcNgEaHgzG0MgsFI";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+  throw new Error("Missing SUPABASE_URL or SUPABASE_SECRET_KEY environment variables.");
+}
 
 // Use service role key to bypass RLS
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 

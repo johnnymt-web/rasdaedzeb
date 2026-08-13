@@ -17,10 +17,33 @@ function json(body: unknown, status = 200) {
 
 // Re-fetch a single RIASEC career list (mirrors onetService.getCareersByRiasec
 // enrichment) so cached lists stay current with O*NET outlook/salary data.
-async function refreshRiasecList(admin: any, riasecCode: string) {
+async function refreshRiasecList(riasecCode: string) {
   const proxy = async (endpoint: string, params: Record<string, string> = {}) => {
-    const { data, error } = await admin.functions.invoke('onet-proxy', { body: { endpoint, params } })
-    if (error || data?.error) throw new Error(error?.message || data?.error || 'onet-proxy error')
+    const username = Deno.env.get('ONET_USERNAME')
+    const password = Deno.env.get('ONET_PASSWORD')
+
+    if (!username || !password) {
+      throw new Error('O*NET credentials not configured')
+    }
+
+    const url = new URL(`https://services.onetcenter.org/ws${endpoint}`)
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
+    url.searchParams.set('fmt', 'json')
+
+    const auth = btoa(`${username}:${password}`)
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json',
+      },
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data?.error || `O*NET API error: ${response.status}`)
+    }
+
     return data
   }
 
@@ -56,8 +79,20 @@ serve(async (req: Request) => {
 
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-    const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
+    const secretKeys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}')
+    const automationKey = secretKeys['automations']
+
+    if (!automationKey) {
+      console.error('refresh-onet-cache: automations secret key is not configured')
+      return json({ error: 'Server configuration error' }, 500)
+    }
+
+    const requestApiKey = req.headers.get('apikey')
+    if (!requestApiKey || requestApiKey !== automationKey) {
+      return json({ error: 'Unauthorized' }, 401)
+    }
+
+    const admin = createClient(SUPABASE_URL, automationKey)
 
     // Refresh RIASEC list caches that are approaching the 30-day staleness window.
     const staleBefore = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
@@ -77,7 +112,7 @@ serve(async (req: Request) => {
     for (const row of rows ?? []) {
       const code = (row.cache_key as string).replace('riasec:', '')
       try {
-        const careers = await refreshRiasecList(admin, code)
+        const careers = await refreshRiasecList(code)
         if (Array.isArray(careers) && careers.length > 0) {
           await admin.from('onet_cache').upsert({
             cache_key: row.cache_key,
