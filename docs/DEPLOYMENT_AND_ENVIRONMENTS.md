@@ -32,8 +32,8 @@
 - RLS lockdown that blocks client writes must come **after** the server-write path is verified.
 
 ## 6. Env vars ✅
-- Frontend (Vite, build-time): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`. Per-environment in Vercel; rebuild after changing.
-- Edge functions: Supabase auto-injects `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Provider keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `LOVABLE_API_KEY`) set as function secrets. **Never expose to frontend.**
+- Frontend (Vite, build-time): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`. Configure per environment in Vercel and rebuild after changing. `VITE_SUPABASE_PROJECT_ID` is not required by the current application code.
+- Edge functions: Supabase provides `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEYS`, and `SUPABASE_SECRET_KEYS`. The publishable/secret variables are named-key JSON dictionaries. Elevated secret keys are backend-only and must never be exposed to frontend code. Provider keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `LOVABLE_API_KEY`) are configured as function secrets.
 
 ## Related
 `CLAUDE_CODE_WORKFLOW.md` · `ARCHITECTURE.md` · `CURRENT_PROJECT_STATUS.md`
