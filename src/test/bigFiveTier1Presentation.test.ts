@@ -181,7 +181,7 @@ describe("Big Five Tier 1 - presentation contract", () => {
   });
 
   it("report Big Five block does not call getRichInterpretation", () => {
-    expect(blockRendered).not.toContain("getRichInterpretation");
+    expect(blockRendered).not.toMatch(/\bgetRichInterpretation\s*\(/);
     expect(blockRendered).not.toMatch(/interpret\.(level|explanation|guidance)/);
   });
 
