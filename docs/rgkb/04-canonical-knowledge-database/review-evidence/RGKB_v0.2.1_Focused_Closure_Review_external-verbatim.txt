@@ -1,0 +1,193 @@
+I'll begin with the mandatory integrity precheck.
+
+  Ran 2 shell commands
+
+Integrity precheck passes on all six conditions. Now reading the documents.
+
+  Searched for 1 pattern, ran 4 shell commands
+
+Diff fully reviewed. Now verifying specific claims adversarially — residual coverage gaps, regression invariants, and F-03 repo compatibility.
+
+  Ran 6 shell commands
+
+All verification complete. Delivering the focused closure review.
+
+---
+1. Integrity Precheck
+
+🖥️ terminal — all six conditions verified against the live worktree.
+
+┌────────────────┬──────────────────────────────────────────────────────────────────┬──────────────────────────────────────────┬──────────┐
+│      Item      │                             Expected                             │                 Observed                 │  Result  │
+├────────────────┼──────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼──────────┤
+│ Branch         │ feat/rgkb-canonical-schema-v0.1                                  │ feat/rgkb-canonical-schema-v0.1          │ ✅ match │
+├────────────────┼──────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼──────────┤
+│ HEAD           │ a6252333a6b8248d5aeeb356584eee405b82c0e9                         │ a6252333a6b8248d5aeeb356584eee405b82c0e9 │ ✅ match │
+├────────────────┼──────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼──────────┤
+│ v0.1 SHA-256   │ df83006972cec26aa598df25fd65726d8df3f8b8f159106fbf7a7797d8f29044 │ identical                                │ ✅ match │
+├────────────────┼──────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼──────────┤
+│ v0.2 SHA-256   │ fcfd74a0046353ec73992fc9f440db14d0cb4017dd68f745101321f05d0e2ccb │ identical                                │ ✅ match │
+├────────────────┼──────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼──────────┤
+│ v0.2.1 SHA-256 │ a32b067edf7e0b446583221bea9314e0dc029e8707de34641c724698a40d5985 │ identical                                │ ✅ match │
+└────────────────┴──────────────────────────────────────────────────────────────────┴──────────────────────────────────────────┴──────────┘
+
+Exact worktree state (git status --porcelain=v1 --untracked-files=all):
+
+?? docs/rgkb/04-canonical-knowledge-database/RGKB_Canonical_Entity_Model_v0.1.md
+?? docs/rgkb/04-canonical-knowledge-database/RGKB_Canonical_Entity_Model_v0.2.1.md
+?? docs/rgkb/04-canonical-knowledge-database/RGKB_Canonical_Entity_Model_v0.2.md
+
+Exactly three entries, no tracked modifications, no staged content, no additional untracked files. find docs/rgkb -type f returns those three paths only. The v0.2.1/v0.2 ordering is the permitted lexical variant.
+
+PASS
+
+---
+2. Scope-Control Result
+
+SCOPE CLEAN
+
+The v0.2 → v0.2.1 delta is 652 insertions / 53 deletions across one file. I traced every hunk. Substantive changes attribute exclusively to:
+
+- F-01 — §4.2(21) refinement, §4.2.1(36), §5.1 Pattern-A note, §5.2, §5.3, §5.7 (new), §9.2.1 (new), §9.4, §10.4.1 (new), §11.1.1 (new), §12.1, §12.2, §12.3/§12.3.1 (new), §12.6, §13.2.1 (new), §16.1, §21.1, §25.3.
+- F-02 — §4.2.1(37), §12.5, §14.2, §15.2, §18.6 / §18.6.1 / §18.6.2 (new), §22.2, §22.3, §23.1, §23.2, §23.3.
+- F-03 — §3.3, §4.2.1(38), §10.7 (new, §10.7.1–§10.7.5), §14.3, §15.3, §16.2, §22.2, §22.5, §23.1, §23.2.
+- Necessary status / cross-reference updates — header block, §1.1, §1.2, §1.4, §2, §26.6, §26.7, §27.2, §28.1, §28.2, §28.3, §28.4.
+
+The 53 deleted lines are all in-place replacements by strengthened text; none removes an invariant, a prohibition, or a deferral.
+
+F-04 through F-14 remain unresolved and deferred — independently verified, not accepted on the author's report. §26.7 and §28.4 register them; no diff hunk decides any of them. Two near-misses I checked deliberately:
+
+- F-05 (citable validation-determination identity): §12.3.1 changes the subject a determination must cite, not the identity of the determination itself. That is precisely the carve-out the review authorized. Not decided.
+- F-04 (dependency re-binding workflow): §16.1 now makes bindings Pattern B immutable records. This constrains re-binding (no in-place re-pointing) but decides no workflow — when re-binding triggers, who authorizes it, and how supersession cascades all remain open. Registered below as L-1.
+
+Registration of F-04–F-14 in §26.7 is explicitly framed as "registration, not architecture," and I confirm it functions that way.
+
+---
+3. F-01 Closure
+
+CLOSED
+
+Pattern A / Pattern B. The distinction is coherent and correctly motivated. Pattern A (§5.7.1) is scoped to enduring concepts carrying successive semantic revisions; Pattern B (§5.7.2) to atomic historical assertions, locations, relations, positions, and events whose correction is "a different thing," not "a revision of the same thing." Neither permits in-place mutation of historical governed meaning: §5.7.3 defines the boundary as draft-exit for A and first-governance-use for B, with five enumerated triggers. Critically, §5.7.2/§5.7.5 explicitly refuse to manufacture identity/version families on atomic records — satisfying F-01A(5) and removing the artificial-version-family pressure the v0.2 rule created.
+
+I probed the one window Pattern B leaves open: an anchor edited while referenced only by a draft KU version. At publication the KU exits draft, the anchor becomes "referenced by a non-draft governed version," and immutability attaches. No governance-bearing determination existed during the mutable window. The boundary holds.
+
+Evidence anchors (F-01B). §9.2.1 freezes every field the review named — source-expression reference, manifestation reference, locator type and payload, page/section/paragraph/span coordinates, character and span offsets, anchor_text_hash, and retained excerpt identity and content. Correction is explicitly new anchor, never update in place, with historical references continuing to resolve to the original. §9.4 extends the same semantics to rights/document anchors.
+
+Original failure-mode test: can a past KU version or runtime trace resolve through the same anchor identifier to different evidence than was reviewed? No. The identifier is immutable, its locator payload is immutable, and the excerpt is hash-pinned.
+
+Construct↔scale mapping (F-01C). §10.4.1 requires immutability after governance use, permitting either realization, with the architectural requirement stated as immutability plus exact historical identity and the table shape deferred to §26.6. Correct level of abstraction.
+
+KU relations. §11.1.1 freezes predicate, source KU version, target KU version, scope qualification, and evidence linkage after governance use. The rationale is exactly right: a reviewer who adjudicated a contradiction must see the contradiction as stated at adjudication time.
+
+Cross-source positions. §13.2.1 freezes KU/source reference, stance, qualifiers, and evidence binding once included in an adjudication, and states that historical adjudications must remain reconstructable against the original positions.
+
+Validation subject identity (F-01D). §12.3.1 replaces "exact subject VERSION" with "exact IMMUTABLE GOVERNED SUBJECT INSTANCE" — version identifier for A, record identifier for B — and §12.6 requires the referential-enforcement technique to reference both instance kinds. This resolves the v0.2 inconsistency without fake version families, which was the precise defect.
+
+One residual coverage gap is recorded as M-1 below. It does not reopen F-01's conceptual machinery: §5.7 states the universal rule that every governance-bearing object must be assigned to exactly one pattern, so the gap is in the illustrative enumeration, not in the semantics.
+
+---
+4. F-02 Closure
+
+CLOSED
+
+I tested all fourteen required properties against §18.6 and its cross-references. All fourteen hold:
+
+Stable localization identity is permitted "where appropriate" (1) — correctly matching the review's "may," since the mandatory half is the version identity. Each governed translation/adaptation is an immutable localized-text version (2). Draft editing is allowed only before the boundary (3). Immutability attaches on any of exit-from-draft, review, validation, binding, activation, publication, or runtime use (4) — the runtime-use trigger is the one that actually closes the student-facing hole. Correction requires a new version, with the explicit statement that "the wording a student saw is never rewritten under them" (5). Historical versions remain resolvable indefinitely, including superseded, retracted, and quarantined (6). translation_fidelity attaches to the exact localized-text version, not to the localization identity and not to the source-language version (7, §12.5 amended to match). georgian_context remains a distinct dimension with non-inheritance stated in both directions (8, 9, 10). §22.2 requires consequential runtime provenance to capture the exact localized-text version(s) actually rendered or supplied (11). §23.1 requires traceability to resolve version identity, not merely localization identity (12). §18.6.1 states the guarantee in terms (13): "Knowing the Knowledge Unit version is NOT sufficient to prove what Georgian wording a student saw." §18.6.2 forbids ephemeral generation-time translation from becoming canonical, and adds that generated text "never becomes a localized-text version by having been shown" (14).
+
+Original failure-mode test: can the Georgian wording change after a report is issued while the historic runtime trace still points to the same governed localization identity? No. The trace records a version, not an identity (§22.2); that version is immutable once used at runtime (§18.6(4)); correction mints a new version (§18.6(5)); and the old version stays resolvable (§18.6(6)).
+
+The domain reasoning in §18.6.1 is substantively correct, not decorative: two Georgian renderings of the same KU version can differ in developmental register in ways that change what a 14-year-old understands about their own future. Traceability that stopped at the KU version could not answer a parent's or counselor's question. That is the right justification for the requirement.
+
+---
+5. F-03 Closure
+
+CLOSED
+
+Domain ownership (F-03A). §10.7.1–§10.7.2 keep canonical instrument identity, instrument-version identity, scale identity, and construct↔scale semantics in RGKB, and place execution identity, scoring-channel/version identity, and the correspondence itself in the operational domain. The stated reason is the correct one: operational identifiers change for engineering reasons carrying no scientific meaning, and RGKB must not absorb unstable implementation strings as canonical scientific identity. §10.7.2 explicitly denies that canonical identifiers denote any administration, session, submission, or scoring run.
+
+Authoritative correspondence (F-03B). §10.7.3 requires the seam to be explicit, auditable, version-aware, testable, and fail-closed — all five named. It prohibits free-text aliases, assessment_type strings, function names, question-set labels, and naming conventions from constituting the authoritative mapping, permitting them only as migration or lookup inputs, with resolution through stable identities. The tie to §16.2 is apt: a correspondence resting on a string can detach silently.
+
+I verified this premise against the repository read-only rather than accepting it on the document's word. assessment_type is live across 20+ tracked files including supabase/functions/submit-assessment/, and src/utils/assessmentNormalization.ts carries two divergent string vocabularies in one file — type: "riasec" | ... | "bigfive" | "workvalues" alongside source: "riasec" | ... | "big_five" | "work_values". That is exactly the silent-detachment class §10.7.3 prohibits, and the operational side today has no scoring-channel version identity at all. v0.2.1 does not assume one exists; it requires one be established and fails closed until it is. The seam is compatible with the codebase and materially necessary to it.
+
+Change safety (F-03C). §10.7.4 requires explicit review and, where required, re-establishment on change to scoring implementation, question set, scoring logic, channel naming, instrument version, or canonical scale supersession, with "no silent inheritance across scientifically meaningful version changes" stated flatly.
+
+Fail-closed (F-03D). §10.7.4 requires the consequential path to fail closed on unresolvable correspondence, and explicitly forbids guessing from strings, falling back to a default channel, and proceeding with an unbound interpretation. Reinforced at §14.3 (guardrail blocks the dependent consequential path) and §15.3 (same for interpretation rules), so the requirement is load-bearing in two places, not stated once.
+
+Student-data boundary (F-03E). §10.7.5 excludes all six named categories from RGKB and characterizes the correspondence as a boundary artefact naming a canonical identifier on one side and an operational channel identity on the other, never carrying a student-linked value across in either direction. §10.5 and §3.3 are intact.
+
+Residual: fail-closed protects against a missing correspondence but not against a present but wrong one, and the correspondence lives outside §12's reviewer-authority domain and §21's canonical audit events. Recorded as M-2. All five tested F-03 criteria are literally satisfied; reviewer authority was not among them, so this tracks rather than blocks.
+
+---
+6. Amendment Regression Check
+
+NO REGRESSION FOUND
+
+The amendment deletes no invariant. I checked each protected item by diff inspection and by keyword census across both documents; no protected term decreased in frequency, and several increased because the amendment strengthened them.
+
+Dedicated private rgkb architecture, public.knowledge_resources separation, assessment results outside RGKB (§10.5, §3.3 — reinforced by §10.7.5), student-linked runtime provenance outside RGKB (§9.1, §22.1), RIASEC interest ≠ ability, construct ≠ score, self-efficacy not a seventh assessment, cross-assessment channels complementary and non-additive, discrepancy as inquiry signal, no universal master score, no arithmetic averaging, preservation of contradictory evidence, scientific validity ≠ rights permission, Georgian contextual validation ≠ translation fidelity, human review for consequential interpretation, no direct browser canonical CRUD, fail-closed governance, and retrieval/embeddings/RAG deferral are all intact. §4.1 is byte-identical to v0.2. §25.1 was tightened to "No embedding or vector entities are added in v0.2 or v0.2.1."
+
+The deferment/non-authorization test also passes: §27.1 retains all seven explicit non-authorizations verbatim, §1.2 adds that the document does not imply Controlled Schema Specification is approved, §10.7.5 states "No implementation is authorized by this document," and §26.6 frames its five new entries as physical-realization questions only. Nothing in the amendment authorizes SQL, DDL, migrations, constraints, enum/reference-table decisions, rule/guardrail DSL, RPC, Edge Functions, schema exposure, embeddings, vector tables, RAG, agent memory, runtime-provenance physical schema, student personalization, an intervention engine, automated publication, or production data ingestion.
+
+---
+7. Findings Register
+
+Finding ID: M-1
+Severity: MEDIUM
+Related closure: F-01
+Finding: The §5.7.4 coverage-assignment table omits the source hierarchy (rgkb.source, rgkb.source_expression, rgkb.source_manifestation) and rgkb.external_identifier, while §12.5 retains source_identity as a validation dimension and §12.3.1/§4.2.1(36) require every validated subject to be cited by an exact immutable governed instance identity.
+Why it matters: §6.3 states that edition identity is "a curated, evidence-backed determination, subject to the source_identity validation dimension." That makes the source expression a validated governance subject, so §12.3.1 demands it have an immutable instance identity — but the table that assigns instance identity does not list it.
+Failure mode if ignored: Controlled Schema Specification realizes source_expression as an in-place mutable record. A source_identity validation determination then cites a subject whose edition designation can later be silently corrected, and the determination no longer describes what was validated. Evidence content remains protected by anchor_text_hash (§9.2.1), so this is bibliographic-identity drift, not evidence drift — which is why it is not a blocker.
+Minimal correction: Add the source/expression/manifestation levels and external identifiers to the §5.7.4 assignment, or state explicitly that their pattern assignment is a §26.6 item. The universal rule in §5.7 ("each governance-bearing object must be assigned to exactly one of them") already covers them semantically; only the enumeration is short.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+Finding ID: M-2
+Severity: MEDIUM
+Related closure: F-03
+Finding: §10.7 requires the governed correspondence to be auditable ("who established it, when, on what basis") but names no reviewer authority or scientific-competence requirement for establishing it. Because the correspondence sits outside RGKB, it falls outside §12's reviewer-authority domain and outside §21's canonical governance/audit events.
+Why it matters: §10.7.4's fail-closed rule defends against an absent correspondence. It does not defend against a present but scientifically wrong one — a wrong mapping resolves successfully and the consequential path proceeds.
+Failure mode if ignored: An engineer maps a renamed scoring channel to the wrong canonical scale in an ordinary code change. The correspondence is explicit, version-aware, testable, and resolves cleanly, so every fail-closed check passes. A RIASEC-interest guardrail then governs a scale it does not actually apply to, and a student receives consequential guidance from a mis-bound interpretation with a fully clean audit trail.
+Minimal correction: State in §10.7.3 that establishing or re-establishing a correspondence requires a named reviewer authority with the relevant scientific competence — an engineering commit alone is not establishment — and extend §26.6(32) to carry that requirement into the operational review workflow.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+Finding ID: L-1
+Severity: LOW
+Related closure: F-01 / scope control
+Finding: §16.1 newly classifies governance bindings as Pattern B immutable records corrected by new binding record. This is legitimately within F-01's remit (governed-object immutability coverage) and is not a scope violation, but it imposes a boundary condition on deferred finding F-04.
+Why it matters: F-04's re-binding workflow can no longer be realized as in-place re-pointing of an existing binding row. The workflow question itself — when re-binding triggers, who authorizes it, how supersession cascades — remains fully open and undecided.
+Failure mode if ignored: Controlled Schema Specification designs an F-04 workflow that mutates bindings in place, contradicting §16.1 and requiring rework.
+Minimal correction: None required to v0.2.1. Carry the constraint into the F-04 tracking entry.
+Resolution gate: DEFERRED
+
+Finding ID: N-1
+Severity: NOTE
+Related closure: F-03
+Finding: Confirmed strength. §10.7.3's prohibition on string-based correspondence is grounded in a live defect class in this repository, not hypothetical: src/utils/assessmentNormalization.ts carries "bigfive"/"workvalues" and "big_five"/"work_values" as parallel vocabularies in a single file, and no operational scoring-channel version identity exists anywhere today. The F-03 seam is correctly allocated and materially needed.
+Why it matters: It confirms the amendment solves a real problem rather than a modelled one.
+Failure mode if ignored: n/a
+Minimal correction: n/a
+Resolution gate: DEFERRED
+
+---
+8. Deferred Findings Confirmation
+
+F-04 through F-14 remain appropriate Controlled Schema Specification items and are not resolved here. I verified independently that v0.2.1 decides none of them: dependency re-binding workflow (F-04), citable validation-determination identity beyond the F-01 subject correction (F-05), validation derivation-rule mechanics and versioning (F-06), current-version cardinality and resolution mechanics (F-07), living-web-source convention (F-08), rights-document physical entity realization (F-09), controlled developmental/grade-scope vocabulary (F-10), consequentiality classification mechanics (F-11), platform application role vs canonical reviewer-authority implementation (F-12), validation applicability matrix (F-13), and contributor normalization / citation sequencing (F-14).
+
+None has been contradicted by the amendment, and none has been made harder to resolve later. F-04 acquires an immutability boundary condition from §16.1 (L-1) — a constraint on the eventual design, not a decision about it. §12.5's amendment touches translation_fidelity binding only and leaves the F-13 applicability matrix explicitly open. I resolve none of them here.
+
+---
+9. Readiness
+
+YES
+
+RGKB Canonical Entity Model v0.2.1 is sufficiently stable to begin Controlled Schema Specification, without authorizing SQL.
+
+All three withheld preconditions are conceptually closed, each original failure-mode test fails to reproduce, no regression was introduced, and the document's non-authorization posture is intact and strengthened. The remaining F-04–F-14 items must be tracked into that stage, together with M-1, M-2, L-1, and the five realization questions v0.2.1 itself opened in §26.6.
+
+---
+10. Final Gate Recommendation
+
+ADVANCE TO CONTROLLED SCHEMA SPECIFICATION
+
+This recommendation does NOT authorize SQL, migrations, schema deployment, production changes, or data ingestion.
+
+Per §27.2, the sequence remains: this focused closure review → owner adjudication → Controlled Schema Specification, which is itself an architecture-stage deliverable and does not authorize migration authoring. Controlled Schema Specification is not approved by v0.2.1 and is not approved by this review; only the owner may open that stage. No file was written, read, or modified beyond read-only inspection, and no Supabase, SQL, or Git-mutating action was taken.

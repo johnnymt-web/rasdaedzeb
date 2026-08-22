@@ -1,0 +1,453 @@
+I'll start with the mandatory integrity precheck.
+
+  Ran 3 shell commands
+
+Integrity precheck passes on all five values. Now reading the baseline and target.
+
+  Read 2 files
+
+Full documents read. Now grounding a few architectural-compatibility claims against the tracked repo (read-only).
+
+  Listed 1 directory, ran 5 shell commands
+
+1. Integrity Precheck
+
+🖥️ terminal (read-only inspection only; no repository state touched)
+
+┌──────────────┬──────────────────────────────────────────────────────────────────┬──────────────────────────────────────────┬──────────┐
+│     Item     │                             Expected                             │                 Observed                 │  Result  │
+├──────────────┼──────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼──────────┤
+│ Branch       │ feat/rgkb-canonical-schema-v0.1                                  │ feat/rgkb-canonical-schema-v0.1          │ ✅ match │
+├──────────────┼──────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼──────────┤
+│ HEAD         │ a6252333a6b8248d5aeeb356584eee405b82c0e9                         │ a6252333a6b8248d5aeeb356584eee405b82c0e9 │ ✅ match │
+├──────────────┼──────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼──────────┤
+│ v0.1 SHA-256 │ df83006972cec26aa598df25fd65726d8df3f8b8f159106fbf7a7797d8f29044 │ identical                                │ ✅ match │
+├──────────────┼──────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼──────────┤
+│ v0.2 SHA-256 │ fcfd74a0046353ec73992fc9f440db14d0cb4017dd68f745101321f05d0e2ccb │ identical                                │ ✅ match │
+└──────────────┴──────────────────────────────────────────────────────────────────┴──────────────────────────────────────────┴──────────┘
+
+Exact worktree status (git status --porcelain=v1 --untracked-files=all):
+
+?? docs/rgkb/04-canonical-knowledge-database/RGKB_Canonical_Entity_Model_v0.1.md
+?? docs/rgkb/04-canonical-knowledge-database/RGKB_Canonical_Entity_Model_v0.2.md
+
+No other modified, staged, or untracked entries. No tracked file carries rgkb references (git grep -il rgkb → empty), confirming zero implementation surface exists.
+
+PASS — proceeding to review.
+
+---
+2. Former BLOCKER Closure
+
+R-01 Immutable Versioning — PARTIALLY CLOSED
+
+Closed for the objects R-01 named. §5.1 establishes the stable-identity / immutable-version split for Knowledge Units, Guardrails, Interpretation Rules, Construct definitions, and Rights decisions. §5.2 draws a coherent draft/post-draft immutability boundary with indefinite historical resolvability. §5.4 explicitly prohibits the v0.1 mutable integer version column as a sole mechanism. §5.5 separates version revision from conceptual supersession and requires scope-qualified partial supersession. §17.2 splits lineage (superseded, retired) from availability and approval, so supersession no longer destroys resolvability. §5.3 correctly makes version identity mandatory wherever an audit must reconstruct what was true, while permitting stable-identity references only for governed, auditable "current version" resolution. On the test's literal question — can a past runtime record resolve to the exact rule, guardrail, KU, construct definition, and rights state? — the answer is yes for those five.
+
+Not closed on coverage. Two in-place mutation paths for governance-bearing semantic content survive, and both reproduce the original R-01 failure one hop further out:
+
+1. Evidence anchors are not versioned. §9.2 gives rgkb.evidence_anchor a locator payload, span offsets, anchor_text_hash, and optionally retained excerpt text — none declared immutable, and anchors are absent from §5.1's list. The typed link from an immutable KU version (§9.3) is fixed, but its target can move. A corrected page range, re-extracted excerpt, or re-pointed manifestation silently changes what a past KU version appears to have been justified by. §23.1 terminates the traceability chain at the anchor, so this is directly on the audit path.
+2. The localized governed text actually shown to a student is not version-bound in the runtime record. §18.5 asserts authoritative Georgian text is "versioned", but localized text appears in neither §5.1's list nor §5.3's reference rule; §23.1 requires only "localization identity" (not version identity) to be resolvable; and §22.2's runtime record enumerates rule, guardrail, KU, validation, rights, review, and model versions — but not the localized-text version. §23.3's own argument ("resolves to whatever that KU says now proves nothing about what was said to a student last term") applies with full force to the Georgian rendering, which is the artefact a minor actually read.
+
+Secondary unversioned governed objects with the same exposure: construct_scale_mapping (§10.4 explicitly calls it a scientific claim that is evidence-linked and validation-governable), knowledge_unit_version_relation (§11.1 — its predicate is the governed fact), and cross_source_position (§13.2). This also collides with §12.3, which makes recording the exact subject VERSION reviewed mandatory: several validation-governable subjects have no version to record.
+
+R-02 Runtime Decision Provenance — CLOSED
+
+§9.1 states the two chains explicitly and gives each its own question ("why is this justified?" vs "what did the system actually use and do?"), reinforced in §22.4 with the correct assertion that neither is reconstructible from the other. §22.1 places runtime provenance outside rgkb on the correct grounds (minors' personal context, retention entanglement, access-boundary containment), consistent with §3.3. §22.3 constrains runtime records to reference RGKB only through immutable canonical version identifiers and forbids copying canonical content or writing into rgkb. §22.2 captures the full required set: rule versions, guardrail versions and their evaluation outcomes, KU versions, validation state, rights state, human-review event, and model/provider/system version. §9.5 and §21.5 fence canonical provenance and governance events off from student-specific records from the other direction. §22.5 correctly scopes the runtime store's own design out while keeping the boundary in scope.
+
+The separation itself is sound and I found no leakage path. Two refinements are recorded as findings rather than closure failures: "validation state relied upon" has no immutable citable identity, which sits in tension with §22.3's identifiers-only rule (F-05); and the localized-text version is missing from §22.2 (F-02, shared with R-01).
+
+R-03 Governance Bindings — CLOSED
+
+§16.1 promotes all five required relationships to first-class typed entities bound to immutable version identities, with binding-level semantics (required vs advisory, role played). §4.2(23) and §16.2 remove free-text scope from the authoritative path, and §16.2 states the correct failure argument — silent guardrail detachment via renamed constructs or translated scope strings. §14.2 and §15.2 explicitly delete v0.1's free-text scope, evidence_basis, and construct_scope. §16.3 makes guardrail prohibition precedence explicit and unidirectional ("rules cannot raise themselves through the safety floor"). §16.4 states transitive fail-closed behaviour over invalid, superseded, unavailable, or gate-failing dependencies, and §14.3 forecloses the two dangerous readings ("proceed with a warning", "fall back to unconstrained model reasoning"). Dependencies are traversable and superseded dependencies are detectable via §17.2 axis 4.
+
+The residual issue is not detection but responsibility: nothing assigns who must re-bind, and neither branch of the supersession decision is managed (F-04).
+
+---
+3. Executive Verdict
+
+PASS WITH REQUIRED CHANGES
+
+- v0.2 is a genuine architectural closure, not a longer restatement: every accepted finding A–V has a traceable structural consequence, and §28's mapping table checks out against the body.
+- R-02 and R-03 are closed cleanly and at the right altitude — conceptual entities and behavioural contracts, with no SQL, no vocabularies fixed, and no DSL designed.
+- R-01 is closed for the five objects it named but the immutability principle is under-enumerated: evidence anchors, localized governed text, construct↔scale mappings, relations, and cross-source positions remain mutable targets of immutable references.
+- The most consequential of these is the localized Georgian text: the immutability of a KU version is decorative for audit purposes if the words the student actually read are not themselves resolvable to a version in the runtime record.
+- §12.3's mandatory "exact subject VERSION reviewed" is currently unsatisfiable for several subjects v0.2 itself declares validation-governable — an internal inconsistency, not merely an omission.
+- §10.2 justifies the instrument/scale registry by enforceability ("name the actual scale the runtime sees"), but v0.2 assigns the canonical-scale ↔ operational-scoring-channel correspondence to neither domain. Repo evidence shows the operational side currently identifies channels by free-text assessment_type with alias fallbacks and ad-hoc questionSetVersion strings — so the seam is real, not hypothetical.
+- §16.4's transitive fail-closed rule is correct but operationally unmanaged: marking a guardrail version superseded hard-fails every dependent rule, while not marking it leaves rules bound to stale governance. Neither branch has an owner.
+- Scientific invariants are preserved and in several places strengthened (§4.3, §8.4, §13.3, §18.3) — I found no wording that reopens averaging, master scores, construct/score conflation, or deterministic interpretation.
+- Deferral discipline is strong: §25 adds no embedding entities while preserving exactly the three hooks retrofitting would require; §1.3 correctly labels all table-like names as conceptual handles.
+- No new BLOCKER. No settled decision is contradicted. The required changes are additive clarifications, not redesign.
+
+---
+4. Architecture Preserved Correctly
+
+Carry into Controlled Schema Specification without reopening:
+
+1. Dedicated rgkb schema; public.knowledge_resources as governed projection only, never a back-door writer (§3.1–§3.2, §24.3).
+2. Operational student data — including assessment results, responses, and platform-derived norms — permanently outside rgkb (§3.3, §10.5).
+3. Stable identity / immutable version split with draft-only mutability and indefinite historical resolvability (§5.1–§5.3).
+4. Prohibition of the mutable integer version column as a sole mechanism (§5.4).
+5. Version chain ≠ supersession relation, with partial (scope-bounded) supersession as a required capability (§5.5, §11.3).
+6. Semantics-free, immutable, never-reused, never-re-pointed, collision-safe domain codes; rejection of KU-001-CH5-014; three separate identifier families (§5.6).
+7. Source / Expression / Manifestation three-level split; evidence binds scientifically at Expression, physically resolves at Manifestation; fingerprints prove file integrity, not edition identity (§6.1–§6.3).
+8. Level-aware external identifiers rather than fixed-level DOI/ISBN/URL columns (§6.4).
+9. Normalized rights model with explicit allow/deny, purpose, jurisdiction, conditions, validity window, revocation, typed evidence, immutable decision history — and fail-closed treatment of unknown, missing, expired, and revoked (§7.2–§7.5).
+10. Rights-conditioned excerpt retention, with retention permission strictly separate from output/quotation permission, and the prohibition on parking restricted excerpts in notes (§7.6).
+11. Typed evidence links as the sole authoritative pointer; free text may annotate only (§9.3, §4.2(24)).
+12. A distinct rights/document anchor concept reachable through one coherent evidence-linking contract (§9.4).
+13. The two-chain provenance separation and its boundary rules (§9.1, §22).
+14. Instrument / instrument-version / scale registry with typed, evidence-linked, validation-governable construct↔scale mappings and explicit operationalizes / partially_operationalizes / proxy_for semantics (§10.3–§10.4).
+15. Version-to-version relations; removal of relation-local validation_status and evidence_basis (§11.1–§11.2).
+16. One immutable append-only decision/review substrate with derived current state; mandatory reviewer attribution including role, authority, and conflict-of-interest (§12.1–§12.3).
+17. Reviewer identity independent of auth.users; no fabricated accounts for external experts (§12.4).
+18. Referential enforcement for governance subjects, with polymorphism permitted only for append-only audit (§12.6).
+19. Claim/KU-version-level cross-source comparison with first-class participating positions; rejection of outcome-plus-confidence-scalar (§13.1–§13.3).
+20. Executable specification requirement: named + versioned + validated specification language, validity as an activation gate, and fail-closed on unparseable/unevaluable content with no fallback to unconstrained generation (§14.3–§14.4, §15.3).
+21. Structured human-review policy (type, required authority, blocking vs advisory, unavailable-review behaviour) (§15.4).
+22. Five first-class typed bindings, guardrail-prohibition precedence, transitive fail-closed dependency behaviour (§16).
+23. Four independent lifecycle axes; approval derived from review events; no self-granted approval; governed reactivation after quarantine (§17).
+24. Language-declaring governed text; translation_fidelity distinct from georgian_context; no inherited validation; no ad-hoc generation-time authoritative translation (§18).
+25. Seven separately authorized curation acts; asserter ≠ approver; ad-hoc SQL not a normal interface; exceptional administration auditable and non-exempt (§19).
+26. The full security stack: schema non-exposure as a drift-controlled verifiable property, zero direct grants to anon/authenticated, hardened bridge functions owned by a dedicated least-privilege role, and service-role possession ≠ authorization (§20).
+27. Append-only actor-attributed governance events with actor types beyond auth.users (§21).
+28. Citations reframed as renderings of structured metadata, generated with overrides (§24).
+29. Retrieval deferral preserving version identity, span offsets, and retention state; future embeddings must bind to immutable versions (§25).
+
+---
+5. Findings Register
+
+F-01
+Severity: HIGH
+Section/entity: §5.1, §5.2, §9.2 rgkb.evidence_anchor; also §10.4 construct_scale_mapping, §11.1 knowledge_unit_version_relation, §13.2 cross_source_position
+Finding: The identity/version split is enumerated for five object families ("at minimum"), but four further governed objects that carry semantic payload on the audit path are given no version model and are never declared immutable. Immutable typed links therefore point at mutable targets.
+Why it matters: This is R-01's failure mode displaced one hop. It also makes §12.3's mandatory "exact subject VERSION reviewed" unsatisfiable for subjects that §10.4 and §11.2 explicitly declare validation-governable.
+Failure mode if ignored: An anchor's locator, span offsets, or retained excerpt is corrected in place; a past runtime record still resolves through its immutable KU version to evidence text that was never the basis of the assertion — traceability that looks intact and is false. A mapping edited from operationalizes to proxy_for retroactively changes what a guardrail was constraining.
+Minimal correction: State which governed objects take the §5.1 split and which are immutable-on-reference; for anchors, state that correction creates a new anchor rather than editing one already referenced by a non-draft version.
+Resolution gate: BEFORE CONTROLLED SCHEMA SPEC
+
+F-02
+Severity: HIGH
+Section/entity: §22.2, §23.1, §18.2, §18.5, §5.3
+Finding: The localized governed text — the Georgian words a student actually reads — is asserted to be "versioned" in §18.5 but is absent from §5.1's version list and §5.3's reference rule, is required by §23.1 only as "localization identity" rather than version identity, and is not among the items §22.2 requires the runtime record to capture.
+Why it matters: §23.3 states the document's own governing argument: a chain resolving to "whatever that KU says now" proves nothing about what was said to a student last term. That argument applies most sharply to the localized rendering, which is the sole artefact the minor was exposed to. Localized text also cannot be wholly inside the immutable version payload, since a translation is necessarily authored after the source-language version is approved — so it needs its own version identity by construction.
+Failure mode if ignored: A Georgian statement is revised after a report is issued; the audit reconstructs the KU version, guardrails, rights, and review correctly, and still cannot establish what the student was told. Safeguarding review of a past output becomes unanswerable.
+Minimal correction: Add localized governed text to §5.1's version-bearing objects, change §23.1's "localization identity" to localized-text version identity, and add the localized-text version(s) used to §22.2's runtime record contents.
+Resolution gate: BEFORE CONTROLLED SCHEMA SPEC
+
+F-03
+Severity: HIGH
+Section/entity: §10.2, §10.3 rgkb.instrument_scale, §16, §3.3
+Finding: §10.2 justifies the registry on enforceability grounds — a guardrail is only enforceable if the architecture "can name the actual scale the runtime sees" — but v0.2 never defines the correspondence between rgkb.instrument_scale and the operational scoring channel, and assigns that correspondence to neither the canonical nor the operational domain. Repo evidence confirms the seam is live: the operational side identifies assessments by a nullable free-text assessment_type with alias fallbacks ('std', a.type, !a.assessment_type) and encodes instrument identity in ad-hoc strings such as riasec_<band>_v1_48 and eq_v1_12 (supabase/functions/submit-assessment/scoring.ts:36,121,153,193).
+Why it matters: Naming a scale scientifically is not the same as the runtime being able to prove that the score in hand is that scale. Without a governed correspondence, guardrail binding to constructs and scales degenerates at the last hop into exactly the free-text matching §4.2(23) prohibits.
+Failure mode if ignored: The "RIASEC interest is not ability" guardrail binds correctly to a canonical scale, an operational channel is renamed or a question set revised, the correspondence silently misses, and the guardrail stops applying to student-facing output with nothing detecting it.
+Minimal correction: State that a governed correspondence between canonical scale identity and operational scoring-channel identity is required, name which side owns it, and state that it must not import semantics-bearing operational strings as canonical codes (§5.6).
+Resolution gate: BEFORE CONTROLLED SCHEMA SPEC (it is a domain-boundary allocation, not a schema detail)
+
+F-04
+Severity: HIGH
+Section/entity: §16.1, §16.4, §17.2 axis 4
+Finding: Bindings reference immutable version identities and §16.4 fails closed on superseded dependencies, but no actor, event, or review obligation is assigned for re-binding when a new guardrail or KU version is issued. Both branches are unmanaged: marking the old version superseded hard-fails every dependent rule at once, while not marking it leaves rules bound to knowledge the curators have already replaced.
+Why it matters: Because rule versions and their bindings are immutable, re-binding implies minting a new version of every dependent rule — an unacknowledged cascade. The predictable operational response is to avoid marking supersession, which converts a safety property into silent under-governance.
+Failure mode if ignored: Either a mass fail-closed outage of student-facing interpretation on a routine guardrail clarification, or a standing practice of never superseding, leaving consequential rules bound to knowledge the organisation no longer stands behind.
+Minimal correction: State whether bindings carry their own lifecycle, and assign the detection and re-binding responsibility (a governance event plus a review obligation) for dependent objects when a bound version is superseded.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-05
+Severity: HIGH
+Section/entity: §22.2, §22.3, §12.2
+Finding: §22.2 requires the runtime record to capture "the validation state relied upon at that time" and "the rights state relied upon at that time". Rights has an immutable citable identity (rights_decision_version), but validation state is derived from the event substrate (§12.2) and has no version or event identity that §22.3's identifiers-only rule can reference. The record must therefore either store a copy of canonical state — which §22.3 forbids — or store nothing provable.
+Why it matters: Test D's exact concern: proving which determination applied rather than recording a generic current status. Without a citable determination identity, the strongest claim a past record can make is an unverifiable assertion about a derived value.
+Failure mode if ignored: An audit of a past consequential output can prove which KU version and rights decision were used but cannot prove the object was validated at that moment — the single question a regulator or school would ask.
+Minimal correction: State that validation determinations expose a citable immutable identity (the review/decision event identifier, or an equivalent determination identity) and that runtime records reference that rather than a status value.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-06
+Severity: MEDIUM
+Section/entity: §12.2
+Finding: Current validation state is required to be "derived from, or governed against, that substrate". The second disjunct permits an independently maintained state that is merely checked against events, which is materially weaker than §4.2(31). Separately, if current state is derived, the derivation rule is itself governance-bearing and is not versioned, so as-of-time re-derivation is not guaranteed stable across changes to that rule.
+Why it matters: The substrate that decides whether consequential output about minors may proceed is precisely where a second writable truth is least acceptable.
+Failure mode if ignored: A materialized validation table drifts from its events and is reconciled periodically rather than derived, quietly reinstating the v0.1 two-store problem; or a past state re-derives differently after the derivation logic changes, without either result being wrong on its face.
+Minimal correction: Drop or tightly constrain "or governed against", and require the derivation rule to be identifiable and versioned so as-of-time re-derivation is reproducible.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-07
+Severity: MEDIUM
+Section/entity: §5.3, §17.2 axis 3
+Finding: §5.3 permits stable-identity references where "current" resolution is "itself governed and auditable", but no mechanism, cardinality rule, or event defines current-version resolution. Nothing states whether more than one version of an identity may hold runtime availability simultaneously.
+Why it matters: "Current" is the reference form used by any non-historical consumer; an undefined resolution rule is a fork in schema design and a source of nondeterministic runtime behaviour.
+Failure mode if ignored: Two versions of a KU are both active; two runtime paths resolve different governed meanings for the same identity with no error.
+Minimal correction: State the cardinality constraint on runtime-available versions per identity and that current-version resolution is itself a governance event.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-08
+Severity: MEDIUM
+Section/entity: §6.1, §6.2
+Finding: §6.2 binds scientific evidence claims to the Expression, but continuously updated web-published sources (living standards, framework portals, silently revised institutional pages) frequently have no declared edition. For those, the only stable object is the dated archival capture, which §6.1 places at the Manifestation level.
+Why it matters: Test K's case. Either a synthetic Expression must be minted per capture — an allowed convention, but unstated — or evidence binds at Manifestation, contradicting §6.2.
+Failure mode if ignored: Curators improvise inconsistently; some claims about living standards become unresolvable after the page changes, and the Expression level accumulates ill-defined entries.
+Minimal correction: State the convention for sources without declared editions (capture-dated Expression, or explicit Manifestation-level binding as a named exception).
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-09
+Severity: MEDIUM
+Section/entity: §7.2 rgkb.rights_evidence, §9.4
+Finding: §9.4 correctly refuses to force licence texts, permission emails, publisher terms, contracts, and statutes into scholarly-source semantics and anticipates a rights/document anchor — but the document objects those anchors resolve against are not modeled anywhere. They are explicitly not sources in the §6 sense, and they have no home.
+Why it matters: A rights determination's evidence must be as resolvable as scientific evidence for the fail-closed rights model (§7.5) to be auditable rather than asserted.
+Failure mode if ignored: Rights evidence degenerates into free-text references to files held outside the system — the exact pattern §4.2(24) removes from the scientific path — leaving rights determinations unauditable.
+Minimal correction: Name the rights-document object and state whether it is a distinct domain entity or a typed use of the manifestation concept.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-10
+Severity: MEDIUM
+Section/entity: §26.2(10), §8.2 developmental scope, §10.1 developmental relevance
+Finding: The controlled grade/developmental scope vocabulary is deferred with no constraint attached. v0.2 nowhere states that developmental scope is a qualifier of applicability rather than a deterministic assignment of a student to a developmental stage.
+Why it matters: This is the one scientific invariant on the review list ("no deterministic universal grade stages") that v0.2 neither retains explicitly in §4.1 nor adds in §4.2, while simultaneously deferring the vocabulary that could violate it.
+Failure mode if ignored: The deferred vocabulary is built as a grade→stage mapping, and rules bind to it, producing age-deterministic guidance for grades 7–12 with the appearance of canonical backing.
+Minimal correction: Add one invariant stating that developmental and grade scope constrain where a claim applies and never assert a student's developmental stage.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-11
+Severity: MEDIUM
+Section/entity: §14.3, §15.3, §16.4, §20.4, §4.2(26)
+Finding: "Consequential" is the trigger for fail-closed behaviour, human review, and audited access, but is defined only obliquely (§20.4, "results feed student-facing output"). It is not a governed classification of paths or outputs.
+Why it matters: Every safety obligation in v0.2 is scoped by this word; an undefined scope leaves the boundary at implementer discretion.
+Failure mode if ignored: A path is classified as non-consequential to avoid fail-closed friction, and student-facing text is produced outside guardrail enforcement without any rule being broken on paper.
+Minimal correction: State that consequentiality is a governed classification of output paths, determined by governance rather than by implementation convenience.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-12
+Severity: LOW
+Section/entity: §12.4, §15.4, §19.1
+Finding: Reviewer identity is separated from auth.users and review is a separately authorized curation act, but no sentence states that platform application roles (school admin, counselor) never by themselves confer canonical scientific, psychometric, safeguarding, or rights review authority.
+Why it matters: Test O. The separation is implied by §12.3's authority/credential attributes and §19.1's act separation, but implication is thin for the substrate that gates output to minors.
+Failure mode if ignored: An implementation treats an elevated platform role as reviewer authority, and approval becomes an administrative privilege.
+Minimal correction: One explicit sentence disjoining application roles from canonical review authority.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-13
+Severity: LOW
+Section/entity: §4.3, §12.5, §26.3(12)
+Finding: Activation gates are conjunctive over "required" dimensions, but which dimensions are required for which subject types is deferred to the applicability matrix, so "required" is currently undefined.
+Why it matters: The conjunctive formulation is correctly guarded against implying universal applicability (Test N passes), but the gate cannot be evaluated until the matrix exists.
+Failure mode if ignored: Implementers apply all dimensions to all subjects (unsatisfiable gates) or an arbitrary subset (weak gates).
+Minimal correction: None to v0.2; ensure the matrix is produced before any activation logic is specified.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-14
+Severity: LOW
+Section/entity: §6.5, §24.2
+Finding: Contributor normalization is deferred while §24.2 prefers generated citation renderings from structured metadata — which requires the structure being deferred.
+Why it matters: A sequencing dependency, not a defect; §6.5 already concedes free-text authors is insufficient.
+Failure mode if ignored: Citation generation is specified against a field that cannot support it, forcing override-by-default.
+Minimal correction: Sequence contributor normalization ahead of citation rendering within the schema-spec stage.
+Resolution gate: DURING CONTROLLED SCHEMA SPEC
+
+F-15
+Severity: NOTE
+Section/entity: §5.4, §7.6, §13.3, §16.2, §17.1, §17.3, §20.6, §22.3
+Finding: v0.2 repeatedly states not only the rule but the failure it prevents, and several of these are unusually well-targeted: the self-granted-approval attack in §17.1/§17.3; silent guardrail detachment via renamed or translated scope strings in §16.2; the rejection of outcome-plus-confidence-scalar as destroying exactly what a counselor would need in a contested case (§13.3); retention permission held distinct from output permission (§7.6); service-role possession explicitly not authorization (§20.6); and runtime storing identifiers rather than copies (§22.3). §14.3's refusal of both "proceed with a warning" and "fall back to unconstrained model reasoning" closes the two readings that would otherwise hollow out fail-closed.
+Resolution gate: n/a — preserve verbatim.
+
+F-16
+Severity: NOTE
+Section/entity: §1.3, §12.6, §14.4, §26
+Finding: Deferral discipline is genuinely maintained. §1.3 pre-empts the main misreading risk by labelling every table-like name a conceptual handle. §12.6 lists three referential-enforcement techniques and explicitly declines to choose. §14.4 requires a specification language while explicitly not designing it. §26 records 27 open items as deliberate topics rather than gaps. No SQL, DDL, constraint, index, enum, or grant is authored anywhere in the document.
+Resolution gate: n/a
+
+---
+6. New-Blocker Search Result
+
+NO NEW BLOCKER
+
+┌──────────────────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│               Test               │                                                  Result                                                  │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                  │ Gap found (F-01, F-02). Five families versioned; evidence anchors, localized text, construct↔scale       │
+│ A Version object coverage        │ mappings, KU relations, and cross-source positions are not. Under-enumeration of a stated invariant      │
+│                                  │ (§4.2(21)), not a contradiction of it — HIGH, not BLOCKER.                                               │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                  │ Partially handled well: §5.5 keeps revision and supersession distinct, and a new KU version does not     │
+│ B Version dependency cascade     │ automatically invalidate its predecessor, correctly avoiding invalid transitive mutation. But the        │
+│                                  │ consequence — that re-binding after supersession requires minting new dependent rule versions — is       │
+│                                  │ unacknowledged (F-04).                                                                                   │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ C Governance event vs validation │ Coherent in structure: immutable substrate, derived state, materialization permitted only as a governed  │
+│  state                           │ projection. Weakened by the "or governed against" disjunct and by an unversioned derivation rule (F-06). │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                  │ Rights can be proven: rights_decision_version is immutable and citable, permissions are carried by it,   │
+│ D Rights at runtime              │ and §7.5 makes expiry and revocation non-applicable rather than silently permissive. Validation state    │
+│                                  │ has no equivalent (F-05).                                                                                │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ E Localized text identity        │ The concrete risk the test names is present: §18.5 asserts versioning, but no reference rule or runtime  │
+│                                  │ record binds to a localized-text version (F-02).                                                         │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                  │ Scientifically clean — instrument, instrument version (revision, question set, scoring model,            │
+│ F Instrument versioning          │ adaptation), scale, and a hard exclusion of student results and platform-derived norms (§10.5), while    │
+│                                  │ leaving published normative data available as canonical knowledge. The unresolved part is the            │
+│                                  │ correspondence to the runtime channel (F-03), not the scientific separation.                             │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                  │ Silent under-governance via a stale binding is prevented by §16.4's fail-closed-on-superseded rule.      │
+│ G Guardrail/rule bindings        │ Activation and review responsibility is not clear, and the incentive created by the cascade is adverse   │
+│                                  │ (F-04).                                                                                                  │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ H Fail-closed semantics          │ Stated at the right altitude: behavioural requirements ("blocks", "does not proceed"), not               │
+│                                  │ implementation. §14.3's explicit exclusions are the strongest part. Scoped by an undefined term (F-11).  │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                  │ All six distinctions are present and separately stated: schema non-exposure as a drift-controlled        │
+│ I Security ownership             │ property (§20.1), direct grants (§20.2), trusted bridge execution (§20.3), dedicated least-privilege     │
+│                                  │ function ownership (§20.3), service-role possession ≠ authorization (§20.6), and operational act         │
+│                                  │ authorization (§19.1). No new blocker; a strength.                                                       │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ J Audit vs runtime provenance    │ Cleanly separated and stated from both directions (§21.5, §22.1, §9.5). The §12.6 polymorphism exception │
+│                                  │  is correctly confined to append-only audit.                                                             │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ K                                │ Coherent for books, editions, translations, versioned frameworks, datasets, and archival captures.       │
+│ Source/Expression/Manifestation  │ Living web standards are the unresolved case (F-08).                                                     │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ L Rights evidence                │ Correctly avoids forcing legal evidence into scholarly semantics while keeping one traversable evidence  │
+│                                  │ contract (§9.4). The rights-document object itself is unmodeled (F-09).                                  │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                  │ Positions are first-class and adjudication is explicitly barred from erasing them; the                   │
+│ M Cross-source validation        │ outcome-plus-confidence shape is rejected by name. Notably, §16's binding list does not permit rules to  │
+│                                  │ bind to adjudication outcomes at all, so no adjudicated summary can become a rule-consumable master      │
+│                                  │ result.                                                                                                  │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ N Conjunctive gates              │ Carefully worded — "each required dimension", with the applicability matrix deferred, so universal       │
+│                                  │ applicability is not implied (F-13 is sequencing only).                                                  │
+├──────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                  │ Reviewer identity is independent of auth.users and authority is expressed via role, credential level,    │
+│ O Human review                   │ internal/external status, and conflict-of-interest. Disjunction from platform application roles is       │
+│                                  │ implied but unstated (F-12).                                                                             │
+└──────────────────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+No finding in this search reaches BLOCKER: none contradicts a stated invariant, none requires abandoning a v0.2 decision, and each minimal correction is additive.
+
+---
+7. Scientific Governance Assessment
+
+┌───────────────────────────┬───────────────────┬────────────────────────────────────────────────────────────────────────────────────────────┐
+│         Invariant         │      Status       │                                      Structural basis                                      │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ RIASEC interest ≠ ability │ Preserved         │ §4.1(16); §14.1 as a canonical guardrail example; §10.2 makes it the motivating case for   │
+│                           │                   │ the scale registry — subject to F-03 for last-hop enforceability                           │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Construct ≠ score         │ Preserved         │ §3.4(2); §10.5 hard boundary; §10.4 mapping semantics distinguish operationalization from  │
+│                           │                   │ identity                                                                                   │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ No deterministic          │ Preserved but     │ No deterministic mapping exists anywhere in v0.2; the vocabulary that could introduce one  │
+│ universal grade stages    │ unguarded         │ is deferred without constraint (F-10)                                                      │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Self-efficacy not a       │ Preserved         │ §4.1(17) retained verbatim; §10.3 keeps instrument identity separate from construct        │
+│ seventh assessment        │                   │ identity, removing the structural temptation                                               │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ No universal master score │ Preserved         │ §4.3 is explicit and enumerates the six axes across which aggregation is forbidden; §13.3  │
+│                           │ (strengthened)    │ rejects the scalar-confidence shape by name                                                │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ No arithmetic averaging   │ Preserved         │ §4.3; §8.4 makes epistemic labels non-arithmetic, non-additive across layers, and          │
+│ across channels           │ (strengthened)    │ non-derivable upward from evidence labels                                                  │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Discrepancy as inquiry    │ Preserved         │ §4.1(19) retained; §14.1 carries the anti-averaging guardrail; nothing in v0.2 introduces  │
+│ signal                    │                   │ a reconciliation entity                                                                    │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Preserved contradictions  │ Preserved         │ §11.1 contradicts predicate binds version-to-version; §11.4; §13.2–§13.3 positions survive │
+│                           │                   │  adjudication                                                                              │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Independent Georgian      │ Preserved         │ §12.5 georgian_context dimension; §18.3 with the two-way non-implication stated explicitly │
+│ contextual validation     │                   │                                                                                            │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Independent translation   │ Preserved (new)   │ §12.5 adds translation_fidelity; §18.3 gives both asymmetric failure cases; §18.4 blocks   │
+│ fidelity                  │                   │ inherited validation; §18.5 blocks ad-hoc machine translation becoming canonical           │
+├───────────────────────────┼───────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Human review for          │ Preserved         │ §4.1(20); §15.4 structures review type, required authority, blocking vs advisory, and      │
+│ consequential             │ (strengthened)    │ unavailable-review behaviour; §22.2 records the review event in runtime provenance; §17.3  │
+│ interpretation            │                   │ prevents self-granted approval                                                             │
+└───────────────────────────┴───────────────────┴────────────────────────────────────────────────────────────────────────────────────────────┘
+
+No wording was found that structurally reopens deterministic interpretation, false numeric precision, construct conflation, hidden averaging, or unsupported student-facing inference. §8.4's instruction to prefer qualitative labels (well_established, contested) over anything reading as a percentage is a direct guard against false precision and should be carried forward.
+
+---
+8. Deferred Design Assessment
+
+┌──────────────────────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────────────────┐
+│                       Deferral                       │                                    Classification                                    │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ SQL / DDL / migrations (§27.1)                       │ APPROPRIATELY DEFERRED                                                               │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Enum vs reference-table choice (§26.4(19))           │ APPROPRIATELY DEFERRED                                                               │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Rule/guardrail specification language (§26.5(26))    │ APPROPRIATELY DEFERRED — §14.2/§15.2 reserve the language-id, language-version, and  │
+│                                                      │ validity-gate slots, so no retrofit is required                                      │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ RPC / Edge Function read boundary (§26.4(20))        │ APPROPRIATELY DEFERRED — §20.3's hardening requirements are already binding on it    │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Production schema exposure (§20.7)                   │ APPROPRIATELY DEFERRED                                                               │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Embeddings / vector tables / RAG (§25.1)             │ APPROPRIATELY DEFERRED — §25.2's three hooks (immutable version ids, span offsets,   │
+│                                                      │ retention state) are the correct minimum to avoid destructive redesign               │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Agent memory (§25.1)                                 │ APPROPRIATELY DEFERRED                                                               │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Runtime provenance store schema (§22.5)              │ APPROPRIATELY DEFERRED — boundary and contents fixed, schema out of scope;           │
+│                                                      │ conditional on F-02 and F-05, which are boundary-level, not schema-level             │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Student personalization (§25.1)                      │ APPROPRIATELY DEFERRED                                                               │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Automated publication into                           │ APPROPRIATELY DEFERRED                                                               │
+│ public.knowledge_resources (§25.1, §24.3)            │                                                                                      │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Intervention engine (§25.1)                          │ APPROPRIATELY DEFERRED                                                               │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Contributor normalization (§6.5)                     │ APPROPRIATELY DEFERRED (sequencing note F-14)                                        │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ External identifier structure (§26.1(2))             │ APPROPRIATELY DEFERRED — level-awareness fixed now, which is the part that would     │
+│                                                      │ have been costly to retrofit                                                         │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Partial supersession representation (§26.2(9))       │ APPROPRIATELY DEFERRED — capability declared mandatory, representation open          │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Validation-dimension applicability matrix            │ APPROPRIATELY DEFERRED                                                               │
+│ (§26.3(12))                                          │                                                                                      │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Cross-source adjudication model (§26.3(14))          │ APPROPRIATELY DEFERRED — §13.3's non-erasure constraint bounds the design space      │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Referential enforcement technique (§26.3(16))        │ APPROPRIATELY DEFERRED                                                               │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ External reviewer onboarding (§26.3(17))             │ APPROPRIATELY DEFERRED                                                               │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Audit-event physical placement (§21.6)               │ APPROPRIATELY DEFERRED                                                               │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Version coverage for anchors, localized text,        │ SHOULD BE RESOLVED NOW (F-01, F-02) — determines which conceptual entities exist     │
+│ mappings, relations, positions                       │                                                                                      │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Canonical-scale ↔ operational-channel correspondence │ SHOULD BE RESOLVED NOW (F-03) — a domain-boundary allocation, and the enforceability │
+│  (not listed as a deferral)                          │  claim of §10.2 rests on it                                                          │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Citable identity for validation determinations (not  │ SHOULD BE RESOLVED NOW (F-05) — §22.3's identifiers-only rule is otherwise           │
+│ listed as a deferral)                                │ unsatisfiable                                                                        │
+├──────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+│ Rights-document object (§9.4, not listed in §26)     │ TOO EARLY TO DEFER as an unnamed concept (F-09); acceptable once named               │
+└──────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────────────────┘
+
+---
+9. Readiness for Controlled Schema Specification
+
+NO — not yet, by a narrow and additive margin.
+
+The model is conceptually sound, its boundaries are correct, and R-02 and R-03 are closed. But three items determine which conceptual entities exist and where a boundary falls, and per the stated classification rule those must be settled before entering the schema-spec stage rather than during it.
+
+Exact remaining preconditions:
+
+1. F-01 — Enumerate which governed objects take the §5.1 identity/version split beyond the current five, and state immutability-on-reference for evidence anchors (correction creates a new anchor). Required because §12.3's mandatory "exact subject VERSION reviewed" is currently unsatisfiable for subjects §10.4 and §11.2 declare validation-governable.
+2. F-02 — Bind localized governed text to a version identity in §5.1 and §5.3, change §23.1's "localization identity" to localized-text version identity, and add the localized-text version(s) used to §22.2's runtime record contents.
+3. F-03 — State that a governed correspondence exists between canonical scale identity and the operational scoring channel, and allocate its ownership to one domain.
+
+These are three additive clarifications consistent with invariants v0.2 already states (§4.2(21), §4.2(23), §5.2). They reopen no settled decision, require no redesign, move no domain boundary already drawn, and should not require re-review of the whole model — a v0.2.1 amendment with confirmation limited to these three points is sufficient.
+
+Findings F-04 through F-14 are correctly resolvable within Controlled Schema Specification and are not preconditions.
+
+---
+10. Final Gate Recommendation
+
+REVISE v0.2 BEFORE ADVANCING
+
+Scoped strictly to F-01, F-02, and F-03. All other v0.2 decisions are sound and should be carried into Controlled Schema Specification without reopening.
+
+No SQL authorization, migration authorization, schema deployment, production access, AI enablement, or data ingestion is implied or granted by this review. This review made no repository modification: no file was created, edited, staged, committed, or pushed, and no database or external system was contacted.
