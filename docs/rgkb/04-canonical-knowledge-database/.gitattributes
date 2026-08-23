@@ -1,0 +1,4 @@
+# Byte-preservation for the accepted Phase 1 canonical specification.
+# Scope: this single file only. Prevents core.autocrlf from altering its
+# accepted byte representation on checkout.
+RGKB_Controlled_Schema_Specification_Step_1_Governed_Object_Versioning_v0.1.md -text
