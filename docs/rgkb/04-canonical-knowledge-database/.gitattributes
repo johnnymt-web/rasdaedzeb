@@ -2,3 +2,8 @@
 # Scope: this single file only. Prevents core.autocrlf from altering its
 # accepted byte representation on checkout.
 RGKB_Controlled_Schema_Specification_Step_1_Governed_Object_Versioning_v0.1.md -text
+
+# Byte-preservation for the Step 2 canonical specification.
+# Scope: this single file only. Same purpose and same narrow scope as above.
+# The Phase 1 rule immediately above is unchanged.
+RGKB_Controlled_Schema_Specification_Step_2_Knowledge_Evidence_Provenance_v0.1.md -text
