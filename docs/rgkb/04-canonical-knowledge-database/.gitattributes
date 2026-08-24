@@ -12,3 +12,8 @@ RGKB_Controlled_Schema_Specification_Step_2_Knowledge_Evidence_Provenance_v0.1.m
 # Scope: this single file only. Same purpose and same narrow scope as above.
 # The Phase 1 and Phase 2 rules above are unchanged.
 RGKB_Controlled_Schema_Specification_Step_3_Scientific_Knowledge_Governance_v0.1.md -text
+
+# Byte-preservation for the Step 4 canonical specification.
+# Scope: this single file only. Same purpose and same narrow scope as above.
+# The Phase 1, Phase 2 and Phase 3 rules above are unchanged.
+RGKB_Controlled_Schema_Specification_Step_4_Interpretation_Synthesis_Governance_v0.1.md -text
