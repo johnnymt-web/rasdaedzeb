@@ -22,3 +22,8 @@ RGKB_Controlled_Schema_Specification_Step_4_Interpretation_Synthesis_Governance_
 # Scope: this single file only. Same purpose and same narrow scope as above.
 # The Phase 1, Phase 2, Phase 3 and Phase 4 rules above are unchanged.
 RGKB_Controlled_Schema_Specification_Step_5_Agent_Orchestration_Integration_v0.1.md -text
+
+# Byte-preservation for the Step 6 canonical specification.
+# Scope: this single file only. Same purpose and same narrow scope as above.
+# The Phase 1, Phase 2, Phase 3, Phase 4 and Phase 5 rules above are unchanged.
+RGKB_Controlled_Schema_Specification_Step_6_Privacy_Safeguarding_Consequential_Decision_Governance_v0.1.md -text
