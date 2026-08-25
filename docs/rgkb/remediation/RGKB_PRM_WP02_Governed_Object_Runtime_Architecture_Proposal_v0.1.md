@@ -8,9 +8,10 @@
 - Controlling sources: Step 1 (Governed Object / Versioning / Referential /
   Lifecycle Substrate v0.1); accepted Master Plan PRM-WP02; PRM-WP02 Tier 1
   Human Gate 1 authorization (Owner, 2026-08-25).
-- Status: **PART I ACCEPTED (architecture, unchanged). TIER 1 IMPLEMENTED,
-  RC1 CORRECTION APPLIED — READY FOR OWNER RE-REVIEW. TIER 2 REMAINS BLOCKED.
-  F-04 OPEN. F-07 OPEN. WP02 NOT CLOSED. NO P-GATE CHANGED.**
+- Status: **PART I ACCEPTED (architecture, unchanged). PART II — TIER 1
+  IMPLEMENTED, RC1 APPLIED, MERGED. PART III — TIER 2 IMPLEMENTED, READY FOR
+  OWNER REVIEW.** F-04 OPEN. F-07 OPEN. M-1 OPEN. **WP02 NOT CLOSED.** NO
+  P-GATE CHANGED.
 - Date: 2026-08-24 (proposal); 2026-08-25 (Tier 1 implementation evidence;
   RC1 correction after Owner review).
 
@@ -671,3 +672,438 @@ State preserved and unchanged: **F-04 OPEN** · **F-07 OPEN** · **WP02 Tier 2
 BLOCKED** · **WP02 NOT CLOSED** · **P1–P16 unchanged** (only PRM-WP18 may
 change a P-gate) · **PR8-1/PR8-2/PR8-3 unchanged** · **Pilot NOT AUTHORIZED**
 · **Real data NOT AUTHORIZED** · **Phase 9 NOT AUTHORIZED**.
+
+*(Part II is historical Tier 1 evidence and is not revised by Part III. The
+"WP02 Tier 2 BLOCKED" statement above records the state that held while Tier 1
+was authored; the block was lifted by the Owner's Tier 2 Human Gate on
+2026-08-25 — see Part III §T1.)*
+
+---
+---
+
+# PART III — PRM-WP02 TIER 2 IMPLEMENTATION EVIDENCE
+
+> **Boundary between the parts.** **Part I (§1–§17) is the accepted
+> architecture authority** and is not rewritten, reinterpreted or softened by
+> anything below. **Part II is historical Tier 1 implementation evidence** and
+> is not revised. **Part III records Tier 2 only.** Where Part III and Part I
+> appear to differ, **Part I governs** and Part III is defective.
+>
+> Part III changes no P-gate, closes no finding, and does not close WP02.
+
+## T1. Authorization and scope actually exercised
+
+- Authorized by: **Owner PRM-WP02 Tier 2 Human Gate, 2026-08-25** — the separate
+  gate required after acceptance and merge of the Controlled Subject-Type
+  Catalog Specification. Scope: Tier 2 within the **accepted 19-family
+  catalog**.
+- Baseline: `origin/main` `0aecc9cfe7cc9e121fc866ca8cbe529b620660f0` (PR #55
+  merged, post-merge proof PASS).
+- Implementation branch: `remediation/rgkb-wp02-tier2-runtime-v0.1`.
+- Catalog authority: the Owner-accepted Controlled Subject-Type Catalog
+  Specification v0.1 (merged, SHA-256 `a38ee545…f7097c388e`) — 11 Pattern A,
+  8 Pattern B, 19 Owner-approved `subject_type` codes.
+- **Not exercised:** F-04 workflow, F-07 applicability inputs, any RLS/auth
+  access model, any Step 2–7 domain semantics, WP03, any remote or production
+  act.
+
+## T2. Artifacts produced
+
+| Artifact | Purpose |
+|---|---|
+| `supabase/migrations/20260825190000_rgkb_wp02_tier2_governed_family_substrate.sql` | The entire Tier 2 substrate — one narrow, additive migration |
+| `src/test/rgkbWp02Tier2Runtime.test.ts` | Tier 2 structural regression evidence |
+| `src/test/rgkbWp02Tier1Substrate.test.ts` | **One** assertion adapted — see T12 |
+| this Part III | implementation evidence |
+
+**The Tier 1 migration was not edited.** Where a Tier 1 guard is superseded, the
+replacement is made additively in the Tier 2 migration, and the reason is stated
+at the replacement site.
+
+## T3. Catalog population — exactly 19 rows
+
+One `INSERT`, 19 rows, in catalog order:
+
+**Pattern A (11):** `knowledge_unit`, `guardrail`, `interpretation_rule`,
+`construct_definition`, `rights_decision`, `instrument`,
+`localized_governed_text`, `validation_derivation_rule`,
+`validation_applicability_matrix`, `integrated_profile_architecture`,
+`instrument_scale`.
+
+**Pattern B (8):** `evidence_anchor`, `knowledge_unit_relation`,
+`review_decision_event`, `governance_audit_event`, `governance_binding`,
+`rights_document_anchor`, `typed_evidence_link`, `derivation_record`.
+
+No twentieth family, no alias, no `_version` subject type, and **none of the
+nine unresolved families** (T9).
+
+**Why the Tier 1 `RG020` admission guard was replaced.** Step 1 §2.5 makes
+admission of a family whose pattern assignment is not fixed a governance/schema
+fault. At Tier 1 no controlled catalog specification existed, so *every*
+admission was an unresolved-family admission and the guard refused all of them.
+That premise no longer holds. This is the exact and only reason the guard is
+superseded.
+
+**The catalog is refrozen, not merely seeded.** A new guard refuses further
+admission (`RG030`), in-place reclassification (`RG031`, Step 1 §2.5 change
+control) and removal of accepted membership (`RG032`). Membership is controlled;
+changing it requires a new controlled specification version and a new migration.
+
+**Seed visibility.** Tier 1 left the catalog under `FORCE ROW LEVEL SECURITY`
+with zero policies, which denies DML to the table *owner* as well. A role
+without `BYPASSRLS` could not seed at all, and that attribute cannot be verified
+from the repository. `FORCE` is therefore lifted for exactly the seeding
+statement and **restored immediately in the same migration**; the end state is
+identical to Tier 1's.
+
+## T4. `governed_instance.subject_type` and DERIVED `pattern`
+
+Both added as `NOT NULL`.
+
+**The catalog is the actual derivation authority** (RC1 correction). A `BEFORE
+INSERT` trigger reads the catalog assignment for the row's `subject_type` and:
+
+| Caller input | Behaviour |
+|---|---|
+| `pattern` omitted (NULL) | **derived** from the catalog — `NEW.pattern := v_catalog_pattern` |
+| `pattern` contradicts the catalog | **`RG081` — fail closed.** Rejected as a governance/schema fault, **never silently corrected** |
+| `subject_type` has no catalog assignment | **`RG080` — fail closed.** This is also how an unknown, unresolved or excluded subject type is refused |
+
+```sql
+SELECT c.pattern INTO v_catalog_pattern
+  FROM rgkb.subject_type_catalog AS c
+ WHERE c.subject_type = NEW.subject_type;
+```
+
+- The **19 assignments are not duplicated** into `CASE` logic, an enum,
+  constants or another table — asserted by test. There is exactly **one**
+  family-to-pattern truth source, and it is frozen (T3).
+- Assignment to `NEW.pattern` occurs **exactly once**, in the derivation branch;
+  the contradiction branch raises rather than assigns — asserted by test.
+- Under zero-policy RLS an invisible catalog row yields `RG080`: **fail closed,
+  never open.**
+
+The composite foreign key
+
+```sql
+FOREIGN KEY (subject_type, pattern)
+  REFERENCES rgkb.subject_type_catalog (subject_type, pattern)
+```
+
+**remains as defence in depth**: even if the derivation trigger were bypassed,
+divergence stays structurally impossible.
+
+- **No second pattern truth store** exists: no member table declares a `pattern`
+  column.
+- `subject_type` is **not transferable after allocation** — the registry write
+  guard refuses `UPDATE` (`RG011`, Step 1 §3.2/§11.2). Registry rows remain
+  non-deletable (`RG012`, §5.3).
+
+## T5. Pattern A structural implementation (11 families)
+
+Two strictly distinct identity levels per family:
+
+| Table | Role |
+|---|---|
+| `rgkb.<family>` | **Stable conceptual identity** — `object_id uuid PK DEFAULT gen_random_uuid()`, `domain_code text NOT NULL UNIQUE`. Carries **no** `instance_id` and **no** `version_sequence`. It is **not** a `governed_instance` and **never** a governance-act target (Step 1 §2.1, §2.2, §11.1). |
+| `rgkb.<family>_version` | **Governed version instance** — `instance_id uuid PRIMARY KEY` (the registry identity is its own identity, §3.2 — no second duplicating identity), `object_id` FK to exactly one stable identity (§4), `version_sequence integer NOT NULL` with `UNIQUE (object_id, version_sequence)`, and `previous_sequence` carrying monotonicity. |
+
+`version_sequence` is **ordering only**: it is not part of any primary key, is
+never a governance-act target, and **nothing in the migration orders, compares,
+maximises or limits by it** — so it cannot act as a current-version tie-break
+(§3.4, §9.4).
+
+### T5.1 Monotonicity — enforced structurally, with no reads (RC1 correction)
+
+Step 1 §2.3/§3.4 require `version_sequence` to be **monotonic within its owning
+stable identity**, with gaps permitted. Four mechanisms per family, all
+declarative:
+
+| Mechanism | Effect |
+|---|---|
+| `previous_sequence integer` | names the version this one was authored after; `NULL` on the first version only |
+| `CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence)` | the step is **strictly increasing** |
+| `FOREIGN KEY (object_id, previous_sequence) → (object_id, version_sequence)` (self) | the named predecessor **must exist**, for this same stable identity |
+| `UNIQUE (object_id, previous_sequence)` | each version has **at most one successor** — the chain cannot branch |
+| partial `UNIQUE INDEX (object_id) WHERE previous_sequence IS NULL` | **exactly one first version** per stable identity |
+
+Together these force the versions of one stable identity into a **single linear
+chain extendable only at its tail**, so every newly created version necessarily
+carries a `version_sequence` strictly greater than every version created before
+it. **That is monotonic creation order.**
+
+**Gaps remain permitted:** only the *direction* of the step is constrained,
+never its size — 1 → 5 → 17 is valid. Asserted by test (no `previous_sequence +
+1`, no equality constraint).
+
+**No reads are involved.** The mechanism is `CHECK` + `FOREIGN KEY` + `UNIQUE` +
+a partial index. It therefore does **not** depend on row visibility, and cannot
+fail open under `FORCE ROW LEVEL SECURITY` — which is precisely why the pre-RC1
+deferral was wrong rather than merely conservative.
+
+**This is not a currency mechanism.** The chain records authoring order and
+nothing else: no scientific, approval, validation, runtime, precedence or
+currency meaning, never a governance-act target, and it **must not** be read as
+"the current version". Resolution remains F-07's open question and the resolver
+remains fail-closed (T8).
+
+### T5.2 Stable identity must own ≥ 1 version (RC1 correction)
+
+Step 1 §4: one `governed_object` **MUST** own one or more version instances; a
+stable identity holding none asserts no governed meaning. The schema previously
+enforced only *version → exactly one object*, not the reverse.
+
+Each of the 11 stable-identity tables now carries a `DEFERRABLE INITIALLY
+DEFERRED` constraint trigger that refuses, **at COMMIT**, a stable identity with
+zero versions (`RG070`). Deferral is exactly what allows the first identity and
+its first version to be created in one transaction, while subsequent versions
+remain permitted.
+
+**No placeholder version is fabricated** — the migration contains exactly one
+`INSERT`, the catalog seed. Under zero-policy RLS a caller who cannot see the
+version row cannot establish the invariant and is **refused: fail closed, never
+open.**
+
+`domain_code` carries **no invented allocation format or policy**: Step 1 §3.3
+defers the format, the allocation authority and the collision-prevention
+mechanism. Only the parts Step 1 *does* fix are enforced — uniqueness, and
+immutability via a guard refusing `UPDATE` (`RG040`) and `DELETE` (`RG041`).
+
+**No domain payload column** was added to any of the 22 tables.
+
+## T6. Pattern B structural implementation (8 families)
+
+One record table per family: `instance_id uuid PRIMARY KEY`, plus the pinned
+`subject_type` used for typed enforcement (T7).
+
+- The **exact record identity is the governed instance identity** (Step 1 §2.4).
+- **No artificial stable-identity/version family** is imposed — no
+  `<family>_version` table exists for any Pattern B family, and no `object_id`,
+  `version_sequence` or `domain_code` column appears.
+- **No second independently writable identity** duplicates `instance_id`.
+- **Correction is append-only**: the guard refuses `UPDATE` (`RG050`) and
+  `DELETE` (`RG051`), so the only correction path is a new record, and the
+  superseded record stays resolvable (§2.4, §5.3).
+- **No family-specific payload field is invented.** WP02 makes no claim to
+  implement later domain-specific semantic immutability for payload that does
+  not yet exist; the governed relationship between a superseded record and its
+  correcting record belongs to later controlled specifications.
+
+## T7. Atomic registry ↔ concrete-instance creation
+
+Step 1 §11.5 requires both to come into existence together. Tier 1 satisfied it
+by refusing every registry `INSERT` (`RG010`) because no concrete family
+existed. That premise no longer holds; `RG010` is superseded here, and `RG011` /
+`RG012` are preserved unchanged.
+
+The replacement is **structural, in two halves**:
+
+**(a) No concrete instance without its registry row — immediate.** Every member
+table carries
+
+```sql
+subject_type text NOT NULL DEFAULT '<family>'
+CHECK (subject_type = '<family>')
+FOREIGN KEY (instance_id, subject_type)
+  REFERENCES rgkb.governed_instance (instance_id, subject_type)
+```
+
+against `UNIQUE (instance_id, subject_type)` on the registry. Because
+`instance_id` is the registry primary key, its `subject_type` is unique — so
+this composite key makes it **structurally impossible** for one `instance_id` to
+appear in two family tables, and **forces the concrete family to agree with the
+registry's `subject_type`**, and therefore (through T4's catalog key) with its
+`pattern`.
+
+**(b) No orphan registry row — at COMMIT.** A `DEFERRABLE INITIALLY DEFERRED`
+constraint trigger requires exactly one member row for the registry row, in the
+member table its own `subject_type` and `pattern` determine (`<subject_type>` for
+Pattern B, `<subject_type>_version` for Pattern A). Creation is atomic, or it
+fails entirely (`RG060`).
+
+**Statement order (RC1 wording correction).** The member table's foreign key
+into the registry is **immediate**, so within the transaction the **registry row
+is written first and the member row second**. The pre-RC1 wording claimed the
+two could be written "in either order"; that was wrong. Deferral does not make
+the order arbitrary — it moves the **orphan test** to commit rather than to the
+registry `INSERT`, which is what allows the two writes to be separate statements
+of one transaction at all. Step 1 §11.5 requires them to come into existence in
+the **same committed transaction**, not in an arbitrary statement order, so this
+satisfies it. The immediate member → registry key is deliberately **not**
+weakened to make a broader prose claim true.
+
+**This is not a general registry INSERT path.** A bare registry `INSERT` is
+accepted by the statement and then **refused at commit**, so the only
+transaction that can succeed is one that creates both halves.
+
+**Fail-closed note.** The deferred check reads the member table. Under `FORCE
+ROW LEVEL SECURITY` with zero policies, a caller who cannot see the member row
+cannot establish the invariant, and creation is refused. That is deliberate and
+is the correct direction: while no access model is authorized, an unprovable
+invariant must fail closed, never open.
+
+**No unconstrained polymorphism.** There is no `subject_id` column anywhere;
+family membership is structurally typed (Step 1 §11.3). A governance subject
+remains the exact `instance_id` — `object_id`, `domain_code` and
+`version_sequence` are referenced by no constraint that would let them stand in
+for it (§11.1).
+
+## T8. F-04 and F-07 remain OPEN
+
+**F-07 — OPEN.** `rgkb.resolve_current_version()` is **not modified**: the
+string does not appear in the Tier 2 migration. It remains argument-free and
+fails closed with `RG003`. No change was mechanically required, so none was
+made. No recency fallback, priority fallback, `version_sequence` tie-break,
+default version, "latest wins" semantics or guessed applicability was
+introduced — asserted by test (`ORDER BY`, `LIMIT`, `DESC`, `MAX(`, `GREATEST`,
+`is_current`, `latest`, `current_version`, `default_version`, `most_recent` are
+all absent from executable code).
+
+**F-04 — OPEN.** No re-binding trigger, authority model, affected-dependent
+discovery, automatic re-pointing or dependency repair exists. The
+`governance_binding` family receives **only its Pattern B structural shell**
+(`instance_id`, `subject_type`) because it is an accepted catalog family. **That
+is not an F-04 implementation and must not be represented as one.**
+
+## T9. The nine unresolved families — negative proof
+
+None of the following is admitted to the catalog, and none has a member table:
+construct ↔ scale mapping; cross-source participating position;
+source-descriptor; identity-determination; external-identifier-attachment;
+cross-source validation exercise; KU-version ↔ construct mapping; reviewer
+identity; contributor.
+
+They remain fail-closed outside the catalog. The seeded set is exactly the 19
+accepted codes, and the migration creates exactly 30 tables — 11 stable
+identities + 11 version tables + 8 record tables — with no others, asserted by
+an exact set comparison in the test suite. **M-1 remains OPEN.**
+
+## T10. Access / RLS containment
+
+No functional access model was invented. Containment is at least as strict as
+Tier 1:
+
+- everything in the dedicated `rgkb` schema — **no object in `public`**;
+- **RLS enabled and forced** on all 30 new tables;
+- **zero policies** — no `CREATE POLICY` anywhere;
+- **`REVOKE ALL`** from `PUBLIC`, `anon` and `authenticated` on all 30 tables
+  and on **all 7 functions** the migration defines;
+- **no `GRANT`** of any kind;
+- **no `SECURITY DEFINER`** — **all 7 functions are `SECURITY INVOKER`** with
+  `SET search_path = ''`;
+- no direct client API authorization; no counselor/admin/reviewer/user rule.
+
+The migration carries **7 `CREATE OR REPLACE FUNCTION` definitions**. Two of
+them — `governed_instance_write_guard` and `subject_type_catalog_frozen_guard`
+(the latter under its new name) — **replace** the behaviour Tier 1 installed,
+for the reasons stated at T3 and T7; the other five are **new**. Whether a
+definition is a replacement or new makes no difference to containment: all 7
+are `SECURITY INVOKER` and all 7 are revoked from `PUBLIC`, `anon` and
+`authenticated`.
+
+**❓ The live Supabase exposed-schema configuration is NOT verified**, and no
+remote Supabase access was performed or is authorized.
+
+## T11. No WP03 or later-Step domain semantics
+
+Across all 30 tables the complete column set is exactly six identifiers:
+`object_id`, `domain_code`, `instance_id`, `subject_type`, `version_sequence`
+and `previous_sequence` — the Step 1 identity/version attributes and nothing
+else. (`previous_sequence` is the structural realization of §2.3/§3.4
+monotonicity, an ordering attribute, not domain payload — T5.1.) No
+evidence-location,
+locator, excerpt, fingerprint, epistemic, claim-taxonomy, disposition,
+orchestration, consent, safeguarding, purpose, assent, uncertainty or
+discrepancy vocabulary appears in executable code. No Step 2/3/4/5/6/7 semantics
+are implemented.
+
+## T12. The one adapted Tier 1 assertion
+
+`src/test/rgkbWp02Tier1Substrate.test.ts` contained
+`"is a single narrow migration and no other migration references rgkb"`, which
+asserted `touching === migrationFiles` — i.e. Tier 1 was the **only** migration
+referencing `rgkb`. That assertion runs against the whole repository, not
+against the Tier 1 file, and it was true and worth locking **while Tier 2 was
+BLOCKED**. Tier 2 is now Owner-authorized and legitimately references `rgkb`, so
+the assertion is **factually obsolete**.
+
+Smallest traceable change, with the reasoning recorded in the test file itself:
+Tier 1 is still exactly one migration, and the set of migrations touching `rgkb`
+is still **closed** — only the two authorized WP02 migrations, nothing else. No
+Tier 1 implementation history is rewritten, no other Tier 1 assertion is
+weakened, and the Tier 1 migration file is byte-unchanged.
+
+## T13. Validation performed
+
+| Command | Result |
+|---|---|
+Final RC1 results, as executed — not carried forward from an earlier run:
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/test/rgkbWp02Tier2Runtime.test.ts` | **58 passed, 4 todo, 0 failed** (62) |
+| `npx vitest run src/test/rgkbWp02Tier1Substrate.test.ts` | **42 passed, 7 todo, 0 failed** (49) |
+| `npm run test` (full suite, 10 files) | **229 passed, 11 todo, 0 failed** (240) |
+| `npm run typecheck` (`tsc --noEmit -p tsconfig.app.json`) | **exit 0** |
+| structural SQL lint (offline) | balanced parens; even `$$` and quote counts; no newline-continued literals; **30 tables**; **45 triggers, of which 12 are `CONSTRAINT TRIGGER`s**; **11 partial unique indexes**; **7 functions**; **1 `INSERT` with 19 catalog rows**; **0 `SECURITY DEFINER`**; **0 `CREATE POLICY`**; **0 `GRANT`**; **0 `public.`**; longest identifier 58 chars (< 63) |
+
+**Evidence level: E1/E2-class local verification only.** These are
+dependency-free structural assertions plus an offline SQL lint. **The migration
+has not been executed against any database**, so this is **not** proof of
+runtime database behaviour and **not** production proof. Full SQL parse
+validation was not possible offline: no PostgreSQL parser is available and
+adding one would modify `package.json`, which is out of scope.
+
+## T14. DEFERRED-BY-DESIGN
+
+Recorded as vitest `todo` (reported as outstanding, never as passing). **Every
+remaining item is runtime-only or remote-only** — no structural Tier 2 invariant
+is deferred after RC1:
+
+1. **Runtime raising** of `RG030/031/032`, `RG040/041`, `RG050/051`,
+   `RG011/012`, `RG080/081` and the deferred `RG060` / `RG070` checks — requires
+   a disposable Postgres; no production or remote Supabase execution is
+   authorized.
+2. **Deferred-constraint semantics** — that a bare registry `INSERT` is accepted
+   by the statement and refused at `COMMIT`, and that a stable identity with no
+   version is refused at `COMMIT`, can only be observed in a live transaction.
+3. **`domain_code` never reused across a family's lifetime** — uniqueness plus
+   non-deletion prevents reuse while rows persist, but a retired-code ledger
+   would require the allocation authority Step 1 §3.3 defers. Cross-family
+   global uniqueness is likewise not fixed by any controlling source and was not
+   invented.
+4. **Live Supabase API-exposed schema list excludes `rgkb`** — requires a remote
+   check, which is not authorized.
+
+**Removed by RC1:** the pre-RC1 draft deferred *strict monotonicity of
+`version_sequence`*, reasoning that enforcing ordering required reading rows,
+which `FORCE ROW LEVEL SECURITY` makes unreliable. That reasoning was wrong: the
+constraint is expressible **declaratively**, with no reads at all (T5.1). It is
+now implemented, and the deferral is withdrawn rather than reworded.
+
+No fixture was manufactured to make any deferred item appear to pass.
+
+## T16. RC1 corrections (Owner-identified)
+
+| # | Defect | Disposition |
+|---|---|---|
+| A | `version_sequence` monotonicity was deferred, with only `UNIQUE (object_id, version_sequence)` enforced | **CORRECTED** — declarative chain: `previous_sequence` + strict-increase `CHECK` + self `FOREIGN KEY` + `UNIQUE (object_id, previous_sequence)` + partial unique first-version index, on all 11 Pattern A families. No reads, gaps preserved, no currency semantics (T5.1) |
+| B | Stable identity could commit with zero versions (Step 1 §4 reverse cardinality unenforced) | **CORRECTED** — `DEFERRABLE INITIALLY DEFERRED` constraint trigger on all 11 stable-identity tables, `RG070`, fail-closed under RLS, no placeholder version (T5.2) |
+| C | `pattern` was only *validated* by composite FK, which is not evidence that it is DERIVED | **CORRECTED** — `BEFORE INSERT` derivation from the catalog: omitted → derived; contradictory → `RG081` fail closed, never corrected; unresolvable `subject_type` → `RG080`. Catalog remains the sole authority; assignments not duplicated. FK retained as defence in depth (T4) |
+| D | Evidence claimed the two rows could be written "in either order" | **CORRECTED** — the member → registry FK is immediate, so registry is written first; deferral moves the orphan *test* to commit, not the ordering. The FK was not weakened (T7) |
+
+All three structural defects (A, B, C) are **implemented**, not reworded. No new
+Owner policy decision was required, so no Genuine Exception arises.
+
+## T15. Non-authorization
+
+No push, PR, merge, deployment. No production SQL, **no migration execution
+anywhere**, no remote Supabase operation, no Supabase MCP. No real data, no real
+participants, no pilot. No external AI/tool enablement. No WP03, no WP13, no
+Phase 9. No existing migration edited; no `public`-schema object altered; no
+destructive change.
+
+State preserved: **F-04 OPEN** · **F-07 OPEN** · **M-1 OPEN** · **WP02 NOT
+CLOSED** (pending Owner acceptance/review) · **P1–P16 unchanged** (only
+PRM-WP18 may change a P-gate) · **PR8-1/PR8-2/PR8-3 unchanged** · **Pilot NOT
+AUTHORIZED** · **Real data NOT AUTHORIZED** · **Phase 9 NOT AUTHORIZED**.
