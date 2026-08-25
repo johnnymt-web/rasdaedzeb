@@ -78,7 +78,14 @@ describe("WP03 — no second identity, version or provenance authority", () => {
       "source_manifestation_identity",
     ]);
     expect(code).not.toMatch(/CREATE TABLE[\s\S]{0,200}instance_id\s+uuid PRIMARY KEY/);
-    expect(code).not.toMatch(/version_sequence/);
+    // version_sequence is never DEFINED here — the only occurrences are the
+    // RC2 editorial guards asserting it must not change, which is the WP02
+    // ordering attribute being protected, not a second allocator.
+    expect(code).not.toMatch(/ADD COLUMN IF NOT EXISTS version_sequence|version_sequence\s+integer/);
+    for (const m of code.match(/version_sequence/g) || []) void m;
+    expect(code.match(/version_sequence/g) || []).toEqual(
+      new Array((code.match(/NEW\.version_sequence IS DISTINCT FROM OLD\.version_sequence/g) || []).length * 2).fill("version_sequence"),
+    );
   });
 
   it("uses the WP02 registry for every governed endpoint", () => {
@@ -95,7 +102,12 @@ describe("WP03 — no second identity, version or provenance authority", () => {
     for (const bad of ["object_id", "domain_code", "version_sequence", "external_identifier", "doi", "isbn"]) {
       expect(code).not.toMatch(new RegExp(`REFERENCES[^;]*\\(${bad}\\)`, "i"));
     }
-    expect(code).not.toMatch(/\bobject_id\b/);
+    // object_id appears only inside the RC2 editorial guards, asserting that
+    // the WP02 stable-identity link must not change. It is never a pointer
+    // target and never a governed-subject substitute here.
+    for (const occ of code.match(/[^\n]*\bobject_id\b[^\n]*/g) || []) {
+      expect(occ).toMatch(/IS DISTINCT FROM/);
+    }
     expect(code).not.toMatch(/\bdomain_code\b/);
   });
 });
@@ -171,14 +183,16 @@ describe("WP03 — CONTENT ORIGIN classification", () => {
   it("requires direct source evidence to resolve to an evidence anchor, at COMMIT", () => {
     expect(exec).toMatch(/ERRCODE = 'RG100'/);
     expect(exec).toMatch(
-      /CREATE CONSTRAINT TRIGGER knowledge_unit_version_direct_evidence_check\s+AFTER INSERT ON rgkb\.knowledge_unit_version\s+DEFERRABLE INITIALLY DEFERRED/,
+      /CREATE CONSTRAINT TRIGGER knowledge_unit_version_direct_evidence_check\s+AFTER INSERT OR UPDATE ON rgkb\.knowledge_unit_version\s+DEFERRABLE INITIALLY DEFERRED/,
     );
   });
 
   it("introduces no arithmetic, scoring or aggregate epistemic semantics", () => {
     expect(code).not.toMatch(/score|confidence|weight|average|avg\(|sum\(|percent/i);
-    expect(exec).toMatch(/epistemic_characterization IS NULL OR epistemic_characterization !~/);
-    expect(exec).toMatch(/support_characterization IS NULL OR support_characterization !~/);
+    // RC2 made both deferred vocabularies fail closed outright, which
+    // subsumes the earlier anti-numeric guard.
+    expect(exec).toMatch(/CHECK \(epistemic_characterization IS NULL\)/);
+    expect(exec).toMatch(/CHECK \(support_characterization IS NULL\)/);
   });
 });
 
@@ -426,8 +440,8 @@ describe("WP03 — deterministic traversal", () => {
 
   it("is SECURITY INVOKER with a safe search_path, never a definer path", () => {
     expect(exec).not.toMatch(/SECURITY DEFINER/i);
-    expect((exec.match(/SECURITY INVOKER/g) || []).length).toBe(10);
-    expect((exec.match(/SET search_path = ''/g) || []).length).toBe(10);
+    expect((exec.match(/SECURITY INVOKER/g) || []).length).toBe(12);
+    expect((exec.match(/SET search_path = ''/g) || []).length).toBe(12);
   });
 });
 
@@ -507,7 +521,7 @@ describe("WP03 RC1 — localized text carries its own CONTENT ORIGIN", () => {
 
   it("resolves direct source content through the SAME canonical link mechanism", () => {
     expect(exec).toMatch(
-      /CREATE CONSTRAINT TRIGGER localized_text_direct_evidence_check\s+AFTER INSERT ON rgkb\.localized_governed_text_version\s+DEFERRABLE INITIALLY DEFERRED\s+FOR EACH ROW EXECUTE FUNCTION rgkb\.direct_evidence_has_anchor_check\(\)/,
+      /CREATE CONSTRAINT TRIGGER localized_text_direct_evidence_check\s+AFTER INSERT OR UPDATE ON rgkb\.localized_governed_text_version\s+DEFERRABLE INITIALLY DEFERRED\s+FOR EACH ROW EXECUTE FUNCTION rgkb\.direct_evidence_has_anchor_check\(\)/,
     );
   });
 });
@@ -559,6 +573,7 @@ describe("WP03 RC1 — retained excerpt fails closed", () => {
   it("invents no rights permission flag and closes no legal finding", () => {
     expect(code).not.toMatch(/rights_permitted|retention_allowed|may_retain|license_ok/i);
     expect(migration).toMatch(/absence of a rights determination is not permission/);
+    expect(code).not.toMatch(/retained_excerpt text NOT NULL/);
   });
 
   it("keeps locator and provenance usable without retained text", () => {
@@ -566,9 +581,138 @@ describe("WP03 RC1 — retained excerpt fails closed", () => {
   });
 });
 
+describe("WP03 RC2 — Pattern A editorial immutability", () => {
+  const GUARDED = [
+    ["knowledge_unit_version", "knowledge_version_editorial_guard"],
+    ["localized_governed_text_version", "localized_text_editorial_guard"],
+  ] as const;
+
+  it("replaces the blanket UPDATE block with an editorial-boundary guard", () => {
+    for (const [table, fn] of GUARDED) {
+      expect(exec).toMatch(new RegExp(`CREATE OR REPLACE FUNCTION rgkb\\.${fn}\\(`));
+      expect(exec).toMatch(
+        new RegExp(`CREATE TRIGGER [a-z_]+\\s+BEFORE UPDATE OR DELETE ON rgkb\\.${table}\\s+FOR EACH ROW EXECUTE FUNCTION rgkb\\.${fn}\\(\\)`),
+      );
+    }
+    // the WP02 generic member guard is detached from these two tables only
+    expect(exec).toMatch(/DROP TRIGGER IF EXISTS knowledge_unit_version_write_guard ON rgkb\.knowledge_unit_version;/);
+    expect(exec).toMatch(
+      /DROP TRIGGER IF EXISTS localized_governed_text_version_write_guard ON rgkb\.localized_governed_text_version;/,
+    );
+  });
+
+  it("permits draft editing and refuses every update once content_asserted", () => {
+    expect(exec).toMatch(/ERRCODE = 'RG130'/);
+    // the guard returns NEW (allowing the write) only after the draft check
+    expect(exec).toMatch(/IF OLD\.editorial_class = 'content_asserted' THEN[\s\S]{0,600}RG130/);
+    expect((exec.match(/RETURN NEW;/g) || []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("makes draft exit irreversible", () => {
+    // content_asserted -> draft is an UPDATE of a content_asserted row, which
+    // RG130 refuses outright; no path restores mutability.
+    expect(code).not.toMatch(/NEW\.editorial_class\s*:=/);
+    expect(migration).toMatch(/exit from draft is IRREVERSIBLE|draft exit is irreversible|irreversible/i);
+  });
+
+  it("keeps identity and ordering immutable in every editorial state", () => {
+    expect(exec).toMatch(/ERRCODE = 'RG132'/);
+    for (const col of ["instance_id", "subject_type", "object_id", "version_sequence", "previous_sequence"]) {
+      expect(exec).toMatch(new RegExp(`NEW\\.${col} IS DISTINCT FROM OLD\\.${col}`));
+    }
+  });
+
+  it("refuses deletion in every state", () => {
+    expect(exec).toMatch(/ERRCODE = 'RG133'/);
+  });
+
+  it("re-evaluates the cross-row invariants on UPDATE, not only INSERT", () => {
+    // A draft edit must not bypass RG100 or RG120.
+    const updateTriggers = exec.match(/AFTER INSERT OR UPDATE ON rgkb\.(knowledge_unit_version|localized_governed_text_version)/g) || [];
+    expect(updateTriggers).toHaveLength(4);
+  });
+});
+
+describe("WP03 RC2 — direct source evidence requires a SCIENTIFIC anchor", () => {
+  it("counts only links carrying an exact evidence_anchor endpoint", () => {
+    expect(exec).toMatch(
+      /WHERE l\.supported_instance_id = NEW\.instance_id\s+AND l\.evidence_anchor_instance_id IS NOT NULL;/,
+    );
+  });
+
+  it("states that a rights anchor does not satisfy it", () => {
+    expect(exec).toMatch(/A rights\/document anchor does not satisfy it/);
+  });
+
+  it("keeps rights anchors inside the same shared linking concept", () => {
+    expect(alterBlock("typed_evidence_link")).toMatch(
+      /rights_anchor_instance_id\)\s+REFERENCES rgkb\.rights_document_anchor \(instance_id\)/,
+    );
+    expect(code).not.toMatch(/rights_evidence_link|rights_typed_link/);
+  });
+
+  it("still refuses free-text commentary as the pointer", () => {
+    const block = alterBlock("typed_evidence_link");
+    expect(block).not.toMatch(/commentary text NOT NULL/);
+  });
+});
+
+describe("WP03 RC2 — complete scientific anchor minimum fields", () => {
+  const block = () => alterBlock("evidence_anchor");
+
+  it("requires a non-blank locator type and payload", () => {
+    expect(block()).toMatch(
+      /CHECK \(length\(btrim\(locator_type\)\) > 0 AND length\(btrim\(locator_payload\)\) > 0\)/,
+    );
+  });
+
+  it("requires a mandatory non-blank integrity value without fixing an algorithm", () => {
+    expect(block()).toMatch(/ADD COLUMN IF NOT EXISTS integrity_value text NOT NULL/);
+    expect(block()).toMatch(/CHECK \(length\(btrim\(integrity_value\)\) > 0\)/);
+    expect(block()).not.toMatch(/sha|md5|blake|CHECK\s*\(\s*integrity_value IN/i);
+  });
+
+  it("keeps extraction provenance mandatory and RG120-correlated", () => {
+    expect(block()).toMatch(/ADD COLUMN IF NOT EXISTS extraction_derivation_instance_id uuid NOT NULL/);
+    expect(exec).toMatch(/CREATE CONSTRAINT TRIGGER evidence_anchor_extraction_output_check/);
+  });
+
+  it("leaves span offsets optional and retention fail-closed", () => {
+    expect(block()).toMatch(/ADD COLUMN IF NOT EXISTS span_start integer,/);
+    expect(block()).toMatch(/CONSTRAINT evidence_anchor_retention_fail_closed CHECK \(retained_excerpt IS NULL\)/);
+  });
+});
+
+describe("WP03 RC2 — deferred controlled vocabularies fail closed", () => {
+  it("refuses any epistemic characterization value until a vocabulary is authorized", () => {
+    expect(alterBlock("knowledge_unit_version")).toMatch(
+      /CONSTRAINT knowledge_unit_version_epistemic_deferred CHECK \(epistemic_characterization IS NULL\)/,
+    );
+  });
+
+  it("refuses any support characterization value until a vocabulary is authorized", () => {
+    expect(alterBlock("typed_evidence_link")).toMatch(
+      /CONSTRAINT typed_evidence_link_support_deferred CHECK \(support_characterization IS NULL\)/,
+    );
+  });
+
+  it("invents no vocabulary value or semantic code", () => {
+    expect(code).not.toMatch(/epistemic_characterization IN \(|support_characterization IN \(/);
+    expect(code).not.toMatch(/strong|weak|moderate|high|low|tentative|robust/i);
+  });
+
+  it("keeps the four mandatory evidence-role distinctions unaffected", () => {
+    expect(exec).toMatch(new RegExp(`CHECK \\(evidence_role_class IN \\('${EVIDENCE_ROLES.join("', '")}'\\)\\)`));
+  });
+
+  it("preserves non-arithmetic, non-additive, no-master-score", () => {
+    expect(code).not.toMatch(/sum\(|avg\(|score|confidence|weight/i);
+  });
+});
+
 describe("WP03 — DEFERRED-BY-EXECUTION-EVIDENCE (runtime only)", () => {
   it.todo(
-    "runtime: RG090/091, RG092/093 and the deferred RG100 / RG110 / RG111 checks actually raise in Postgres — DEFERRED: requires a disposable Postgres; no production or remote Supabase execution is authorized",
+    "runtime: RG090/091, RG092/093, RG130/132/133 and the deferred RG100 / RG110 / RG111 / RG120 checks actually raise in Postgres — DEFERRED: requires a disposable Postgres; no production or remote Supabase execution is authorized",
   );
   it.todo(
     "runtime: a direct_source_evidence knowledge version with no typed evidence link is refused at COMMIT, and a derivation with no input is refused at COMMIT — DEFERRED: deferred-constraint semantics are observable only in a live transaction",

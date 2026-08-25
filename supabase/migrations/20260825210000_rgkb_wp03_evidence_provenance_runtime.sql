@@ -227,7 +227,7 @@ ALTER TABLE rgkb.evidence_anchor
   ADD COLUMN IF NOT EXISTS locator_payload text NOT NULL,
   ADD COLUMN IF NOT EXISTS span_start integer,
   ADD COLUMN IF NOT EXISTS span_end integer,
-  ADD COLUMN IF NOT EXISTS integrity_value text,
+  ADD COLUMN IF NOT EXISTS integrity_value text NOT NULL,
   ADD COLUMN IF NOT EXISTS retained_excerpt text,
   ADD COLUMN IF NOT EXISTS extraction_derivation_instance_id uuid NOT NULL,
   ADD CONSTRAINT evidence_anchor_expression_fk FOREIGN KEY (expression_id)
@@ -237,7 +237,14 @@ ALTER TABLE rgkb.evidence_anchor
   ADD CONSTRAINT evidence_anchor_extraction_fk FOREIGN KEY (extraction_derivation_instance_id)
     REFERENCES rgkb.derivation_record (instance_id),
   ADD CONSTRAINT evidence_anchor_span_ordered CHECK (span_start IS NULL OR span_end IS NULL OR span_end >= span_start),
-  ADD CONSTRAINT evidence_anchor_retention_fail_closed CHECK (retained_excerpt IS NULL);
+  ADD CONSTRAINT evidence_anchor_retention_fail_closed CHECK (retained_excerpt IS NULL),
+  ADD CONSTRAINT evidence_anchor_locator_resolvable
+    CHECK (length(btrim(locator_type)) > 0 AND length(btrim(locator_payload)) > 0),
+  ADD CONSTRAINT evidence_anchor_integrity_present CHECK (length(btrim(integrity_value)) > 0);
+
+COMMENT ON CONSTRAINT evidence_anchor_locator_resolvable ON rgkb.evidence_anchor IS 'Step 2 §4.1: a scientific evidence anchor is an EXACT, RESOLVABLE location, so a blank locator type or payload is refused. The locator-type vocabulary itself remains DEFERRED and is not constrained.';
+
+COMMENT ON CONSTRAINT evidence_anchor_integrity_present ON rgkb.evidence_anchor IS 'Step 2 §4.1: an integrity value over the anchored text is a minimum element of a complete scientific anchor, so it is mandatory and non-blank. The fingerprint ALGORITHM remains DEFERRED (§3.3) and is deliberately not constrained — this requires that an integrity value exists, never how it is computed.';
 
 COMMENT ON CONSTRAINT evidence_anchor_retention_fail_closed ON rgkb.evidence_anchor IS 'Step 2 §4.1 permits retained excerpt text ONLY where rights permit retention. WP03 has no authority to determine that permission, and absence of a rights determination is not permission — so retention fails closed. The column exists because §4.1 fixes it; a later authorized package may replace this constraint once a governed rights determination can establish retention. No rights flag and no legal decision is invented here, and F-09 / WP09 are not closed.';
 
@@ -337,8 +344,9 @@ ALTER TABLE rgkb.knowledge_unit_version
     REFERENCES rgkb.derivation_record (instance_id),
   ADD CONSTRAINT knowledge_unit_version_derived_needs_derivation
     CHECK (content_origin <> 'derived_interpretation' OR origin_derivation_instance_id IS NOT NULL),
-  ADD CONSTRAINT knowledge_unit_version_epistemic_not_numeric
-    CHECK (epistemic_characterization IS NULL OR epistemic_characterization !~ '^[0-9]+([.,][0-9]+)?%?$');
+  ADD CONSTRAINT knowledge_unit_version_epistemic_deferred CHECK (epistemic_characterization IS NULL);
+
+COMMENT ON CONSTRAINT knowledge_unit_version_epistemic_deferred ON rgkb.knowledge_unit_version IS 'Step 2 §5.4 requires epistemic characterization to be a CONTROLLED vocabulary and DEFERS the exact vocabulary. Arbitrary free text is therefore not admissible canonical state: it could not be validated and would become an uncontrolled authority. Until a later controlled specification authorizes the vocabulary, any value fails closed. The column exists because §5.2 fixes that the version carries it. Non-arithmetic, non-additive and no-master-score hold trivially while no value can be stored, and nothing here invents a vocabulary value.';
 
 COMMENT ON COLUMN rgkb.knowledge_unit_version.content_origin IS 'Step 2 §2.1: exactly one CONTENT ORIGIN — direct_source_evidence, derived_interpretation or constructed_content. Governance-bearing, never multi-valued, never defaulted, never inferred from family, evidence status or epistemic characterization (§2.5). Reclassification after the immutability boundary proceeds by a new version, never in place.';
 
@@ -434,8 +442,9 @@ ALTER TABLE rgkb.typed_evidence_link
     CHECK ((evidence_anchor_instance_id IS NOT NULL) <> (rights_anchor_instance_id IS NOT NULL)),
   ADD CONSTRAINT typed_evidence_link_role_class_fixed
     CHECK (evidence_role_class IN ('supports', 'corroborates', 'contradicts', 'context')),
-  ADD CONSTRAINT typed_evidence_link_support_not_numeric
-    CHECK (support_characterization IS NULL OR support_characterization !~ '^[0-9]+([.,][0-9]+)?%?$');
+  ADD CONSTRAINT typed_evidence_link_support_deferred CHECK (support_characterization IS NULL);
+
+COMMENT ON CONSTRAINT typed_evidence_link_support_deferred ON rgkb.typed_evidence_link IS 'Step 2 §6.3 with §5.4: support characterization is CONTROLLED and its vocabulary is DEFERRED. Arbitrary free text would be an uncontrolled authority, so any value fails closed until a later controlled specification authorizes the vocabulary. Aggregation across an object''s links, and any master score, remain prohibited regardless. The four mandatory evidence-role distinctions (§6.2) are unaffected — evidence_role_class stays mandatory and constrained.';
 
 COMMENT ON COLUMN rgkb.typed_evidence_link.evidence_role_class IS 'Step 2 §6.2: the four distinctions that must remain expressible — supports, corroborates, contradicts, context. Controlled, never free text. The exact role vocabulary is DEFERRED; this class does not close it and a later controlled specification may specialize beneath it.';
 
@@ -566,21 +575,22 @@ BEGIN
 
   SELECT count(*) INTO v_link_count
     FROM rgkb.typed_evidence_link AS l
-   WHERE l.supported_instance_id = NEW.instance_id;
+   WHERE l.supported_instance_id = NEW.instance_id
+     AND l.evidence_anchor_instance_id IS NOT NULL;
 
   IF v_link_count < 1 THEN
-    RAISE EXCEPTION 'RGKB Step 2 §2.2/§14.1 fail closed: content classified as direct source evidence must resolve to an evidence anchor through a typed evidence link. Free-text commentary is never the pointer, and absence of a link is not evidence of support.' USING ERRCODE = 'RG100';
+    RAISE EXCEPTION 'RGKB Step 2 §2.2/§14.1 fail closed: content classified as direct source evidence must resolve to a SCIENTIFIC evidence anchor through a typed evidence link. A rights/document anchor does not satisfy it, free-text commentary is never the pointer, and absence of a link is not evidence of support.' USING ERRCODE = 'RG100';
   END IF;
 
   RETURN NULL;
 END;
 $$;
 
-COMMENT ON FUNCTION rgkb.direct_evidence_has_anchor_check() IS 'PRM-WP03 deferred check (Step 2 §2.2, §6.4, §14.1). A direct-source-evidence knowledge version without a typed evidence link is refused at COMMIT.';
+COMMENT ON FUNCTION rgkb.direct_evidence_has_anchor_check() IS 'PRM-WP03 deferred check (Step 2 §2.2, §6.4, §14.1). Direct source evidence must resolve along the scientific path — governed object -> typed evidence link -> evidence_anchor -> source expression + locator — so only a link carrying an exact evidence_anchor endpoint counts. A rights/document anchor never satisfies this invariant, though rights links remain fully valid within the same shared typed_evidence_link concept for rights/document determinations. Evaluated on INSERT and on UPDATE, so a draft edit cannot bypass it.';
 
 DROP TRIGGER IF EXISTS knowledge_unit_version_direct_evidence_check ON rgkb.knowledge_unit_version;
 CREATE CONSTRAINT TRIGGER knowledge_unit_version_direct_evidence_check
-  AFTER INSERT ON rgkb.knowledge_unit_version
+  AFTER INSERT OR UPDATE ON rgkb.knowledge_unit_version
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION rgkb.direct_evidence_has_anchor_check();
 
@@ -591,7 +601,7 @@ CREATE CONSTRAINT TRIGGER knowledge_unit_version_direct_evidence_check
 --    provenance authority.
 DROP TRIGGER IF EXISTS localized_text_direct_evidence_check ON rgkb.localized_governed_text_version;
 CREATE CONSTRAINT TRIGGER localized_text_direct_evidence_check
-  AFTER INSERT ON rgkb.localized_governed_text_version
+  AFTER INSERT OR UPDATE ON rgkb.localized_governed_text_version
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION rgkb.direct_evidence_has_anchor_check();
 
@@ -685,13 +695,13 @@ $$;
 
 DROP TRIGGER IF EXISTS knowledge_unit_version_origin_output_check ON rgkb.knowledge_unit_version;
 CREATE CONSTRAINT TRIGGER knowledge_unit_version_origin_output_check
-  AFTER INSERT ON rgkb.knowledge_unit_version
+  AFTER INSERT OR UPDATE ON rgkb.knowledge_unit_version
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION rgkb.knowledge_version_origin_output_check();
 
 DROP TRIGGER IF EXISTS localized_text_origin_output_check ON rgkb.localized_governed_text_version;
 CREATE CONSTRAINT TRIGGER localized_text_origin_output_check
-  AFTER INSERT ON rgkb.localized_governed_text_version
+  AFTER INSERT OR UPDATE ON rgkb.localized_governed_text_version
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION rgkb.localized_text_origin_output_check();
 
@@ -706,6 +716,112 @@ CREATE CONSTRAINT TRIGGER rights_anchor_extraction_output_check
   AFTER INSERT ON rgkb.rights_document_anchor
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION rgkb.anchor_extraction_output_check();
+
+-- -------------------------------------------------------------------------
+--    PATTERN A EDITORIAL IMMUTABILITY (RG130–RG133).
+--
+--    WP03 put governance-bearing semantic payload on two Pattern A version
+--    families, so Step 1 §5.1/§7.3 now bite here: while a version is in DRAFT
+--    its content MAY be edited; once it is content_asserted that content is
+--    immutable; and exit from draft is IRREVERSIBLE.
+--
+--    The WP02 generic member guard refused every UPDATE, which was correct
+--    while these tables carried no editable payload but would now forbid the
+--    draft editing Step 1 explicitly permits. It is therefore replaced on
+--    these two tables only, additively, by a guard that enforces the editorial
+--    boundary instead. The WP02 migration itself is NOT edited, and the guard
+--    on every other member table is untouched.
+--
+--      RG130  any UPDATE of a content_asserted version. Refusing all of them
+--             is the minimum that satisfies §5.1: there is no non-semantic
+--             administrative column on these tables to exempt, and it makes
+--             draft exit irreversible for free — a content_asserted row can
+--             never be edited back to draft.
+--      RG132  any change to an identity or ordering attribute, in any state
+--             (Step 1 §3.2, §2.3, §3.4).
+--      RG133  DELETE, in any state — a governed instance must remain
+--             resolvable indefinitely (Step 1 §5.3).
+--
+--    Because draft rows are mutable, every WP03 cross-row invariant over
+--    mutable semantic fields now fires on UPDATE as well as INSERT: an UPDATE
+--    while draft cannot bypass RG100 or RG120.
+-- -------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION rgkb.knowledge_version_editorial_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'RGKB Step 1 §5.3 fail closed: a governed instance must remain resolvable indefinitely and must not be deleted.' USING ERRCODE = 'RG133';
+  END IF;
+
+  IF NEW.instance_id IS DISTINCT FROM OLD.instance_id
+     OR NEW.subject_type IS DISTINCT FROM OLD.subject_type
+     OR NEW.object_id IS DISTINCT FROM OLD.object_id
+     OR NEW.version_sequence IS DISTINCT FROM OLD.version_sequence
+     OR NEW.previous_sequence IS DISTINCT FROM OLD.previous_sequence THEN
+    RAISE EXCEPTION 'RGKB Step 1 §2.3/§3.2/§3.4 fail closed: identity and ordering attributes are immutable in every editorial state. instance_id is never reused or transferred, a version is never repointed to another stable identity, and its ordering position is never rewritten.' USING ERRCODE = 'RG132';
+  END IF;
+
+  IF OLD.editorial_class = 'content_asserted' THEN
+    RAISE EXCEPTION 'RGKB Step 1 §5.1/§7.3 fail closed: this version has left draft, so its governance-bearing content is immutable and exit from draft is irreversible. Correction proceeds by creating a NEW version under the same stable identity.' USING ERRCODE = 'RG130';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION rgkb.knowledge_version_editorial_guard() IS 'PRM-WP03 Pattern A editorial boundary guard for rgkb.knowledge_unit_version (Step 1 §5.1, §7.3, §5.3). Draft content is editable; content_asserted content is immutable; draft exit is irreversible; identity and ordering are immutable in every state; deletion is refused.';
+
+CREATE OR REPLACE FUNCTION rgkb.localized_text_editorial_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'RGKB Step 1 §5.3 / Step 2 §5.3 fail closed: historical localized-text versions must remain resolvable indefinitely and must not be deleted.' USING ERRCODE = 'RG133';
+  END IF;
+
+  IF NEW.instance_id IS DISTINCT FROM OLD.instance_id
+     OR NEW.subject_type IS DISTINCT FROM OLD.subject_type
+     OR NEW.object_id IS DISTINCT FROM OLD.object_id
+     OR NEW.version_sequence IS DISTINCT FROM OLD.version_sequence
+     OR NEW.previous_sequence IS DISTINCT FROM OLD.previous_sequence THEN
+    RAISE EXCEPTION 'RGKB Step 1 §2.3/§3.2/§3.4 fail closed: identity and ordering attributes of a localized-text version are immutable in every editorial state.' USING ERRCODE = 'RG132';
+  END IF;
+
+  IF OLD.editorial_class = 'content_asserted' THEN
+    RAISE EXCEPTION 'RGKB Step 1 §5.1 / Step 2 §5.3 fail closed: this localized-text version has left draft, so its governed wording is immutable and exit from draft is irreversible. The wording a reader saw is never rewritten under them; correction requires a NEW localized-text version.' USING ERRCODE = 'RG130';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION rgkb.localized_text_editorial_guard() IS 'PRM-WP03 Pattern A editorial boundary guard for rgkb.localized_governed_text_version (Step 1 §5.1, §5.3; Step 2 §5.3).';
+
+DROP TRIGGER IF EXISTS knowledge_unit_version_write_guard ON rgkb.knowledge_unit_version;
+DROP TRIGGER IF EXISTS knowledge_unit_version_editorial_guard ON rgkb.knowledge_unit_version;
+CREATE TRIGGER knowledge_unit_version_editorial_guard
+  BEFORE UPDATE OR DELETE ON rgkb.knowledge_unit_version
+  FOR EACH ROW EXECUTE FUNCTION rgkb.knowledge_version_editorial_guard();
+
+DROP TRIGGER IF EXISTS localized_governed_text_version_write_guard ON rgkb.localized_governed_text_version;
+DROP TRIGGER IF EXISTS localized_text_editorial_guard ON rgkb.localized_governed_text_version;
+CREATE TRIGGER localized_text_editorial_guard
+  BEFORE UPDATE OR DELETE ON rgkb.localized_governed_text_version
+  FOR EACH ROW EXECUTE FUNCTION rgkb.localized_text_editorial_guard();
+
+REVOKE ALL ON FUNCTION rgkb.knowledge_version_editorial_guard() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.knowledge_version_editorial_guard() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.knowledge_version_editorial_guard() FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.localized_text_editorial_guard() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.localized_text_editorial_guard() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.localized_text_editorial_guard() FROM authenticated;
 
 CREATE OR REPLACE FUNCTION rgkb.derivation_has_exact_inputs_check()
 RETURNS trigger
