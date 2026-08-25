@@ -24,14 +24,20 @@
 --   * any RLS/auth ACCESS MODEL for this substrate (WP02 §13; CLAUDE.md §3 —
 --     that is separate L2 work requiring its own Owner gate)
 --
--- WHY A DEDICATED, NON-EXPOSED SCHEMA (containment, not an access model):
+-- WHY A DEDICATED SCHEMA (containment layer, not an access model):
 -- Supabase exposes the `public` schema through PostgREST, and Supabase's
 -- default privileges hand new `public` tables to `anon`/`authenticated`.
--- This substrate has NO authorized access model yet, so it must not be
--- reachable by any client. `rgkb` is not in the API-exposed schema list, and
--- the REVOKEs + RLS below are defence in depth. Enabling RLS with ZERO
--- policies is a deny-all containment posture; it deliberately expresses no
--- opinion about who may eventually read or write this substrate.
+-- This substrate has NO authorized access model yet, so placing it outside
+-- `public` is an INTENDED containment layer.
+--
+-- The live API-exposure status of the `rgkb` schema is NOT VERIFIED. No
+-- remote Supabase check is performed or authorized by this change, so this
+-- migration must not be read as asserting that `rgkb` is unreachable through
+-- the API. The locally evidenced enforcement controls are the REVOKEs and the
+-- deny-all RLS below; schema placement is an additional intended layer whose
+-- effect is unconfirmed. Enabling RLS with ZERO policies is a deny-all
+-- containment posture; it deliberately expresses no opinion about who may
+-- eventually read or write this substrate.
 --
 -- NO ROWS ARE INSERTED BY THIS MIGRATION. Both tables are created empty and
 -- are held empty by explicit fail-closed write guards (see notes at each
@@ -48,7 +54,7 @@
 -- -------------------------------------------------------------------------
 CREATE SCHEMA IF NOT EXISTS rgkb;
 
-COMMENT ON SCHEMA rgkb IS 'RGKB canonical knowledge substrate (PRM-WP02 Tier 1). Not API-exposed. No access model is authorized yet; contents are non-operational.';
+COMMENT ON SCHEMA rgkb IS 'RGKB canonical knowledge substrate (PRM-WP02 Tier 1). Placed outside public as an intended containment layer; live API-exposure status is NOT VERIFIED. Enforcement evidenced locally is REVOKE plus deny-all RLS. No access model is authorized yet; contents are non-operational.';
 
 REVOKE ALL ON SCHEMA rgkb FROM PUBLIC;
 REVOKE ALL ON SCHEMA rgkb FROM anon;
@@ -214,73 +220,77 @@ CREATE TRIGGER subject_type_catalog_write_guard
 --    `is_current` (or equivalent master-state) column exists anywhere in this
 --    migration, by construction.
 --
---    Every path fails closed at Tier 1, with a distinct governance reason:
+--    IT TAKES NO ARGUMENTS, AND THAT IS THE POINT.
 --
---      RG001  zero eligible versions          (§10.1) — absence of an eligible
---             version is not permission and is never an implicit selection of
---             any other version.
---      RG002  more than one eligible version  (§10.2, §9.4) — a governance
---             fault, raised, never silently tie-broken. NO recency, priority,
---             ordering or version_sequence heuristic is applied; candidates
---             are deliberately NOT de-duplicated, because normalizing a
---             candidate set down to one is itself a form of silent selection.
---      RG003  exactly one candidate           (§9.3, §10.3) — still not
---             resolvable, because the predicate's applicability inputs
---             (developmental/grade scope F-10; validation applicability F-13;
---             rights-permitted-act semantics; resolution-scope vocabulary)
---             are unspecified. Until a controlled specification fixes them
---             the predicate MUST NOT be treated as evaluable for a
---             consequential path. F-07 REMAINS OPEN; this function does not
---             close it and must not be read as closing it.
+--    Step 1 §9.4 fixes cardinality WITHIN ONE STABLE IDENTITY AND ONE
+--    RESOLUTION SCOPE, OVER ELIGIBLE VERSIONS. Tier 1 has none of the three
+--    things needed to establish that set:
 --
---    The cardinality check runs FIRST because §9.4 fixes the cardinality rule
---    "independently of the pending applicability inputs" — a multiple-eligible
---    governance fault must surface as such, not be masked by RG003.
+--      * no Pattern A stable-identity runtime substrate — `governed_object`
+--        and its version tables are Tier 2 (WP02 §5.2.2), so "within one
+--        stable identity" cannot be evaluated;
+--      * no resolution-scope vocabulary — DEFERRED by Step 1 §14.5, so
+--        "within one resolution scope" cannot be evaluated;
+--      * no eligibility predicate — its applicability inputs (F-10
+--        developmental/grade scope; F-13 validation applicability;
+--        rights-permitted-act semantics) are unspecified (§9.3), so
+--        "eligible versions" cannot be evaluated.
+--
+--    An earlier draft accepted a caller-supplied `uuid[]` and reported its
+--    length as the §10.1 / §10.2 cardinality outcome. That was an overclaim
+--    and has been removed: a caller-supplied array is NOT authoritative
+--    evidence that its elements are eligible versions of one stable identity
+--    in one resolution scope, so counting it cannot prove §9.4/§10.1/§10.2.
+--    Accepting such an argument would also invite a caller to believe the
+--    substrate had validated something it had not.
+--
+--    So the only truthful Tier 1 behaviour is a single fail-closed outcome:
+--
+--      RG003  the resolution predicate is not evaluable (§9.3, §10.3), and
+--             the identity/scope/eligibility substrate needed even to POSE
+--             the cardinality question does not exist.
+--
+--    Step 1's fixed logical rules are NOT weakened by this — zero eligible
+--    fails closed (§10.1); exactly one eligible is the only potentially
+--    resolvable cardinality (§9.4); more than one eligible is a governance
+--    fault (§10.2); no recency, priority, ordering or `version_sequence`
+--    tie-break is ever authorized (§9.4). Tier 1 simply does not yet
+--    RUNTIME-ENFORCE them, and this migration must not be read as claiming it
+--    does. Their executable enforcement is DEFERRED-BY-DESIGN until the
+--    identity/scope/eligibility substrate exists.
+--
+--    F-07 REMAINS OPEN. This function does not close it and must not be read
+--    as closing it.
 --
 --    The function has no RETURN statement: at Tier 1 there is no condition
 --    under which a resolved instance may be handed back, and returning NULL
 --    would risk being read as "nothing blocks you".
 --
---    Governance-event routing for the §10.2 fault is DEFERRED. No audit/event
---    schema or semantics is invented here; the fault surfaces as an explicit
---    database exception, which a later, separately authorized package may
---    route once a governed event shape exists (Step 1 §8.3, §11.4).
+--    Governance-event routing for the §10.2 fault is DEFERRED together with
+--    the fault detection itself. No audit/event schema or semantics is
+--    invented here (Step 1 §8.3, §11.4).
 -- -------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION rgkb.resolve_current_version(
-  p_candidate_instance_ids uuid[]
-)
+CREATE OR REPLACE FUNCTION rgkb.resolve_current_version()
 RETURNS uuid
 LANGUAGE plpgsql
 STABLE
 SECURITY INVOKER
 SET search_path = ''
 AS $$
-DECLARE
-  v_candidate_count integer;
 BEGIN
-  v_candidate_count := coalesce(array_length(p_candidate_instance_ids, 1), 0);
-
-  IF v_candidate_count = 0 THEN
-    RAISE EXCEPTION 'RGKB Step 1 §10.1 fail closed: zero eligible versions. Absence of an eligible version is not permission and is not an implicit selection of any other version.' USING ERRCODE = 'RG001';
-  END IF;
-
-  IF v_candidate_count > 1 THEN
-    RAISE EXCEPTION 'RGKB Step 1 §10.2 governance fault, fail closed: % eligible versions. No recency, priority, ordering or version_sequence tie-break is authorized (§9.4).', v_candidate_count USING ERRCODE = 'RG002';
-  END IF;
-
-  RAISE EXCEPTION 'RGKB Step 1 §9.3/§10.3 fail closed: the current-version resolution predicate is not evaluable. Its applicability inputs are unspecified (F-10 developmental/grade scope; F-13 validation applicability; rights-permitted-act semantics; resolution-scope vocabulary). F-07 remains OPEN.' USING ERRCODE = 'RG003';
+  RAISE EXCEPTION 'RGKB Step 1 §9.3/§10.3 fail closed: the current-version resolution predicate is not evaluable at PRM-WP02 Tier 1. No Pattern A stable-identity runtime substrate exists (Tier 2 BLOCKED), no resolution-scope vocabulary exists (deferred by Step 1 §14.5), and the eligibility applicability inputs are unspecified (F-10 developmental/grade scope; F-13 validation applicability; rights-permitted-act semantics). The eligible-version set of §9.4 therefore cannot be derived, and no caller-supplied candidate set may stand in for it. F-07 remains OPEN.' USING ERRCODE = 'RG003';
 END;
 $$;
 
-COMMENT ON FUNCTION rgkb.resolve_current_version(uuid[]) IS 'Step 1 §9 current-version resolution CONTRACT/SKELETON (PRM-WP02 Tier 1). Derived, never stored (§9.2). Fails closed on zero eligible (§10.1), on multiple eligible as a governance fault with no tie-break (§10.2/§9.4), and on the not-yet-evaluable predicate (§9.3/§10.3). Does NOT close F-07.';
+COMMENT ON FUNCTION rgkb.resolve_current_version() IS 'Step 1 §9 current-version resolution CONTRACT/SKELETON (PRM-WP02 Tier 1). Derived, never stored (§9.2). Takes no candidate set: a caller-supplied set is not authoritative evidence of the §9.4 eligible-version set within one stable identity and one resolution scope. Always fails closed as not-evaluable (§9.3/§10.3). Runtime enforcement of the §10.1/§10.2 cardinality rules is DEFERRED-BY-DESIGN. Does NOT close F-07.';
 
-REVOKE ALL ON FUNCTION rgkb.resolve_current_version(uuid[]) FROM PUBLIC;
-REVOKE ALL ON FUNCTION rgkb.resolve_current_version(uuid[]) FROM anon;
-REVOKE ALL ON FUNCTION rgkb.resolve_current_version(uuid[]) FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.resolve_current_version() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.resolve_current_version() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.resolve_current_version() FROM authenticated;
 
 -- =========================================================================
 -- Rollback (additive-only migration; drops nothing pre-existing):
---   DROP FUNCTION IF EXISTS rgkb.resolve_current_version(uuid[]);
+--   DROP FUNCTION IF EXISTS rgkb.resolve_current_version();
 --   DROP TRIGGER IF EXISTS subject_type_catalog_write_guard ON rgkb.subject_type_catalog;
 --   DROP FUNCTION IF EXISTS rgkb.subject_type_catalog_write_guard();
 --   DROP TRIGGER IF EXISTS governed_instance_write_guard ON rgkb.governed_instance;

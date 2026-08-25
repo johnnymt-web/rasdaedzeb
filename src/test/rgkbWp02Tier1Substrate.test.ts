@@ -6,9 +6,9 @@ import { resolve } from "node:path";
 //
 // These are dependency-free structural assertions over the migration text, in
 // the same style as the PF-012 / PF-013 governance tests. Real database
-// behaviour (that RG001/RG002/RG003 actually raise, that the write guards
-// actually refuse) must be validated at runtime against a disposable Postgres
-// — recorded below as DEFERRED-BY-DESIGN, not claimed here.
+// behaviour (that RG003 actually raises, that the write guards actually
+// refuse) must be validated at runtime against a disposable Postgres —
+// recorded below as DEFERRED-BY-DESIGN, not claimed here.
 //
 // What these tests protect is the governance shape: that Tier 2 stays blocked,
 // that F-04/F-07 stay open, that no subject type is invented, that no stored
@@ -64,7 +64,7 @@ const TIER2_IDENTIFIERS = ["object_id", "domain_code", "version_sequence"];
 const ASSESSMENT_FAMILIES = /riasec|big[_ ]?five|caas|adapt[- ]?abilit|emotional[_ ]?intelligence|\beq\b|employab|work[_ ]?values/i;
 
 describe("WP02 Tier 1 — governed_instance registry shape", () => {
-  it("creates the registry in the non-API-exposed rgkb schema", () => {
+  it("creates the registry in the dedicated rgkb containment schema, outside public", () => {
     expect(exec).toMatch(/CREATE SCHEMA IF NOT EXISTS rgkb;/);
     expect(exec).toMatch(/CREATE TABLE IF NOT EXISTS rgkb\.governed_instance \(/);
   });
@@ -169,26 +169,34 @@ describe("WP02 Tier 1 — registry atomicity held fail-closed, not weakened", ()
 describe("WP02 Tier 1 — current-version resolution skeleton (F-07 stays OPEN)", () => {
   it("is a derived function, never a stored boolean (§9.2)", () => {
     expect(exec).toMatch(
-      /CREATE OR REPLACE FUNCTION rgkb\.resolve_current_version\(\s*p_candidate_instance_ids uuid\[\]\s*\)\s*RETURNS uuid/,
+      /CREATE OR REPLACE FUNCTION rgkb\.resolve_current_version\(\)\s*RETURNS uuid/,
     );
   });
 
-  it("fails closed on zero eligible versions (§10.1)", () => {
-    expect(resolverBody).toMatch(/v_candidate_count = 0[\s\S]*?ERRCODE = 'RG001'/);
+  it("accepts no caller-supplied candidate set", () => {
+    // Step 1 §9.4 fixes cardinality within one stable identity and one
+    // resolution scope, over ELIGIBLE versions. None of those three can be
+    // derived at Tier 1, so a caller-supplied array must not be accepted and
+    // then counted as if it were the eligible-version set.
+    // Assert against code, not prose: the RAISE message legitimately explains
+    // that no caller-supplied candidate set may stand in for the eligible set.
+    const resolverCode = resolverBody.replace(/'(?:[^']|'')*'/g, "''");
+    expect(exec).not.toMatch(/resolve_current_version\([^)]*\w/);
+    expect(resolverCode).not.toMatch(/array_length|cardinality\s*\(|candidate|uuid\[\]/i);
   });
 
-  it("raises a governance fault on multiple eligible versions (§10.2)", () => {
-    expect(resolverBody).toMatch(/v_candidate_count > 1[\s\S]*?ERRCODE = 'RG002'/);
+  it("fails closed because the predicate is not evaluable (§9.3, §10.3)", () => {
+    expect(resolverBody).toMatch(/ERRCODE = 'RG003'/);
+  });
+
+  it("claims no executable cardinality enforcement (§10.1 / §10.2 codes absent)", () => {
+    expect(exec).not.toMatch(/RG001|RG002/);
   });
 
   it("applies no recency / priority / ordering / version_sequence tie-break (§9.4)", () => {
     const resolverCode = resolverBody.replace(/'(?:[^']|'')*'/g, "''");
     expect(resolverCode).not.toMatch(/ORDER\s+BY|\bLIMIT\b|\bDESC\b|\bMAX\s*\(|GREATEST|DISTINCT/i);
     expect(resolverCode).not.toMatch(/version_sequence|created_at|priority|\bnow\(\)/i);
-  });
-
-  it("treats a single candidate as still-unresolvable while F-07 inputs are absent (§9.3)", () => {
-    expect(resolverBody).toMatch(/ERRCODE = 'RG003'/);
   });
 
   it("never returns a value — absence of evidence is not permission (§1.3, §10.3)", () => {
@@ -201,6 +209,30 @@ describe("WP02 Tier 1 — current-version resolution skeleton (F-07 stays OPEN)"
     expect(exec).toMatch(/F-07\s+remains OPEN|Does NOT close F-07/);
     expect(migration).toMatch(/F-10/);
     expect(migration).toMatch(/F-13/);
+    expect(migration).toMatch(/resolution-scope vocabulary/);
+    expect(migration).toMatch(/stable-identity runtime substrate/);
+  });
+});
+
+describe("WP02 Tier 1 — Step 1 §9.4/§10 logical rules recorded, not runtime-claimed", () => {
+  // These rules are fixed by Step 1 now. Tier 1 does not yet enforce them at
+  // runtime (no identity/scope/eligibility substrate), so they are locked as
+  // documented requirements rather than manufactured from caller input.
+  const rules: Array<[string, RegExp]> = [
+    ["zero eligible fails closed", /zero eligible\s*\n?--\s*fails closed|zero eligible[\s\S]{0,40}fails closed/i],
+    ["exactly one is the only potentially resolvable cardinality", /exactly one eligible is the only potentially\s*\n--\s*resolvable cardinality/i],
+    ["multiple eligible is a governance fault", /more than one eligible is a governance\s*\n--\s*fault/i],
+    ["no tie-break is ever authorized", /no recency, priority, ordering or `version_sequence`\s*\n--\s*tie-break is ever authorized/i],
+  ];
+  for (const [name, re] of rules) {
+    it(`records that ${name} (§9.4/§10.1/§10.2)`, () => {
+      expect(migration).toMatch(re);
+    });
+  }
+
+  it("states plainly that runtime cardinality enforcement is deferred", () => {
+    expect(migration).toMatch(/DEFERRED-BY-DESIGN until the/);
+    expect(migration).toMatch(/does not yet\s*\n--\s*RUNTIME-ENFORCE them/);
   });
 });
 
@@ -235,7 +267,16 @@ describe("WP02 Tier 1 — containment: no access model invented, nothing existin
     expect(exec).not.toMatch(/\bGRANT\b/i);
     expect(exec).toMatch(/REVOKE ALL ON TABLE rgkb\.governed_instance FROM anon/);
     expect(exec).toMatch(/REVOKE ALL ON TABLE rgkb\.subject_type_catalog FROM anon/);
-    expect(exec).toMatch(/REVOKE ALL ON FUNCTION rgkb\.resolve_current_version\(uuid\[\]\) FROM anon/);
+    expect(exec).toMatch(/REVOKE ALL ON FUNCTION rgkb\.resolve_current_version\(\) FROM anon/);
+  });
+
+  it("does not assert the live schema is API-unexposed — that was never verified", () => {
+    // Schema placement is an intended containment layer. The live Supabase
+    // exposed-schema configuration was not remotely checked, and no remote
+    // check is authorized, so the migration must not claim it as fact.
+    expect(migration).not.toMatch(/not[- ]API[- ]exposed|non-API-exposed|is not in the API-exposed/i);
+    expect(migration).toMatch(/NOT VERIFIED/);
+    expect(migration).toMatch(/intended containment layer/i);
   });
 
   it("enables row level security on both substrate tables (deny-all, zero policies)", () => {
@@ -286,6 +327,15 @@ describe("WP02 Tier 1 — DEFERRED-BY-DESIGN (cannot be truthfully executed yet)
     "negative: a stale / superseded exact-instance reference is rejected — DEFERRED: requires Tier 2 Pattern A version tables (Master Plan PRM-WP02 negative evidence)",
   );
   it.todo(
-    "runtime: RG001 / RG002 / RG003 and both write guards actually raise in Postgres — DEFERRED: requires a disposable Postgres; no production or remote Supabase execution is authorized",
+    "runtime: RG003 and both write guards actually raise in Postgres — DEFERRED: requires a disposable Postgres; no production or remote Supabase execution is authorized",
+  );
+  it.todo(
+    "negative: zero eligible versions within one stable identity and one resolution scope fails closed (Step 1 §10.1) — DEFERRED: requires a Pattern A stable-identity runtime substrate (Tier 2), a resolution-scope vocabulary (Step 1 §14.5) and the eligibility predicate (F-10/F-13/rights); a caller-supplied uuid[] is not evidence of that set",
+  );
+  it.todo(
+    "negative: more than one eligible version raises a governance fault with no tie-break (Step 1 §10.2/§9.4) — DEFERRED: same identity/scope/eligibility substrate dependency as above",
+  );
+  it.todo(
+    "verification: live Supabase API-exposed schema list excludes rgkb — DEFERRED: requires a remote Supabase check, which is not authorized; REVOKE + deny-all RLS are the locally evidenced controls",
   );
 });

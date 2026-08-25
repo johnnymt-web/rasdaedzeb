@@ -8,10 +8,11 @@
 - Controlling sources: Step 1 (Governed Object / Versioning / Referential /
   Lifecycle Substrate v0.1); accepted Master Plan PRM-WP02; PRM-WP02 Tier 1
   Human Gate 1 authorization (Owner, 2026-08-25).
-- Status: **PART I ACCEPTED (architecture, unchanged). TIER 1 IMPLEMENTED —
-  READY FOR OWNER REVIEW. TIER 2 REMAINS BLOCKED. F-04 OPEN. F-07 OPEN.
-  WP02 NOT CLOSED. NO P-GATE CHANGED.**
-- Date: 2026-08-24 (proposal); 2026-08-25 (Tier 1 implementation evidence).
+- Status: **PART I ACCEPTED (architecture, unchanged). TIER 1 IMPLEMENTED,
+  RC1 CORRECTION APPLIED — READY FOR OWNER RE-REVIEW. TIER 2 REMAINS BLOCKED.
+  F-04 OPEN. F-07 OPEN. WP02 NOT CLOSED. NO P-GATE CHANGED.**
+- Date: 2026-08-24 (proposal); 2026-08-25 (Tier 1 implementation evidence;
+  RC1 correction after Owner review).
 
 ## 1. Purpose
 
@@ -365,10 +366,10 @@ migration was edited.
 ## P3. What was implemented (Tier 1)
 
 **Containment schema `rgkb`.** The substrate is created in a dedicated schema
-that is not in the API-exposed schema list, rather than in `public`, because
-`public` is PostgREST-exposed and Supabase's default privileges hand new
-`public` tables to `anon`/`authenticated`. This is *containment*, not an
-access model (see P7).
+outside `public`, because `public` is PostgREST-exposed and Supabase's default
+privileges hand new `public` tables to `anon`/`authenticated`. This is an
+*intended containment layer*, not an access model, and its live API-exposure
+effect is **NOT VERIFIED** — see P7 for what is and is not evidenced.
 
 **`rgkb.governed_instance` — the registry (Step 1 §2.1, §3.2).**
 
@@ -399,8 +400,9 @@ pattern       text  NOT NULL  CHECK (pattern IN ('A','B'))
 None of RIASEC, Big Five, CAAS, EQ, Employability Skills, Work Values,
 reports, or evidence is classified — nor named — anywhere in the migration.
 
-**`rgkb.resolve_current_version(uuid[]) RETURNS uuid`** — the §9 resolution
-skeleton as a function, never a stored column (Step 1 §9.2). See P5.
+**`rgkb.resolve_current_version() RETURNS uuid`** — the §9 resolution skeleton
+as a function, never a stored column (Step 1 §9.2). It takes **no arguments**
+and always fails closed as not-evaluable. See P5.
 
 **Two fail-closed write guards** — see P6.
 
@@ -418,37 +420,84 @@ skeleton as a function, never a stored column (Step 1 §9.2). See P5.
 | 8 | Family with unfixed pattern must not be admitted | §2.5 | `RG020` INSERT guard |
 | 9 | No in-place reclassification of a family | §2.5 | `RG021` UPDATE guard |
 | 10 | Resolution is DERIVED, not a stored boolean | §9.2 | function, not column; no `is_current` anywhere |
-| 11 | Zero eligible → fail closed | §10.1 | `RG001` |
-| 12 | Multiple eligible → governance fault, no tie-break | §10.2, §9.4 | `RG002`; no ordering/recency/priority/`version_sequence`; candidates not de-duplicated |
-| 13 | Predicate not evaluable → fail closed | §9.3, §10.3 | `RG003` |
-| 14 | Absence of evidence is never permission | §1.3, §10.3 | the function has **no `RETURN` statement**; no path yields a value |
+| 11 | Predicate not evaluable → fail closed | §9.3, §10.3 | `RG003`, the function's only outcome |
+| 12 | No heuristic tie-break exists | §9.4 | no ordering/recency/priority/`version_sequence` anywhere in the resolver; nothing to tie-break |
+| 13 | Absence of evidence is never permission | §1.3, §10.3 | the function has **no `RETURN` statement**; no path yields a value |
 
-## P5. The resolver, precisely
+Deliberately **not** claimed as implemented: runtime enforcement of §10.1
+(zero eligible) and §10.2 (multiple eligible). See P5.
 
-`rgkb.resolve_current_version(p_candidate_instance_ids uuid[])` evaluates in
-this order and **always** fails closed at Tier 1:
+## P5. The resolver, precisely — and the RC1 correction
 
-1. `0` candidates → `RG001` (§10.1).
-2. `> 1` candidates → `RG002` (§10.2 / §9.4) — raised as a fault, never
-   tie-broken. Candidates are deliberately **not** de-duplicated, because
-   normalizing a candidate set down to one is itself a form of silent
-   selection.
-3. exactly `1` candidate → `RG003` (§9.3 / §10.3) — still unresolvable,
-   because F-10 (developmental/grade scope), F-13 (validation applicability),
-   rights-permitted-act semantics, and resolution-scope vocabulary are
-   unspecified.
+### P5.1 The defect that Owner review caught
 
-Cardinality is checked **before** evaluability because §9.4 fixes the
-cardinality rule "independently of the pending applicability inputs" — a
-multiple-eligible governance fault must surface as such, not be masked.
+The first implementation accepted a caller-supplied `uuid[]` and reported its
+length as the §10.1 / §10.2 outcome: `0` → "zero eligible versions",
+`>1` → "multiple eligible versions". **That was a semantic overclaim.**
 
-The function's parameter is an `instance_id` array. No Tier 2 identifier
-(`object_id`, `domain_code`, `version_sequence`) exists to be substituted as a
-governance-act target, at Tier 1 or in this function's contract (Step 1
-§11.1).
+Step 1 §9.4 fixes cardinality **within one stable identity, within one
+resolution scope, over eligible versions**. An arbitrary caller-supplied array
+establishes none of those three properties, so counting it could not prove
+§9.4 / §10.1 / §10.2. Fail-closed safety was never at risk — every path still
+raised — but the *evidence claim* was stronger than what was built, and
+accepting the argument could have led a caller to believe the substrate had
+validated a set it had not.
+
+### P5.2 Why no safe derivation is available at Tier 1
+
+Deriving the eligible-version set honestly would require all three of:
+
+| Needed to evaluate | Status at Tier 1 |
+|---|---|
+| "within one stable identity" | **absent** — `governed_object` and Pattern A version tables are Tier 2 (§5.2.2 above) |
+| "within one resolution scope" | **absent** — resolution-scope vocabulary is DEFERRED (Step 1 §14.5) |
+| "eligible versions" | **absent** — F-10 developmental/grade scope, F-13 validation applicability, and rights-permitted-act semantics are unspecified (§9.3) |
+
+None can be supplied without inventing Tier 2 or F-07 semantics, which this
+package is not authorized to do. No alternative safe representation was found.
+
+### P5.3 The corrected resolver
+
+```sql
+rgkb.resolve_current_version() RETURNS uuid
+```
+
+**No arguments.** One outcome: `RG003` — the resolution predicate is not
+evaluable (§9.3 / §10.3), because the identity/scope/eligibility substrate
+needed even to *pose* the cardinality question does not exist. The error text
+names each missing input explicitly and states that no caller-supplied
+candidate set may stand in for the §9.4 eligible-version set.
+
+Preserved: resolution stays **derived and non-stored** (a function, never a
+column — §9.2); it **fails closed**; it contains **no** ordering, recency,
+priority or `version_sequence` construct; it has **no `RETURN` statement**, so
+no path yields a value (returning `NULL` could be read as "nothing blocks
+you" — §1.3).
+
+No Tier 2 identifier (`object_id`, `domain_code`, `version_sequence`) exists
+to be substituted as a governance-act target, at Tier 1 or in this function's
+contract (Step 1 §11.1).
 
 **F-07 is NOT closed by this function**, and the function's own `COMMENT` says
 so.
+
+### P5.4 Step 1's fixed logical rules — recorded, not runtime-claimed
+
+These rules are fixed by Step 1 **now**, and nothing here weakens them. They
+are locked as documented requirements (and asserted as such by the test
+suite), **not** manufactured into executable evidence from unverified caller
+input:
+
+1. zero eligible versions → fail closed (§10.1);
+2. exactly one eligible version is the only potentially resolvable cardinality
+   (§9.4);
+3. more than one eligible version → governance fault (§10.2);
+4. no recency, priority, ordering or `version_sequence` tie-break is ever
+   authorized (§9.4).
+
+Their **runtime enforcement is DEFERRED-BY-DESIGN** until the
+identity/scope/eligibility substrate exists. Error codes `RG001` and `RG002`
+were removed from the migration entirely and are **not** emitted anywhere.
 
 ## P6. Fail-closed behaviour and the atomicity invariant
 
@@ -472,8 +521,6 @@ guard is replaced by real atomic-creation enforcement.
 
 | Code | Condition | Step 1 |
 |---|---|---|
-| `RG001` | zero eligible versions | §10.1 |
-| `RG002` | more than one eligible version (governance fault) | §10.2, §9.4 |
 | `RG003` | resolution predicate not evaluable | §9.3, §10.3 |
 | `RG010` | registry INSERT without a concrete governed instance | §11.5 |
 | `RG011` | registry UPDATE (identity reuse/transfer) | §3.2, §11.2 |
@@ -482,10 +529,13 @@ guard is replaced by real atomic-creation enforcement.
 | `RG021` | in-place reclassification of a family | §2.5 |
 | `RG022` | catalog membership removal | §2.5 |
 
-**No audit/event schema or semantics was invented.** The §10.2 fault surfaces
-as an explicit database exception. Routing it into a governed event chain is
-DEFERRED to a later, separately authorized package, once a governed event
-shape exists (Step 1 §8.3, §11.4).
+`RG001` / `RG002` are **not allocated and not emitted** — see P5.4.
+
+**No audit/event schema or semantics was invented.** Every fault above
+surfaces as an explicit database exception. Routing the §10.2 governance fault
+into a governed event chain is DEFERRED together with the fault detection
+itself, to a later separately authorized package, once a governed event shape
+exists (Step 1 §8.3, §11.4).
 
 ## P7. RLS / auth containment status — no access model was invented
 
@@ -494,26 +544,33 @@ separate, later, gated L2 work. It is **not** decided here. What was done is
 containment only, so the substrate's safest state — non-exposed and
 fail-closed — holds until that decision exists:
 
-1. **Dedicated `rgkb` schema**, not `public`. `public` is PostgREST-exposed
-   and Supabase's default privileges grant new `public` tables to
-   `anon`/`authenticated`; `rgkb` is not in the API-exposed schema list.
-2. **`REVOKE ALL`** on the schema, both tables, and the resolver, from
+**Locally evidenced enforcement controls:**
+
+1. **`REVOKE ALL`** on the schema, both tables, and the resolver, from
    `PUBLIC`, `anon`, and `authenticated`. No `GRANT` appears anywhere in the
    migration.
-3. **RLS enabled (and forced) with ZERO policies** on both tables — a deny-all
+2. **RLS enabled (and forced) with ZERO policies** on both tables — a deny-all
    posture that expresses no opinion about who may eventually read or write.
+
+**Intended containment layer, effect NOT VERIFIED:**
+
+3. **Dedicated `rgkb` schema**, outside `public`. `public` is PostgREST-exposed
+   and Supabase's default privileges grant new `public` tables to
+   `anon`/`authenticated`, so placing the substrate elsewhere is an intended
+   containment layer.
+
+   **❓ The live Supabase exposed-schema configuration was NOT checked, and no
+   remote check is authorized.** This document therefore does **not** state as
+   fact that `rgkb` is unreachable through the API. That `supabase/config.toml`
+   declares no schema override is repository-evidenced; what the live project
+   actually exposes is **unknown here**. Controls 1 and 2 are the enforcement
+   this package can evidence; control 3 is an additional intended layer whose
+   effect is unconfirmed. Verifying it is recorded as DEFERRED-BY-DESIGN (P8).
 
 What was deliberately **not** done: no `CREATE POLICY`, no admin/counselor/
 student/parent rule, no `has_role` predicate, no `SECURITY DEFINER`, no change
 to any existing role, policy, grant, table, or column. Nothing in `public` is
-touched at all.
-
-**ⓘ Verification limit (inferred, not verified):** that the live Supabase
-project's API-exposed schema list excludes `rgkb` is inferred from
-`supabase/config.toml` declaring no override and from Supabase's documented
-default. It was **not** verified against the live project — no remote Supabase
-operation is authorized by this package. Items 2 and 3 are defence in depth
-precisely because item 1 is unverified here.
+touched at all. No remote Supabase operation of any kind was performed.
 
 ## P8. Explicitly deferred — Tier 2, F-04, F-07
 
@@ -547,18 +604,30 @@ than passing), each with its exact dependency:
 3. negative — a stale/superseded exact-instance reference is rejected (the
    Master Plan's PRM-WP02 negative evidence) → requires Tier 2 Pattern A
    version tables;
-4. runtime — that `RG001`/`RG002`/`RG003` and both write guards actually raise
-   in PostgreSQL → requires a disposable Postgres; no production or remote
-   Supabase execution is authorized.
+4. runtime — that `RG003` and both write guards actually raise in PostgreSQL →
+   requires a disposable Postgres; no production or remote Supabase execution
+   is authorized;
+5. negative — zero eligible versions within one stable identity and one
+   resolution scope fails closed (§10.1) → requires the Pattern A
+   stable-identity runtime substrate (Tier 2), the resolution-scope vocabulary
+   (Step 1 §14.5) and the eligibility predicate (F-10 / F-13 / rights); a
+   caller-supplied `uuid[]` is not evidence of that set (P5);
+6. negative — more than one eligible version raises a governance fault with no
+   tie-break (§10.2 / §9.4) → same identity/scope/eligibility dependency;
+7. verification — the live Supabase API-exposed schema list excludes `rgkb` →
+   requires a remote Supabase check, which is not authorized (P7).
 
 No fixture was manufactured to make any of these appear to pass.
 
 ## P9. Validation performed
 
+Counts below are the **actual RC1 results**, read from the runs performed
+after the RC1 correction — not carried forward from an earlier run.
+
 | Command | Result |
 |---|---|
-| `npx vitest run src/test/rgkbWp02Tier1Substrate.test.ts` | 35 passed, 4 todo (DEFERRED-BY-DESIGN) |
-| `npm run test` (full regression, 9 files) | **165 passed, 4 todo, 0 failed** |
+| `npx vitest run src/test/rgkbWp02Tier1Substrate.test.ts` | **42 passed, 7 todo (DEFERRED-BY-DESIGN), 0 failed** — 49 total |
+| `npm run test` (full regression, 9 files) | **171 passed, 7 todo, 0 failed** — 178 total |
 | `npm run typecheck` (`tsc --noEmit -p tsconfig.app.json`) | **exit 0** |
 
 **Evidence level: E1/E2-class local verification only.** These are
@@ -567,12 +636,24 @@ repository's existing suites. They are **not** production proof and **not**
 proof of runtime database behaviour. The migration has not been executed
 against any database.
 
-**Self-audit correction performed.** The first draft used newline-continued
-SQL string literals. No other migration in this repository does, a `RAISE`
-format argument must be a literal, and no database was available to prove the
-continuation parses — so a parse failure would have surfaced only at apply
-time. Every literal was rewritten to a single line, and a regression test now
-locks that convention.
+### P9.1 Self-audit corrections performed
+
+1. **Newline-continued SQL string literals (pre-review).** No other migration
+   in this repository uses them, a `RAISE` format argument must be a literal,
+   and no database was available to prove the continuation parses — a parse
+   failure would have surfaced only at apply time. Every literal was rewritten
+   to a single line, and a regression test locks that convention.
+2. **Resolver semantic overclaim (RC1, Owner-identified).** See P5 — the
+   `uuid[]` parameter and the `RG001`/`RG002` cardinality claims were removed.
+3. **API-exposure wording (RC1, Owner-identified).** See P7 — schema placement
+   is now stated as an intended containment layer with live exposure status
+   NOT VERIFIED, rather than as a verified fact.
+4. **Evidence-count drift (RC1, Owner-identified).** The pre-RC1 artifact
+   reported the focused suite as 35 passed / 4 todo, a figure taken from a run
+   made *before* the final test was added. The table above is re-derived from
+   the post-correction runs, and an assertion-on-prose defect found while
+   re-running RC1 was fixed in the test itself (a forbidden-identifier check
+   was matching the `RAISE` message text instead of the SQL code).
 
 ## P10. Explicit non-authorization and state preservation
 
