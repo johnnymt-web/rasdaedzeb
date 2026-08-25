@@ -1,12 +1,17 @@
 # PRM-WP02 — Governed Object / Version Runtime Architecture Proposal — v0.1
 
 - Work package: PRM-WP02 — Governed Object / Version Runtime Foundation
-- Authorization level: **DISCOVERY + ARCHITECTURE ONLY.** No code, no schema,
-  no migration, no RLS/auth change is performed by this document.
+- Authorization level: **PART I (§1–§17) — DISCOVERY + ARCHITECTURE ONLY**,
+  as accepted; unchanged by the Tier 1 implementation. **PART II — TIER 1
+  IMPLEMENTATION EVIDENCE**, added under the Owner's PRM-WP02 Tier 1 Human
+  Gate 1 authorization.
 - Controlling sources: Step 1 (Governed Object / Versioning / Referential /
-  Lifecycle Substrate v0.1); accepted Master Plan PRM-WP02.
-- Status: DRAFT — proposal only, ends at Human Gate 1.
-- Date: 2026-08-24.
+  Lifecycle Substrate v0.1); accepted Master Plan PRM-WP02; PRM-WP02 Tier 1
+  Human Gate 1 authorization (Owner, 2026-08-25).
+- Status: **PART I ACCEPTED (architecture, unchanged). TIER 1 IMPLEMENTED —
+  READY FOR OWNER REVIEW. TIER 2 REMAINS BLOCKED. F-04 OPEN. F-07 OPEN.
+  WP02 NOT CLOSED. NO P-GATE CHANGED.**
+- Date: 2026-08-24 (proposal); 2026-08-25 (Tier 1 implementation evidence).
 
 ## 1. Purpose
 
@@ -321,3 +326,267 @@ performed here.
 **NO IMPLEMENTATION** — no code, schema, migration, RLS, or auth change was
 performed in the production of this document. All statements above are
 proposal and forecast, not committed design or executed work.
+
+---
+---
+
+# PART II — PRM-WP02 TIER 1 IMPLEMENTATION EVIDENCE
+
+> **Boundary between the two parts.** Everything above (§1–§17) is the
+> **ACCEPTED ARCHITECTURE PROPOSAL**. Its semantics are not rewritten,
+> reinterpreted, or softened by anything below; where Part I and Part II
+> appear to differ, **Part I governs the architecture** and Part II is
+> defective and must be corrected. Everything below records only **what was
+> actually built** for Tier 1, what was deliberately not built, and how that
+> was validated.
+>
+> Part II changes no P-gate, closes no finding, unblocks no Tier 2 component,
+> and closes neither WP02 nor F-04/F-07.
+
+## P1. Authorization and scope actually exercised
+
+- Authorized by: Owner **PRM-WP02 Tier 1 Human Gate 1** (2026-08-25), scoped
+  to §5.1 (catalog-independent Tier 1) only.
+- Baseline: `origin/main` `a3cbd61c1a650f2499198644e53abc7477679cd3`.
+- Implementation branch: `remediation/rgkb-wp02-tier1-runtime-v0.1`.
+- Not exercised: Tier 2 (§5.2), F-04 workflow (§6), F-07 applicability inputs
+  (§7), any RLS/auth access model (§13), any remote/production execution.
+
+## P2. Artifacts produced
+
+| Artifact | Purpose |
+|---|---|
+| `supabase/migrations/20260825120000_rgkb_wp02_tier1_governed_instance_substrate.sql` | The entire Tier 1 substrate — one narrow, additive, single-purpose migration |
+| `src/test/rgkbWp02Tier1Substrate.test.ts` | Structural regression evidence (positive + negative + DEFERRED-BY-DESIGN) |
+
+No other file was created or modified by the implementation. No existing
+migration was edited.
+
+## P3. What was implemented (Tier 1)
+
+**Containment schema `rgkb`.** The substrate is created in a dedicated schema
+that is not in the API-exposed schema list, rather than in `public`, because
+`public` is PostgREST-exposed and Supabase's default privileges hand new
+`public` tables to `anon`/`authenticated`. This is *containment*, not an
+access model (see P7).
+
+**`rgkb.governed_instance` — the registry (Step 1 §2.1, §3.2).**
+
+```
+instance_id  uuid  PRIMARY KEY  DEFAULT gen_random_uuid()
+```
+
+That is the entire table. It carries:
+
+- no `subject_type`, no `pattern` — Tier 2 (§5.2.1 above);
+- no `object_id`, `domain_code`, `version_sequence` — Tier 2 (§5.2.3 above);
+- no lifecycle, approval, validation, runtime, retirement, readiness or
+  master-status field — prohibited by Step 1 §2.1;
+- no `created_at` — deliberately omitted, because Step 1 §9.4 forbids recency
+  as a tie-break and this table must not offer one.
+
+`gen_random_uuid()` is the repository's established UUID mechanism (§3 above),
+reused here as the opaque, registry-allocated `instance_id` (Step 1 §3.2).
+
+**`rgkb.subject_type_catalog` — the catalog SUBSTRATE SHAPE (Step 1 §2.5).**
+
+```
+subject_type  text  PRIMARY KEY
+pattern       text  NOT NULL  CHECK (pattern IN ('A','B'))
+```
+
+**Zero rows.** No subject type is invented, inferred, seeded, or defaulted.
+None of RIASEC, Big Five, CAAS, EQ, Employability Skills, Work Values,
+reports, or evidence is classified — nor named — anywhere in the migration.
+
+**`rgkb.resolve_current_version(uuid[]) RETURNS uuid`** — the §9 resolution
+skeleton as a function, never a stored column (Step 1 §9.2). See P5.
+
+**Two fail-closed write guards** — see P6.
+
+## P4. Requirements implemented, and the exact Step 1 traceability
+
+| # | Tier 1 requirement | Step 1 source | Realization |
+|---|---|---|---|
+| 1 | Registry exists, exact-instance identity | §2.1, §3.2 | `rgkb.governed_instance` |
+| 2 | `instance_id` opaque, registry-allocated | §2.1, §3.2 | `uuid` PK, `DEFAULT gen_random_uuid()` |
+| 3 | No lifecycle/approval/master-status in registry | §2.1 | single-column table; asserted by test |
+| 4 | Registry entry never removed | §5.3 | `RG012` DELETE guard |
+| 5 | `instance_id` never reused/reallocated/transferred | §3.2, §11.2 | `RG011` UPDATE guard |
+| 6 | Registry + concrete instance created together | §11.5 | `RG010` INSERT guard (see P6) |
+| 7 | Catalog answers exactly one A/B question per family | §2.1, §2.5 | `subject_type` → `pattern`, `CHECK IN ('A','B')` |
+| 8 | Family with unfixed pattern must not be admitted | §2.5 | `RG020` INSERT guard |
+| 9 | No in-place reclassification of a family | §2.5 | `RG021` UPDATE guard |
+| 10 | Resolution is DERIVED, not a stored boolean | §9.2 | function, not column; no `is_current` anywhere |
+| 11 | Zero eligible → fail closed | §10.1 | `RG001` |
+| 12 | Multiple eligible → governance fault, no tie-break | §10.2, §9.4 | `RG002`; no ordering/recency/priority/`version_sequence`; candidates not de-duplicated |
+| 13 | Predicate not evaluable → fail closed | §9.3, §10.3 | `RG003` |
+| 14 | Absence of evidence is never permission | §1.3, §10.3 | the function has **no `RETURN` statement**; no path yields a value |
+
+## P5. The resolver, precisely
+
+`rgkb.resolve_current_version(p_candidate_instance_ids uuid[])` evaluates in
+this order and **always** fails closed at Tier 1:
+
+1. `0` candidates → `RG001` (§10.1).
+2. `> 1` candidates → `RG002` (§10.2 / §9.4) — raised as a fault, never
+   tie-broken. Candidates are deliberately **not** de-duplicated, because
+   normalizing a candidate set down to one is itself a form of silent
+   selection.
+3. exactly `1` candidate → `RG003` (§9.3 / §10.3) — still unresolvable,
+   because F-10 (developmental/grade scope), F-13 (validation applicability),
+   rights-permitted-act semantics, and resolution-scope vocabulary are
+   unspecified.
+
+Cardinality is checked **before** evaluability because §9.4 fixes the
+cardinality rule "independently of the pending applicability inputs" — a
+multiple-eligible governance fault must surface as such, not be masked.
+
+The function's parameter is an `instance_id` array. No Tier 2 identifier
+(`object_id`, `domain_code`, `version_sequence`) exists to be substituted as a
+governance-act target, at Tier 1 or in this function's contract (Step 1
+§11.1).
+
+**F-07 is NOT closed by this function**, and the function's own `COMMENT` says
+so.
+
+## P6. Fail-closed behaviour and the atomicity invariant
+
+Step 1 §11.5 requires that "a registry entry MUST NOT exist without its
+concrete governed instance." At Tier 1 there is **no concrete governed member
+table at all** — Tier 2 is blocked — so any row insertable today would
+necessarily be an orphan registry entry, i.e. a direct violation of §11.5.
+
+The implementation therefore **holds the registry structurally
+non-operational** (`RG010` on INSERT) rather than weakening the invariant or
+claiming it is satisfied. The same reasoning applies to Step 1 §4's "each
+`governed_instance` MUST carry exactly one `subject_type` value": that column
+is Tier 2, so the honest realization is a registry that admits no rows, not a
+registry admitting rows that would violate §4.
+
+The full atomic registry-plus-concrete-instance invariant is therefore
+**NOT operationally completed**, and this document does not claim otherwise.
+It becomes implementable when Tier 2 introduces the first concrete governed
+family, under its own separate authorization, which is where the `RG010`
+guard is replaced by real atomic-creation enforcement.
+
+| Code | Condition | Step 1 |
+|---|---|---|
+| `RG001` | zero eligible versions | §10.1 |
+| `RG002` | more than one eligible version (governance fault) | §10.2, §9.4 |
+| `RG003` | resolution predicate not evaluable | §9.3, §10.3 |
+| `RG010` | registry INSERT without a concrete governed instance | §11.5 |
+| `RG011` | registry UPDATE (identity reuse/transfer) | §3.2, §11.2 |
+| `RG012` | registry DELETE (entry removal) | §5.3 |
+| `RG020` | catalog admission with no controlled catalog specification | §2.5 |
+| `RG021` | in-place reclassification of a family | §2.5 |
+| `RG022` | catalog membership removal | §2.5 |
+
+**No audit/event schema or semantics was invented.** The §10.2 fault surfaces
+as an explicit database exception. Routing it into a governed event chain is
+DEFERRED to a later, separately authorized package, once a governed event
+shape exists (Step 1 §8.3, §11.4).
+
+## P7. RLS / auth containment status — no access model was invented
+
+Per §13 above and CLAUDE.md §3, the substrate's actual access model is
+separate, later, gated L2 work. It is **not** decided here. What was done is
+containment only, so the substrate's safest state — non-exposed and
+fail-closed — holds until that decision exists:
+
+1. **Dedicated `rgkb` schema**, not `public`. `public` is PostgREST-exposed
+   and Supabase's default privileges grant new `public` tables to
+   `anon`/`authenticated`; `rgkb` is not in the API-exposed schema list.
+2. **`REVOKE ALL`** on the schema, both tables, and the resolver, from
+   `PUBLIC`, `anon`, and `authenticated`. No `GRANT` appears anywhere in the
+   migration.
+3. **RLS enabled (and forced) with ZERO policies** on both tables — a deny-all
+   posture that expresses no opinion about who may eventually read or write.
+
+What was deliberately **not** done: no `CREATE POLICY`, no admin/counselor/
+student/parent rule, no `has_role` predicate, no `SECURITY DEFINER`, no change
+to any existing role, policy, grant, table, or column. Nothing in `public` is
+touched at all.
+
+**ⓘ Verification limit (inferred, not verified):** that the live Supabase
+project's API-exposed schema list excludes `rgkb` is inferred from
+`supabase/config.toml` declaring no override and from Supabase's documented
+default. It was **not** verified against the live project — no remote Supabase
+operation is authorized by this package. Items 2 and 3 are defence in depth
+precisely because item 1 is unverified here.
+
+## P8. Explicitly deferred — Tier 2, F-04, F-07
+
+**Tier 2 — structurally BLOCKED** pending a separately accepted controlled
+subject-type catalog specification (§5.2 above; Step 1 §14.5). Not
+implemented, not prepared, not worked around:
+
+- `governed_instance.subject_type`, `governed_instance.pattern`;
+- concrete Pattern A version tables and Pattern B record tables;
+- `object_id`, `domain_code`, `version_sequence`;
+- any subject-type catalog membership.
+
+**F-04 — OPEN.** No re-binding trigger, authority model, affected-dependent
+discovery rule, or re-binding workflow was implemented or implied. Any future
+dependency re-binding scenario must fail closed until F-04 is separately
+specified.
+
+**F-07 — OPEN.** The Tier 1 resolver implements the §9 skeleton and the §9.4
+cardinality rule only. It invents none of the deferred applicability inputs
+and does not close F-07.
+
+**Tests that cannot yet be truthfully executed** are recorded in the test file
+as `DEFERRED-BY-DESIGN` (vitest `todo`, so they report as outstanding rather
+than passing), each with its exact dependency:
+
+1. positive — `instance_id` allocated atomically with its concrete governed
+   instance → requires a Tier 2 concrete member table;
+2. negative — a `pattern` mismatching the catalog assignment is rejected as a
+   fault → requires `governed_instance.pattern` (Tier 2) and a populated
+   catalog (Step 1 §14.5);
+3. negative — a stale/superseded exact-instance reference is rejected (the
+   Master Plan's PRM-WP02 negative evidence) → requires Tier 2 Pattern A
+   version tables;
+4. runtime — that `RG001`/`RG002`/`RG003` and both write guards actually raise
+   in PostgreSQL → requires a disposable Postgres; no production or remote
+   Supabase execution is authorized.
+
+No fixture was manufactured to make any of these appear to pass.
+
+## P9. Validation performed
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/test/rgkbWp02Tier1Substrate.test.ts` | 35 passed, 4 todo (DEFERRED-BY-DESIGN) |
+| `npm run test` (full regression, 9 files) | **165 passed, 4 todo, 0 failed** |
+| `npm run typecheck` (`tsc --noEmit -p tsconfig.app.json`) | **exit 0** |
+
+**Evidence level: E1/E2-class local verification only.** These are
+dependency-free structural assertions over migration text plus the
+repository's existing suites. They are **not** production proof and **not**
+proof of runtime database behaviour. The migration has not been executed
+against any database.
+
+**Self-audit correction performed.** The first draft used newline-continued
+SQL string literals. No other migration in this repository does, a `RAISE`
+format argument must be a literal, and no database was available to prove the
+continuation parses — so a parse failure would have surfaced only at apply
+time. Every literal was rewritten to a single line, and a regression test now
+locks that convention.
+
+## P10. Explicit non-authorization and state preservation
+
+This Part II records implementation evidence only. It does not authorize,
+perform, or imply any of the following, none of which occurred:
+
+- no push, PR, merge, deployment;
+- no production SQL, no migration execution anywhere, no remote Supabase
+  operation, no Supabase MCP;
+- no real data, no real participants, no pilot execution;
+- no external AI/tool enablement and no external transmission;
+- no Tier 2 work, no WP03+ work, no WP13, no Phase 9.
+
+State preserved and unchanged: **F-04 OPEN** · **F-07 OPEN** · **WP02 Tier 2
+BLOCKED** · **WP02 NOT CLOSED** · **P1–P16 unchanged** (only PRM-WP18 may
+change a P-gate) · **PR8-1/PR8-2/PR8-3 unchanged** · **Pilot NOT AUTHORIZED**
+· **Real data NOT AUTHORIZED** · **Phase 9 NOT AUTHORIZED**.
