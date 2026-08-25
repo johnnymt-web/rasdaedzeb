@@ -7,11 +7,15 @@
 - Controlling sources: RGKB Canonical Entity Model v0.2.1; Controlled Schema
   Specification Steps 1–7; accepted PRM-WP02 artifact; accepted Pilot Readiness
   Remediation Master Plan.
-- Status: **DRAFT, RC1 CORRECTION APPLIED — READY FOR OWNER RE-REVIEW.** Tier 2
-  remains **BLOCKED** until this specification is accepted. F-04 OPEN. F-07
-  OPEN. M-1 OPEN.
+- Status: **DRAFT, RC1 CORRECTION APPLIED, ODQ-9 OWNER-APPROVED — READY FOR
+  OWNER REVIEW.** Tier 2 remains **BLOCKED** pending a separate Human Gate.
+  WP02 NOT CLOSED. F-04 OPEN. F-07 OPEN. M-1 OPEN. Seven Owner decisions remain
+  OPEN (§9).
 - Baseline: `origin/main` `2cc13957dcef2638e951d1232a24a850236a6135`.
-- Date: 2026-08-25 (drafted; RC1 source-fidelity correction after Owner review).
+- Date: 2026-08-25 (drafted; RC1 source-fidelity correction; ODQ-9 Owner
+  decision recorded).
+- Owner decisions recorded in this artifact: **ODQ-9 — APPROVED, 2026-08-25**
+  (the 19 `subject_type` identifiers). No other ODQ is decided.
 
 ## 1. Purpose and authority
 
@@ -131,7 +135,7 @@ no candidate was invented.
 
 ### 5.1 FIXED — PATTERN A (admitted)
 
-| # | `subject_type` (PROPOSED) | Family name | Basis | Controlling source | Admission |
+| # | `subject_type` (**OWNER-APPROVED**) | Family name | Basis | Controlling source | Admission |
 |---|---|---|---|---|---|
 | A1 | `knowledge_unit` | Knowledge Unit | [table] | CEM §5.7.4 row 1; §5.1, §8.2. Step 2 §9.1 maps its local label "governed knowledge object" → `Knowledge Unit` | **PERMITTED** |
 | A2 | `guardrail` | Guardrail | [table] | CEM §5.7.4 row 2; §5.1, §14.2. Relied on unchanged by Step 4 §18.2 | **PERMITTED** |
@@ -161,7 +165,7 @@ for every other Pattern A family in this table.
 
 ### 5.2 FIXED — PATTERN B (admitted)
 
-| # | `subject_type` (PROPOSED) | Family name | Basis | Controlling source | Admission |
+| # | `subject_type` (**OWNER-APPROVED**) | Family name | Basis | Controlling source | Admission |
 |---|---|---|---|---|---|
 | B1 | `evidence_anchor` | Evidence anchor | [table] | CEM §5.7.4 row 8; §9.2.1. Step 2 §4.2, §9.1 | **PERMITTED** |
 | B2 | `knowledge_unit_relation` | Knowledge-unit relation | [table] | CEM §5.7.4 row 9; §11.1.1 ("It follows **Pattern B**"). Step 2 §9.1 label "knowledge object relation" | **PERMITTED** |
@@ -244,10 +248,11 @@ only once Tier 2 is separately authorized (§16). Forbidden: U1–U7, U9, U10
 | ~~U8~~ | ~~Instrument scale as a distinct family~~ | **RETIRED IN RC1** — not unresolved; admitted at A11 | n/a — only its physical table shape remains a Tier 2 design question (§16.4) |
 | U9 | Reviewer identity | UNRESOLVED (**F-12** DEFERRED) | Not admitted |
 | U10 | Contributor | UNRESOLVED (**F-14** DEFERRED) | Not admitted |
-| ID-1 | The `subject_type` machine-identifier vocabulary itself | **PROPOSED — OWNER REVIEW REQUIRED** (§11) | No identifier is authoritative until accepted |
+| ~~ID-1~~ | ~~The `subject_type` machine-identifier vocabulary itself~~ | **CLOSED — APPROVED BY OWNER DECISION, 2026-08-25** (§11, ODQ-9) | n/a — the 19 spellings are now normative |
 
-**Count:** nine unresolved **families** (U1–U7, U9, U10). **ID-1 is not a family
-row** — it is the identifier-vocabulary item and is counted separately.
+**Count:** nine unresolved **families** (U1–U7, U9, U10) — **unchanged by the
+ODQ-9 decision**. **ID-1 was never a family row**; it was the
+identifier-vocabulary item, counted separately, and it is now closed.
 
 Additionally carried, untouched by this document: **F-04 OPEN**, **F-07 OPEN**.
 This document implements no dependency re-binding workflow and no current-version
@@ -285,6 +290,23 @@ resolution; it does not resolve M-1.
 
 Only genuinely unresolved governance choices appear here. **No option is
 recommended**, and none is preferred for implementation convenience.
+
+**Queue status.** One item is closed by Owner decision (ODQ-9, 2026-08-25); one
+is retired as never having been a genuine decision (ODQ-4, RC1); **seven remain
+OPEN**: ODQ-1, ODQ-2, ODQ-3, ODQ-5, ODQ-6, ODQ-7, ODQ-8. No identifier has been
+renumbered.
+
+| ODQ | State |
+|---|---|
+| ODQ-1 — M-1 source-hierarchy families | **OPEN** |
+| ODQ-2 — construct ↔ scale realization | **OPEN** |
+| ODQ-3 — cross-source position realization | **OPEN** |
+| ~~ODQ-4~~ — instrument scale | **RETIRED IN RC1** |
+| ODQ-5 — cross-source validation exercise | **OPEN** |
+| ODQ-6 — KU-version ↔ construct mapping | **OPEN** |
+| ODQ-7 — reviewer identity | **OPEN** |
+| ODQ-8 — contributor | **OPEN** |
+| ODQ-9 — `subject_type` vocabulary | **APPROVED / CLOSED BY OWNER DECISION — 2026-08-25** |
 
 ---
 
@@ -326,10 +348,14 @@ recommended**, and none is preferred for implementation convenience.
 
 **ODQ-8 — Is contributor a governed family?** (interacts with **F-14**, DEFERRED; CEM §6.5 defers it deliberately). **While unresolved:** not admitted.
 
-**ODQ-9 — Approve the `subject_type` machine-identifier vocabulary**
-- **Question:** are the **19** proposed identifiers in §5.1/§5.2 accepted as the runtime `subject_type` codes? (18 pre-RC1, plus `instrument_scale` added at A11.)
-- **Evidence:** no accepted source defines a `subject_type` code vocabulary (§10). Each identifier is a semantics-free snake_case rendering of the family name its controlling source uses.
-- **While unresolved:** every identifier is **PROPOSED — OWNER REVIEW REQUIRED**; the *classifications* in §5.1/§5.2 do not depend on the identifier spelling and stand independently.
+**ODQ-9 — Approve the `subject_type` machine-identifier vocabulary — APPROVED / CLOSED BY OWNER DECISION, 2026-08-25**
+- **Question asked:** are the **19** proposed identifiers in §5.1/§5.2 accepted as the runtime `subject_type` codes? (18 pre-RC1, plus `instrument_scale` added at A11.)
+- **Evidence presented:** no accepted source defines a `subject_type` code vocabulary (§11). Each identifier is a semantics-free snake_case rendering of the family name its controlling source uses.
+- **Owner decision (recorded verbatim):** „ვამტკიცებ ODQ-9-ს — 19 subject_type კოდი მიღებულია." — *ODQ-9 approved; the 19 subject_type codes are accepted.*
+- **Date:** 2026-08-25.
+- **Effect.** All **19** identifiers listed in §5.1/§5.2 are the **accepted runtime `subject_type` vocabulary** for the 19 admitted families. Their **spelling is now normative** for later, separately authorized Tier 2 implementation. ODQ-9 and its register entry `ID-1` are **CLOSED**.
+- **Explicitly NOT decided by this act.** It does **not** authorize catalog population, Tier 2 implementation, SQL or migration, or any `governed_instance.subject_type` / `.pattern` change. It does **not** resolve M-1 and does **not** resolve ODQ-1, ODQ-2, ODQ-3, ODQ-5, ODQ-6, ODQ-7 or ODQ-8. It changes **no** Pattern A/B assignment, closes neither F-04 nor F-07, changes no P-gate, and authorizes neither WP03 nor pilot, real data, production, deployment or Phase 9.
+- **Relationship to classification.** The family-to-pattern classifications of §5.1/§5.2 are **exactly unchanged** by this decision. They never depended on identifier spelling (§11), and approving the spellings did not revisit them.
 
 ---
 
@@ -378,9 +404,25 @@ across the Canonical Entity Model and Steps 1–7. The only `subject_type` menti
 in the Canonical Entity Model (§12.6) is the **prohibition** on unconstrained
 `subject_type` + `subject_id` polymorphism.
 
-Therefore every identifier in §5.1/§5.2 is marked **PROPOSED — OWNER REVIEW
-REQUIRED** (ODQ-9), separately from the normative family classification, which
-does not depend on it.
+The 19 identifiers of §5.1/§5.2 were therefore put to the Owner separately from
+the normative family classification, which does not depend on them.
+
+> **OWNER DECISION — 2026-08-25: APPROVED.** „ვამტკიცებ ODQ-9-ს — 19
+> subject_type კოდი მიღებულია." The **19** identifiers in §5.1/§5.2 are the
+> **accepted runtime `subject_type` vocabulary**, and their **spelling is
+> normative** for later separately authorized Tier 2 implementation. ODQ-9 and
+> `ID-1` are CLOSED (§7, §9).
+
+**The accepted vocabulary size is exactly 19.** Under this accepted vocabulary,
+and until a new controlled specification version says otherwise:
+
+- no alias may be added for any accepted identifier;
+- no `_version` variant may be added;
+- no Pattern A/B encoding and no lifecycle/status encoding may be added;
+- no accepted identifier may be renamed;
+- **no twentieth identifier may be introduced.** A new identifier would require a
+  new admitted family, which requires a controlling-source assignment plus a new
+  controlled specification version (Step 1 §2.5).
 
 **Construction rule used:** lowercase snake_case of the controlling source's own
 family name. Nothing else.
@@ -518,6 +560,25 @@ documentation-only):
    register; omitting them silently would have left a later implementer free to
    admit them. Both were added as UNRESOLVED.
 
+### 14.2 ODQ-9 formalization self-audit (2026-08-25)
+
+| Check | Result |
+|---|---|
+| Exactly 19 approved identifiers | **PASS** — 11 in §5.1 + 8 in §5.2 |
+| All 19 map one-to-one to the 19 admitted families | **PASS** — one identifier per row, no row without one, no identifier without a row |
+| No identifier changed spelling | **PASS** — the §5.1/§5.2 identifier column is byte-unchanged; only the column header's status label changed |
+| Pattern A count remains 11 | **PASS** |
+| Pattern B count remains 8 | **PASS** |
+| Unresolved family count remains 9 | **PASS** — U1–U7, U9, U10 |
+| Excluded count remains 8 | **PASS** — X1–X8 |
+| ODQ-9 only is closed by this Owner decision | **PASS** — §9 queue table |
+| All other ODQs preserve their prior state | **PASS** — ODQ-1/2/3/5/6/7/8 OPEN, ODQ-4 RETIRED; no renumbering |
+| No implementation authorization implied | **PASS** — §9 ODQ-9 "Explicitly NOT decided", §15, §16.0 |
+
+No documentation inconsistency was found requiring correction beyond the status
+updates themselves. The `ID-1` register row (§7) was closed in step with ODQ-9,
+because it was the same item under its register identifier.
+
 ## 15. Explicit statement: no implementation
 
 **NO IMPLEMENTATION WAS PERFORMED.** This document creates no schema, no
@@ -531,20 +592,31 @@ It does not authorize `governed_instance.subject_type`,
 `domain_code`, `version_sequence`, catalog population, stable-identity/version
 runtime implementation, or PRM-WP03.
 
-**PRM-WP02 Tier 2 remains BLOCKED** pending Owner acceptance of this
-specification. **WP02 is NOT CLOSED.** **F-04 OPEN. F-07 OPEN. M-1 OPEN.**
-**P1–P16 unchanged** — only PRM-WP18 may change a P-gate state. **Pilot NOT
+**The ODQ-9 Owner approval (2026-08-25) does not change any of the above.**
+Approving the 19 identifier spellings is a naming decision recorded in a
+document; it creates nothing, populates nothing, and authorizes nothing.
+
+**PRM-WP02 Tier 2 remains BLOCKED pending a separate Human Gate.** **WP02 is NOT
+CLOSED.** **F-04 OPEN. F-07 OPEN. M-1 OPEN.** Seven Owner decisions remain OPEN
+(§9). **P1–P16 unchanged** — only PRM-WP18 may change a P-gate state. **Pilot NOT
 AUTHORIZED. Real data NOT AUTHORIZED. Phase 9 NOT AUTHORIZED.**
 
 ## 16. Future Tier 2 implementation implications
 
 Recorded as implications of this specification, not as authorization.
 
-1. **Catalog population would be a separately authorized act.** If accepted, the
-   **19** admitted families of §5.1/§5.2 become the permitted membership. The
-   Tier 1 `RG020` admission guard exists precisely to keep the catalog empty
-   until then, and its removal or replacement is Tier 2 work requiring its own
-   gate.
+0. **What the Owner has and has not accepted so far.** The **19 `subject_type`
+   codes are Owner-approved** (ODQ-9, 2026-08-25) and their spelling is normative
+   for Tier 2. The **family classifications of §5.1/§5.2 stand as specified**,
+   awaiting acceptance of this specification as a whole. **Neither approval
+   authorizes any implementation:** actual catalog population and runtime
+   implementation still require a **separate Human Gate**, and **Tier 2 remains
+   BLOCKED** until it is granted. **WP02 remains NOT CLOSED.**
+1. **Catalog population would be a separately authorized act.** If the
+   specification is accepted, the **19** admitted families of §5.1/§5.2 become
+   the permitted membership, under the Owner-approved codes. The Tier 1 `RG020`
+   admission guard exists precisely to keep the catalog empty until then, and its
+   removal or replacement is Tier 2 work requiring its own gate.
 2. **`governed_instance.subject_type` and `.pattern` become implementable** — but
    only against accepted membership, with `pattern` DERIVED from the catalog and
    a fail-closed mismatch check (Step 1 §2.1; §12.2 here).
