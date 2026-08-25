@@ -7,10 +7,11 @@
 - Controlling sources: RGKB Canonical Entity Model v0.2.1; Controlled Schema
   Specification Steps 1–7; accepted PRM-WP02 artifact; accepted Pilot Readiness
   Remediation Master Plan.
-- Status: **DRAFT — READY FOR OWNER REVIEW.** Tier 2 remains **BLOCKED** until
-  this specification is accepted. F-04 OPEN. F-07 OPEN. M-1 OPEN.
+- Status: **DRAFT, RC1 CORRECTION APPLIED — READY FOR OWNER RE-REVIEW.** Tier 2
+  remains **BLOCKED** until this specification is accepted. F-04 OPEN. F-07
+  OPEN. M-1 OPEN.
 - Baseline: `origin/main` `2cc13957dcef2638e951d1232a24a850236a6135`.
-- Date: 2026-08-25.
+- Date: 2026-08-25 (drafted; RC1 source-fidelity correction after Owner review).
 
 ## 1. Purpose and authority
 
@@ -114,11 +115,19 @@ state is DERIVED and never independently writable.
 ## 5. Source-derived family inventory
 
 Every candidate below was investigated against §2's hierarchy. **36 candidates**
-were investigated: **18 admitted** (10 Pattern A, 8 Pattern B), **10 UNRESOLVED
+were investigated: **19 admitted** (11 Pattern A, 8 Pattern B), **9 UNRESOLVED
 — DO NOT ADMIT**, **8 EXCLUDED**.
 
 No candidate was admitted because an implementation shape seemed convenient, and
 no candidate was invented.
+
+> **Classification is not table design.** A family's Pattern A/B classification
+> and its physical Tier 2 table realization are different questions. Where a
+> controlling source fixes the pattern but leaves the physical stable-identity /
+> version table shape to later design, the family is **FIXED**, and the table
+> shape is recorded as a Tier 2 physical-realization note (§16) — never as an
+> unresolved pattern assignment. RC1 corrected one row that had confused the
+> two (§14).
 
 ### 5.1 FIXED — PATTERN A (admitted)
 
@@ -129,11 +138,26 @@ no candidate was invented.
 | A3 | `interpretation_rule` | Interpretation Rule | [table] | CEM §5.7.4 row 3; §5.1, §15.2. Step 4 §18.2: the synthesis rule is a `rule_class` specialization of this family, **not** a new family | **PERMITTED** |
 | A4 | `construct_definition` | Construct definition | [table] | CEM §5.7.4 row 4; §5.1, §10.1 | **PERMITTED** |
 | A5 | `rights_decision` | Rights decision | [table] | CEM §5.7.4 row 5; §5.1, §7.2 (`rights_declaration` identity + `rights_decision_version`) | **PERMITTED** |
-| A6 | `instrument` | Instrument (identity + version) | [table] | CEM §5.7.4 row 6; §10.3. **Scope note:** admits the instrument identity/version family only — see U8 for `instrument_scale` | **PERMITTED (bounded)** |
+| A6 | `instrument` | Instrument | [table] | CEM §5.7.4 row 6; §10.3 (`rgkb.instrument` identity, `rgkb.instrument_version` version) | **PERMITTED** |
 | A7 | `localized_governed_text` | Localized governed text | [table] | CEM §5.7.4 row 7; §18.6. Step 2 §9.1 assigns the same family as "governed localized text" | **PERMITTED** |
 | A8 | `validation_derivation_rule` | Validation derivation rule | [derived] Step 3 | Step 3 §16.1 — Step 3 determination on the Pattern A criterion; §6.2 | **PERMITTED** |
 | A9 | `validation_applicability_matrix` | Validation applicability matrix | [derived] Step 3 | Step 3 §16.1 — Step 3 determination on the Pattern A criterion; §7.9 | **PERMITTED** |
 | A10 | `integrated_profile_architecture` | Integrated Profile Architecture | [derived] Step 4 | Step 4 §18.1 — Step 4 determination on the Pattern A criterion | **PERMITTED** |
+| A11 | `instrument_scale` | Instrument scale | [table] | CEM §5.7.4 row 6 (same row assigns Pattern A to "Instrument / instrument version / **instrument scale**"); §10.3 names `rgkb.instrument_scale` as a canonical registry entity; §10.7.2 exposes canonical identifiers for "instrument version **and/or instrument scale**"; §10.7.3 names the "canonical RGKB **instrument-scale identity / version**". Relied on as already assigned by Step 3 §16.2 and Step 4 §18.2 | **PERMITTED** |
+
+**Row 6 admits two families, not one, and not three.** Canonical Entity Model
+§5.7.4 row 6 covers three *named entities* — instrument, instrument version,
+instrument scale — under one Pattern A assignment. Under §4, a Pattern A family
+comprises a stable identity **and** its versions as two identity levels of one
+family. `rgkb.instrument` + `rgkb.instrument_version` are therefore one family
+(A6); `rgkb.instrument_scale`, which §10.7.3 gives its own "identity / version",
+is a second family (A11).
+
+**No `instrument_version` subject type exists, deliberately.** For a Pattern A
+family the governed instance *is* the version; creating a separate
+`instrument_version` catalog row would split one family into two subject types
+and would additionally encode Pattern A in an identifier (§11). The same holds
+for every other Pattern A family in this table.
 
 ### 5.2 FIXED — PATTERN B (admitted)
 
@@ -169,9 +193,14 @@ Step 2 §3.5; Step 3 §16.3).
 | U5 | External-identifier-attachment family | **M-1.** As U3. CEM §2.2/§3.5 additionally forbid an external identifier ever becoming a governed instance identity | Step 1 §3.5, §14.1; Step 2 §3.5, §9.1 |
 | U6 | Cross-source validation exercise (`rgkb.cross_source_validation`) | Named as an entity carrying identity and scope (CEM §13.2), but **no coverage-assignment row and no Step register assigns it**. Whether it is a governed family at all, and its pattern, are both unfixed | CEM §13.2; absent from §5.7.4 and from Step 2 §9.1 / Step 3 §16.1 / Step 4 §18.1 |
 | U7 | KU-version ↔ construct mapping (`rgkb.knowledge_unit_version_construct`) | CEM §10.6 names it. It is **not** the Knowledge-unit relation family: §11.1 binds KU version ↔ KU version, while §10.6 binds KU version ↔ construct. No source assigns it | CEM §10.6 vs §11.1; absent from §5.7.4 |
-| U8 | Instrument scale (`rgkb.instrument_scale`) as a distinct family | The §5.7.4 row lumps "Instrument / instrument version / instrument scale" under one Pattern A entry, but §10.3 gives the scale **no stable-identity/version family of its own**. Whether the scale is a separate catalog family or a component of the instrument version is unfixed | CEM §5.7.4 row 6, §10.3 |
+| ~~U8~~ | ~~Instrument scale as a distinct family~~ | **RETIRED IN RC1 — NOT UNRESOLVED.** The pre-RC1 draft treated `rgkb.instrument_scale` as unfixed. That was a source-fidelity defect: CEM §5.7.4 row 6 assigns Pattern A to instrument scale explicitly, and §10.7.3 names its "identity / version". The family is admitted at **A11**. What remains open is only its physical table shape, recorded as a Tier 2 realization note (§16.4), not as a pattern question | CEM §5.7.4 row 6, §10.3, §10.7.2, §10.7.3; Step 3 §16.2; Step 4 §18.2 |
 | U9 | Reviewer identity (`rgkb.reviewer`) | CEM §12.4 names it and defers its mechanics; **F-12** (platform-role vs reviewer-authority) is DEFERRED. No pattern assigned | CEM §12.4, §26.7; Step 1 §14.4 (F-12) |
 | U10 | Contributor | CEM §6.5 recognizes contributor normalization as required and **deliberately defers** it; **F-14** DEFERRED | CEM §6.5, §26.7; Step 1 §14.4 (F-14) |
+
+**Nine families are unresolved:** U1–U7, U9, U10. `U8` is retired in place rather
+than renumbered, so that every other identifier — and every cross-reference to
+it, including in the Owner's review record — stays byte-stable. `U8` MUST NOT be
+reused for a different family.
 
 **Nothing in this section is a recommendation.** Where two realizations are
 admissible (U1, U2), this document states both and selects neither.
@@ -199,9 +228,9 @@ identifier, the human-readable family name, the FIXED A / FIXED B / EXCLUDED /
 UNRESOLVED state, the controlling source, the exact rationale, and whether
 runtime admission is permitted. No family carries a fifth state.
 
-**Runtime admission summary.** Permitted: A1–A10, B1–B8 (18 families), and only
-once Tier 2 is separately authorized (§11). Forbidden: U1–U10 (unresolved) and
-X1–X8 (not governed instances).
+**Runtime admission summary.** Permitted: A1–A11, B1–B8 (**19 families**), and
+only once Tier 2 is separately authorized (§16). Forbidden: U1–U7, U9, U10
+(**9 unresolved families**) and X1–X8 (**8 excluded**, not governed instances).
 
 ## 7. Explicit unresolved register
 
@@ -212,10 +241,13 @@ X1–X8 (not governed instances).
 | U3–U5 | Source-descriptor / identity-determination / external-identifier-attachment | UNRESOLVED (**M-1**) | Not admitted; source-identity governance must cite the exact governed descriptor or determination instance and never a bare enduring source identity (Step 2 §3.5) |
 | U6 | Cross-source validation exercise | UNRESOLVED | Not admitted |
 | U7 | KU-version ↔ construct mapping | UNRESOLVED | Not admitted |
-| U8 | Instrument scale as a distinct family | UNRESOLVED | Not admitted as a separate family; A6 is bounded to the instrument identity/version family |
+| ~~U8~~ | ~~Instrument scale as a distinct family~~ | **RETIRED IN RC1** — not unresolved; admitted at A11 | n/a — only its physical table shape remains a Tier 2 design question (§16.4) |
 | U9 | Reviewer identity | UNRESOLVED (**F-12** DEFERRED) | Not admitted |
 | U10 | Contributor | UNRESOLVED (**F-14** DEFERRED) | Not admitted |
-| ID-1 | The `subject_type` machine-identifier vocabulary itself | **PROPOSED — OWNER REVIEW REQUIRED** (§8) | No identifier is authoritative until accepted |
+| ID-1 | The `subject_type` machine-identifier vocabulary itself | **PROPOSED — OWNER REVIEW REQUIRED** (§11) | No identifier is authoritative until accepted |
+
+**Count:** nine unresolved **families** (U1–U7, U9, U10). **ID-1 is not a family
+row** — it is the identifier-vocabulary item and is counted separately.
 
 Additionally carried, untouched by this document: **F-04 OPEN**, **F-07 OPEN**.
 This document implements no dependency re-binding workflow and no current-version
@@ -277,12 +309,10 @@ recommended**, and none is preferred for implementation convenience.
 - **Consequence:** determines how a historical adjudication reconstructs the competing positions it considered.
 - **While unresolved:** not admitted.
 
-**ODQ-4 — Is `instrument_scale` a distinct governed family?**
-- **Question:** does the §5.7.4 "Instrument / instrument version / instrument scale" row admit one family or more than one, and does the scale carry its own governed identity?
-- **Admissible choices:** (a) the scale is a component of the instrument version, so A6 alone is admitted; (b) the scale is a distinct governed family requiring its own catalog row and its own pattern assignment.
-- **Evidence:** CEM §5.7.4 row 6, §10.3.
-- **Consequence:** the scale is "the object a runtime score is produced *for*" (§10.3); whether a governance act may cite a scale instance directly depends on this answer.
-- **While unresolved:** A6 is admitted **bounded** to the instrument identity/version family; the scale is not admitted separately.
+**~~ODQ-4~~ — RETIRED IN RC1. No Owner decision is required.**
+- The pre-RC1 draft asked whether `instrument_scale` is a distinct governed family and what pattern it carries. **The controlling source already answers both.** CEM §5.7.4 row 6 assigns Pattern A to "Instrument / instrument version / **instrument scale**"; §10.3 names `rgkb.instrument_scale` as a canonical registry entity; §10.7.3 names the "canonical RGKB **instrument-scale identity / version**"; Step 3 §16.2 and Step 4 §18.2 both rely on the row as already assigned. Asking the Owner to decide it would have manufactured an Owner decision the sources do not require.
+- **Disposition:** admitted at **A11 — FIXED, Pattern A**. Only its physical table shape remains, as a Tier 2 realization note (§16.4) — not an Owner governance decision.
+- **`ODQ-4` MUST NOT be reused** for a different question. Numbering is held stable; ODQ-5 … ODQ-9 keep their identifiers.
 
 **ODQ-5 — Is the cross-source validation exercise a governed family?**
 - **Evidence:** CEM §13.2; absent from §5.7.4 and from every Step register.
@@ -297,7 +327,7 @@ recommended**, and none is preferred for implementation convenience.
 **ODQ-8 — Is contributor a governed family?** (interacts with **F-14**, DEFERRED; CEM §6.5 defers it deliberately). **While unresolved:** not admitted.
 
 **ODQ-9 — Approve the `subject_type` machine-identifier vocabulary**
-- **Question:** are the 18 proposed identifiers in §5.1/§5.2 accepted as the runtime `subject_type` codes?
+- **Question:** are the **19** proposed identifiers in §5.1/§5.2 accepted as the runtime `subject_type` codes? (18 pre-RC1, plus `instrument_scale` added at A11.)
 - **Evidence:** no accepted source defines a `subject_type` code vocabulary (§10). Each identifier is a semantics-free snake_case rendering of the family name its controlling source uses.
 - **While unresolved:** every identifier is **PROPOSED — OWNER REVIEW REQUIRED**; the *classifications* in §5.1/§5.2 do not depend on the identifier spelling and stand independently.
 
@@ -317,9 +347,12 @@ document makes no new [derived] determination of its own.
 
 **No assessment family was classified.** RIASEC, Big Five, CAAS, EQ,
 Employability Skills and Work Values are **not** catalog families. They are
-instruments in the operational product; any RGKB-canonical representation of an
-instrument would be an *instance* of A6, admitted only by a separately
-authorized curation act — never by this document, which creates no rows.
+instruments in the operational product; any RGKB-canonical representation of one
+would be an *instance* of A6 (and its scales instances of A11), created only by a
+separately authorized curation act — never by this document, which creates no
+rows. Likewise, the operational scoring channels those products expose are **not**
+A11 instances: CEM §10.7.1 places the operational side outside canonical RGKB, and
+§10.7.3 forbids strings and aliases from being the authoritative correspondence.
 
 **No stable identity was admitted as a governed instance** (X1).
 
@@ -359,7 +392,9 @@ source authority, or ordering.
 - No `_a` / `_b` / `pattern_` element, and **no `_version` suffix** — a
   `_version` suffix would encode Pattern A, since only Pattern A families have
   versions. `knowledge_unit` is the family; that its governed instances are
-  versions is carried by `pattern = 'A'`, not by the identifier.
+  versions is carried by `pattern = 'A'`, not by the identifier. This is why
+  A6 is `instrument` and not `instrument_version`, and why A11 is
+  `instrument_scale` and not `instrument_scale_version`.
 - No `draft`, `approved`, `validated`, `active`, `retired`, `current`, `ready`
   element.
 - No numeric or ordinal element; no grade or developmental element; no source or
@@ -401,7 +436,9 @@ source authority, or ordering.
 | Pattern is DERIVED, not independently writable | Step 1 §2.1 | §4, §12.2 |
 | Stable identities excluded from the registry | Step 1 §2.1, §2.2 | §4 callout, X1 |
 | Pattern A/B criteria | CEM §5.7.1–§5.7.3; Step 1 §2.3, §2.4 | §4 |
-| Coverage assignment table | CEM §5.7.4 | §5.1 A1–A7, §5.2 B1–B5 |
+| Coverage assignment table | CEM §5.7.4 | §5.1 A1–A7 **and A11**, §5.2 B1–B5 |
+| Instrument scale is a canonical registry entity under Pattern A | CEM §5.7.4 row 6; §10.3; §10.7.2; §10.7.3; Step 3 §16.2; Step 4 §18.2 | A11 |
+| Canonical vs operational scale identity (correspondence is operational) | CEM §10.7.1, §10.7.3, §10.7.5 | A11 note, §10, X8 |
 | Rights/document anchor Pattern B outside the table | CEM §9.4 | B6 |
 | Step 2 assignment register | Step 2 §9.1 | A1, A7, B1, B2, B3, B6, B7, B8 |
 | Step 3 assignment register | Step 3 §16.1 | A8, A9 |
@@ -434,13 +471,42 @@ corrections noted.
 | Tier 2 still BLOCKED | **PASS** — §15 |
 | P-gates unchanged | **PASS** — only PRM-WP18 may change one |
 
-**Corrections made during self-audit** (autonomous, documentation-only):
+### 14.1 RC1 self-audit (after Owner review)
 
-1. **`instrument_scale` was initially folded into A6.** Re-reading CEM §10.3
-   showed the scale has no stable-identity/version family of its own while the
-   §5.7.4 row lumps three entities together. Folding it in would have been an
-   assignment the coverage table does not make. A6 was bounded to the instrument
-   identity/version family and **U8 / ODQ-4** were raised.
+| Check | Result |
+|---|---|
+| §5.7.4 row 6 represented without narrowing its Pattern A coverage | **PASS** — all three named entities of row 6 are carried; none is left unassigned |
+| Instrument stable identity is not treated as a `governed_instance` | **PASS** — X1 and §4 hold for A6 and A11 alike; the governed instance is the version |
+| `instrument_version` is not made a separate subject type | **PASS** — §5.1 states the rule explicitly and no such row exists |
+| `instrument_scale` Pattern A coverage preserved | **PASS** — A11, [table] basis |
+| Physical table design not invented | **PASS** — §16.4 records the shape as a Tier 2 design question and specifies none |
+| All classification counts reconcile | **PASS** — 11 + 8 + 9 + 8 = 36 in §5, §6, §7, §16 |
+| Every ODQ item is a genuinely unresolved question | **PASS** — ODQ-4 retired because the source answers it; 8 items remain |
+| No other admitted A/B assignment changed without source evidence | **PASS** — A1–A10 and B1–B8 are byte-unchanged by RC1 |
+
+**RC1 correction (Owner-identified, material).** The pre-RC1 draft placed
+`rgkb.instrument_scale` under UNRESOLVED (U8) with an Owner decision (ODQ-4).
+Re-reading the sources directly confirms that was a **source-fidelity defect**,
+not a conservative choice: CEM §5.7.4 row 6 assigns Pattern A to instrument
+scale by name; §10.3 names `rgkb.instrument_scale` as a canonical registry
+entity; §10.7 opens by recording that v0.2 "correctly established canonical
+instrument identity, instrument version, instrument scale/channel"; §10.7.2
+exposes canonical identifiers for the "instrument version and/or instrument
+scale"; §10.7.3 names the "canonical RGKB instrument-scale **identity /
+version**", which is precisely a Pattern A structure; and Step 3 §16.2 and Step 4
+§18.2 both rely on the row as already assigned. What is genuinely open is only
+the **physical table shape**, and CEM §26.6 does not even list it among the
+deferred realization questions. Converting a physical-shape question into an
+unresolved *pattern* question understated what the controlling source fixes and
+would have manufactured an unnecessary Owner decision. Corrected: A11 admitted;
+U8 and ODQ-4 retired in place; counts, cross-references and §16 reconciled.
+
+**Corrections made during the original self-audit** (autonomous,
+documentation-only):
+
+1. *(Superseded by RC1.)* `instrument_scale` was moved out of A6 into U8/ODQ-4.
+   RC1 reverses this: the family is admitted at **A11**, and the reasoning above
+   records why the original move was wrong.
 2. **KU-version ↔ construct mapping was initially assumed covered by B2.** CEM
    §11.1 binds KU version ↔ KU version; §10.6 binds KU version ↔ construct.
    Different relations. **U7 / ODQ-6** were raised rather than admitting it under
@@ -475,25 +541,37 @@ AUTHORIZED. Real data NOT AUTHORIZED. Phase 9 NOT AUTHORIZED.**
 Recorded as implications of this specification, not as authorization.
 
 1. **Catalog population would be a separately authorized act.** If accepted, the
-   18 admitted families of §5.1/§5.2 become the permitted membership. The Tier 1
-   `RG020` admission guard exists precisely to keep the catalog empty until then,
-   and its removal or replacement is Tier 2 work requiring its own gate.
+   **19** admitted families of §5.1/§5.2 become the permitted membership. The
+   Tier 1 `RG020` admission guard exists precisely to keep the catalog empty
+   until then, and its removal or replacement is Tier 2 work requiring its own
+   gate.
 2. **`governed_instance.subject_type` and `.pattern` become implementable** — but
    only against accepted membership, with `pattern` DERIVED from the catalog and
    a fail-closed mismatch check (Step 1 §2.1; §12.2 here).
-3. **Concrete member tables remain family-by-family work.** Ten Pattern A
-   families need stable-identity + version tables; eight Pattern B families need
-   append-only record tables. The Tier 1 `RG010` guard is replaced by real atomic
-   creation enforcement only when the first concrete family exists.
-4. **`object_id` / `domain_code` / `version_sequence` attach to Pattern A tables
+3. **Concrete member tables remain family-by-family work.** **Eleven** Pattern A
+   families need stable-identity + version tables; **eight** Pattern B families
+   need append-only record tables. The Tier 1 `RG010` guard is replaced by real
+   atomic creation enforcement only when the first concrete family exists.
+4. **Physical realization questions that are NOT pattern questions.** The
+   following families are FIXED, but their physical stable-identity / version
+   table shape is a Tier 2 design question: **A11 `instrument_scale`** — CEM
+   §10.7.2 exposes its canonical identifiers "as determined by Controlled Schema
+   Specification", and §10.7.3's chain requires a resolvable instrument-scale
+   identity/version, without fixing table shape. Designing it is Tier 2 work; it
+   is **not** an Owner pattern decision and **not** an unresolved assignment.
+   Relatedly, the operational scale ↔ scoring-channel **correspondence** is owned
+   by the operational domain, not by RGKB (CEM §10.7.1, §10.7.5), and is outside
+   this catalog entirely.
+5. **`object_id` / `domain_code` / `version_sequence` attach to Pattern A tables
    only**, and remain non-governance-act targets (Step 1 §3, §11.1).
-5. **Nine unresolved families (U1–U10 less the identifier item) stay outside
-   Tier 2** until their ODQ items are adjudicated. Tier 2 may proceed for the
-   admitted families without them, provided every path touching an unresolved
-   family fails closed.
-6. **F-07 is unaffected.** Admitting families supplies the *stable identity*
+6. **The nine unresolved families — U1–U7, U9 and U10 — stay outside Tier 2**
+   until their ODQ items are adjudicated. (`ID-1`, the identifier-vocabulary
+   item, is not a family and is counted separately; `U8` is retired, §5.3.)
+   Tier 2 may proceed for the admitted families without them, provided every path
+   touching an unresolved family fails closed.
+7. **F-07 is unaffected.** Admitting families supplies the *stable identity*
    substrate the resolver lacks, but not the resolution-scope vocabulary or the
    eligibility applicability inputs. The Tier 1 resolver must continue to fail
    closed as not-evaluable.
-7. **No access model is implied.** The substrate's RLS/auth model remains
+8. **No access model is implied.** The substrate's RLS/auth model remains
    separate, later, gated L2 work.
