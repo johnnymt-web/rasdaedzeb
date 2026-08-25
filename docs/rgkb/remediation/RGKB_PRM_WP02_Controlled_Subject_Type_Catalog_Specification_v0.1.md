@@ -7,15 +7,23 @@
 - Controlling sources: RGKB Canonical Entity Model v0.2.1; Controlled Schema
   Specification Steps 1–7; accepted PRM-WP02 artifact; accepted Pilot Readiness
   Remediation Master Plan.
-- Status: **DRAFT, RC1 CORRECTION APPLIED, ODQ-9 OWNER-APPROVED — READY FOR
-  OWNER REVIEW.** Tier 2 remains **BLOCKED** pending a separate Human Gate.
-  WP02 NOT CLOSED. F-04 OPEN. F-07 OPEN. M-1 OPEN. Seven Owner decisions remain
-  OPEN (§9).
+- Status: **SPECIFICATION OWNER-ACCEPTED — OWNER-SIDE FINAL RE-REVIEW PASSED.**
+  RC1 source-fidelity correction **incorporated**. **ODQ-9 APPROVED / CLOSED —
+  2026-08-25** (the 19 `subject_type` identifiers).
+  - **PRM-WP02 Tier 2 remains BLOCKED pending a separate Human Gate.**
+  - **WP02 NOT CLOSED.**
+  - **F-04 OPEN. F-07 OPEN. M-1 OPEN.**
+  - **Seven Owner decisions remain OPEN** — ODQ-1, ODQ-2, ODQ-3, ODQ-5, ODQ-6,
+    ODQ-7, ODQ-8 (§9). ODQ-4 is RETIRED (RC1).
+  - Acceptance of this specification is **not** an implementation authorization
+    (§15, §16.0).
 - Baseline: `origin/main` `2cc13957dcef2638e951d1232a24a850236a6135`.
-- Date: 2026-08-25 (drafted; RC1 source-fidelity correction; ODQ-9 Owner
-  decision recorded).
+- Date: 2026-08-25 (authored; RC1 source-fidelity correction; ODQ-9 Owner
+  decision recorded; Owner acceptance recorded).
 - Owner decisions recorded in this artifact: **ODQ-9 — APPROVED, 2026-08-25**
-  (the 19 `subject_type` identifiers). No other ODQ is decided.
+  (the 19 `subject_type` identifiers), and **Owner acceptance of the
+  specification as a whole** — its 19 family classifications and its unresolved
+  register. No other ODQ is decided.
 
 ## 1. Purpose and authority
 
@@ -605,18 +613,23 @@ AUTHORIZED. Real data NOT AUTHORIZED. Phase 9 NOT AUTHORIZED.**
 
 Recorded as implications of this specification, not as authorization.
 
-0. **What the Owner has and has not accepted so far.** The **19 `subject_type`
-   codes are Owner-approved** (ODQ-9, 2026-08-25) and their spelling is normative
-   for Tier 2. The **family classifications of §5.1/§5.2 stand as specified**,
-   awaiting acceptance of this specification as a whole. **Neither approval
-   authorizes any implementation:** actual catalog population and runtime
-   implementation still require a **separate Human Gate**, and **Tier 2 remains
-   BLOCKED** until it is granted. **WP02 remains NOT CLOSED.**
-1. **Catalog population would be a separately authorized act.** If the
-   specification is accepted, the **19** admitted families of §5.1/§5.2 become
-   the permitted membership, under the Owner-approved codes. The Tier 1 `RG020`
-   admission guard exists precisely to keep the catalog empty until then, and its
-   removal or replacement is Tier 2 work requiring its own gate.
+0. **What the Owner has accepted, and what that does not authorize.**
+   - **This specification is Owner-accepted** — Owner-side final re-review
+     passed, with the RC1 source-fidelity correction incorporated.
+   - The **19 family classifications** of §5.1/§5.2 are **accepted**.
+   - The **19 `subject_type` codes are Owner-approved and normative** for Tier 2
+     (ODQ-9, 2026-08-25).
+   - **None of this authorizes implementation.** Actual **catalog population and
+     Tier 2 runtime implementation still require a separate Human Gate**, and
+     **Tier 2 remains BLOCKED** until it is granted. **WP02 remains NOT CLOSED.**
+   - The unresolved register is accepted **as unresolved**: seven Owner decisions
+     stay OPEN (§9), and M-1, F-04 and F-07 stay OPEN.
+1. **Catalog population remains a separately authorized act.** The **19**
+   admitted families of §5.1/§5.2 are the permitted membership, under the
+   Owner-approved codes — but membership being *specified* is not membership
+   being *created*. The Tier 1 `RG020` admission guard keeps the catalog empty
+   until the separate Human Gate is granted, and its removal or replacement is
+   itself Tier 2 work requiring that gate.
 2. **`governed_instance.subject_type` and `.pattern` become implementable** — but
    only against accepted membership, with `pattern` DERIVED from the catalog and
    a fail-closed mismatch check (Step 1 §2.1; §12.2 here).
