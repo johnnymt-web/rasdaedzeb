@@ -987,11 +987,19 @@ Tier 1:
 - **RLS enabled and forced** on all 30 new tables;
 - **zero policies** — no `CREATE POLICY` anywhere;
 - **`REVOKE ALL`** from `PUBLIC`, `anon` and `authenticated` on all 30 tables
-  and all 4 new functions;
+  and on **all 7 functions** the migration defines;
 - **no `GRANT`** of any kind;
-- **no `SECURITY DEFINER`** — all 5 functions are `SECURITY INVOKER` with
+- **no `SECURITY DEFINER`** — **all 7 functions are `SECURITY INVOKER`** with
   `SET search_path = ''`;
 - no direct client API authorization; no counselor/admin/reviewer/user rule.
+
+The migration carries **7 `CREATE OR REPLACE FUNCTION` definitions**. Two of
+them — `governed_instance_write_guard` and `subject_type_catalog_frozen_guard`
+(the latter under its new name) — **replace** the behaviour Tier 1 installed,
+for the reasons stated at T3 and T7; the other five are **new**. Whether a
+definition is a replacement or new makes no difference to containment: all 7
+are `SECURITY INVOKER` and all 7 are revoked from `PUBLIC`, `anon` and
+`authenticated`.
 
 **❓ The live Supabase exposed-schema configuration is NOT verified**, and no
 remote Supabase access was performed or is authorized.
@@ -1029,11 +1037,15 @@ weakened, and the Tier 1 migration file is byte-unchanged.
 
 | Command | Result |
 |---|---|
-| `npx vitest run src/test/rgkbWp02Tier2Runtime.test.ts` | see T15 |
-| `npx vitest run src/test/rgkbWp02Tier1Substrate.test.ts` | see T15 |
-| `npm run test` (full suite) | see T15 |
-| `npm run typecheck` | see T15 |
-| structural SQL lint (offline) | balanced parens; even `$$` and quote counts; no newline-continued literals; 30 tables; 33 triggers; 5 functions; 1 `INSERT` with 19 rows; 0 `SECURITY DEFINER`; 0 `CREATE POLICY`; 0 `GRANT`; 0 `public.`; longest identifier 58 chars (< 63) |
+Final RC1 results, as executed — not carried forward from an earlier run:
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/test/rgkbWp02Tier2Runtime.test.ts` | **58 passed, 4 todo, 0 failed** (62) |
+| `npx vitest run src/test/rgkbWp02Tier1Substrate.test.ts` | **42 passed, 7 todo, 0 failed** (49) |
+| `npm run test` (full suite, 10 files) | **229 passed, 11 todo, 0 failed** (240) |
+| `npm run typecheck` (`tsc --noEmit -p tsconfig.app.json`) | **exit 0** |
+| structural SQL lint (offline) | balanced parens; even `$$` and quote counts; no newline-continued literals; **30 tables**; **45 triggers, of which 12 are `CONSTRAINT TRIGGER`s**; **11 partial unique indexes**; **7 functions**; **1 `INSERT` with 19 catalog rows**; **0 `SECURITY DEFINER`**; **0 `CREATE POLICY`**; **0 `GRANT`**; **0 `public.`**; longest identifier 58 chars (< 63) |
 
 **Evidence level: E1/E2-class local verification only.** These are
 dependency-free structural assertions plus an offline SQL lint. **The migration

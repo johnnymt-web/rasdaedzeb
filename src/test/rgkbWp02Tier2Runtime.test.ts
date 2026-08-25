@@ -153,7 +153,7 @@ describe("WP02 Tier 2 — registry subject_type and DERIVED pattern", () => {
     expect(exec).toMatch(/ADD COLUMN IF NOT EXISTS pattern text NOT NULL/);
   });
 
-  it("derives pattern from the catalog by composite foreign key", () => {
+  it("keeps the composite catalog foreign key as defence in depth", () => {
     expect(exec).toMatch(
       /CONSTRAINT governed_instance_pattern_derives_from_catalog\s+FOREIGN KEY \(subject_type, pattern\)\s+REFERENCES rgkb\.subject_type_catalog \(subject_type, pattern\)/,
     );
