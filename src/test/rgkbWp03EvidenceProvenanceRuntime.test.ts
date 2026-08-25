@@ -250,10 +250,19 @@ describe("WP03 — evidence anchor", () => {
 });
 
 describe("WP03 — rights / document anchor stays distinct", () => {
-  it("is a separate family and is not forced into the scholarly expression binding", () => {
+  it("borrows no scientific source identity as a surrogate rights authority", () => {
+    // F-09 boundary: a rights anchor must not resolve against source_expression
+    // or source_manifestation, which would quietly manufacture the physical
+    // rights-document entity F-09 defers.
     const block = alterBlock("rights_document_anchor");
-    expect(block).toMatch(/ADD COLUMN IF NOT EXISTS expression_id uuid,/); // nullable
+    expect(block).not.toMatch(/expression_id/);
+    expect(block).not.toMatch(/manifestation_id/);
     expect(block).toMatch(/ADD COLUMN IF NOT EXISTS locator_type text NOT NULL/);
+    expect(block).toMatch(/ADD COLUMN IF NOT EXISTS locator_payload text NOT NULL/);
+  });
+
+  it("keeps rights-side traversal explicitly incomplete", () => {
+    expect(exec).toMatch(/'incomplete_f09_unresolved'/);
   });
 
   it("creates no rights-document identity family — F-09 stays deferred", () => {
@@ -266,9 +275,18 @@ describe("WP03 — typed evidence link is the only authoritative pointer", () =>
   it("uses exact governed instances at both endpoints", () => {
     const block = alterBlock("typed_evidence_link");
     expect(block).toMatch(/ADD COLUMN IF NOT EXISTS supported_instance_id uuid NOT NULL/);
-    expect(block).toMatch(/ADD COLUMN IF NOT EXISTS evidence_anchor_instance_id uuid NOT NULL/);
     expect(block).toMatch(/supported_instance_id\)\s+REFERENCES rgkb\.governed_instance \(instance_id\)/);
     expect(block).toMatch(/evidence_anchor_instance_id\)\s+REFERENCES rgkb\.evidence_anchor \(instance_id\)/);
+  });
+
+  it("is ONE family that can name either anchor kind, exactly one per link", () => {
+    const block = alterBlock("typed_evidence_link");
+    expect(block).toMatch(/rights_anchor_instance_id\)\s+REFERENCES rgkb\.rights_document_anchor \(instance_id\)/);
+    expect(block).toMatch(
+      /CHECK \(\(evidence_anchor_instance_id IS NOT NULL\) <> \(rights_anchor_instance_id IS NOT NULL\)\)/,
+    );
+    // no second, ad-hoc rights evidence-link family
+    expect(code).not.toMatch(/rights_evidence_link|rights_typed_link/);
   });
 
   it("preserves the four mandatory evidence-role distinctions without closing the deferred vocabulary", () => {
@@ -376,7 +394,7 @@ describe("WP03 — derivation and provenance preservation", () => {
 
 describe("WP03 — deterministic traversal", () => {
   it("exposes forward, backward and derivation walks as exact key joins", () => {
-    for (const fn of ["evidence_for_instance", "instances_referencing_anchor", "derivation_inputs_for_output"]) {
+    for (const fn of ["anchor_level_evidence_for_instance", "instances_referencing_anchor", "derivation_inputs_for_output"]) {
       expect(exec).toMatch(new RegExp(`CREATE OR REPLACE FUNCTION rgkb\\.${fn}\\(`));
     }
   });
@@ -384,6 +402,16 @@ describe("WP03 — deterministic traversal", () => {
   it("uses no string, label, nearest-match, recency or latest heuristic", () => {
     expect(code).not.toMatch(/ORDER\s+BY|\bLIMIT\b|\bDESC\b|\bMAX\s*\(|GREATEST|LIKE|ILIKE|similar|~\*/i);
     expect(code).not.toMatch(/latest|most_recent|current_version|fallback|nearest/i);
+  });
+
+  it("cannot be mistaken for a complete canonical provenance chain", () => {
+    // The canonical source chain additionally requires the governed
+    // source-identity determination M-1 blocks, and the rights side requires
+    // the physical rights-document entity F-09 defers.
+    expect(exec).toMatch(/canonical_source_chain_status\s+text/);
+    expect(exec).toMatch(/'incomplete_m1_unresolved'/);
+    expect(exec).toMatch(/anchor_level_evidence_for_instance/);
+    expect(code).not.toMatch(/complete_canonical|canonical_provenance_chain\(/i);
   });
 
   it("keeps the enduring-identity reference level explicit and separate", () => {
@@ -398,8 +426,8 @@ describe("WP03 — deterministic traversal", () => {
 
   it("is SECURITY INVOKER with a safe search_path, never a definer path", () => {
     expect(exec).not.toMatch(/SECURITY DEFINER/i);
-    expect((exec.match(/SECURITY INVOKER/g) || []).length).toBe(7);
-    expect((exec.match(/SET search_path = ''/g) || []).length).toBe(7);
+    expect((exec.match(/SECURITY INVOKER/g) || []).length).toBe(10);
+    expect((exec.match(/SET search_path = ''/g) || []).length).toBe(10);
   });
 });
 
@@ -452,6 +480,89 @@ describe("WP03 — non-scope and containment", () => {
     expect(wp03Files).toHaveLength(1);
     expect(wp03Files[0]).toMatch(/^\d{14}_rgkb_wp03_evidence_provenance_runtime\.sql$/);
     expect(exec).not.toMatch(/'[ \t]*\r?\n[ \t]*'/);
+  });
+});
+
+describe("WP03 RC1 — localized text carries its own CONTENT ORIGIN", () => {
+  const block = () => alterBlock("localized_governed_text_version");
+
+  it("is mandatory and constrained to the same three fixed classes", () => {
+    expect(block()).toMatch(/ADD COLUMN IF NOT EXISTS content_origin text NOT NULL/);
+    expect(block()).toMatch(
+      new RegExp(`CHECK \\(content_origin IN \\('${CONTENT_ORIGINS.join("', '")}'\\)\\)`),
+    );
+  });
+
+  it("has no default and is never inherited from the knowledge version", () => {
+    expect(block()).not.toMatch(/content_origin[^,\n]*DEFAULT/i);
+    expect(code).not.toMatch(/NEW\.content_origin\s*:=/);
+  });
+
+  it("requires its own governed derivation when derived", () => {
+    expect(block()).toMatch(
+      /CHECK \(content_origin <> 'derived_interpretation' OR origin_derivation_instance_id IS NOT NULL\)/,
+    );
+    expect(block()).toMatch(/origin_derivation_instance_id\)\s+REFERENCES rgkb\.derivation_record \(instance_id\)/);
+  });
+
+  it("resolves direct source content through the SAME canonical link mechanism", () => {
+    expect(exec).toMatch(
+      /CREATE CONSTRAINT TRIGGER localized_text_direct_evidence_check\s+AFTER INSERT ON rgkb\.localized_governed_text_version\s+DEFERRABLE INITIALLY DEFERRED\s+FOR EACH ROW EXECUTE FUNCTION rgkb\.direct_evidence_has_anchor_check\(\)/,
+    );
+  });
+});
+
+describe("WP03 RC1 — derivation / output integrity", () => {
+  it("requires the referenced derivation to name this instance as its exact output", () => {
+    expect(exec).toMatch(/ERRCODE = 'RG120'/);
+    for (const t of [
+      "knowledge_unit_version_origin_output_check",
+      "localized_text_origin_output_check",
+      "evidence_anchor_extraction_output_check",
+      "rights_anchor_extraction_output_check",
+    ]) {
+      expect(exec).toMatch(new RegExp(`CREATE CONSTRAINT TRIGGER ${t}`));
+    }
+  });
+
+  it("makes evidence-anchor extraction provenance mandatory", () => {
+    expect(alterBlock("evidence_anchor")).toMatch(
+      /ADD COLUMN IF NOT EXISTS extraction_derivation_instance_id uuid NOT NULL/,
+    );
+  });
+
+  it("requires machine identity and version both-or-neither, non-blank when present", () => {
+    const block = alterBlock("derivation_record");
+    expect(block).toMatch(
+      /CHECK \(\(machine_process_identity IS NULL\) = \(machine_process_version IS NULL\)\)/,
+    );
+    expect(block).toMatch(
+      /length\(btrim\(machine_process_identity\)\) > 0 AND length\(btrim\(machine_process_version\)\) > 0/,
+    );
+  });
+
+  it("invents no machine-provider taxonomy", () => {
+    expect(code).not.toMatch(/CHECK\s*\(\s*machine_process_identity IN/i);
+  });
+});
+
+describe("WP03 RC1 — retained excerpt fails closed", () => {
+  it("refuses retained excerpt on both anchor families", () => {
+    expect(alterBlock("evidence_anchor")).toMatch(
+      /CONSTRAINT evidence_anchor_retention_fail_closed CHECK \(retained_excerpt IS NULL\)/,
+    );
+    expect(alterBlock("rights_document_anchor")).toMatch(
+      /CONSTRAINT rights_anchor_retention_fail_closed CHECK \(retained_excerpt IS NULL\)/,
+    );
+  });
+
+  it("invents no rights permission flag and closes no legal finding", () => {
+    expect(code).not.toMatch(/rights_permitted|retention_allowed|may_retain|license_ok/i);
+    expect(migration).toMatch(/absence of a rights determination is not permission/);
+  });
+
+  it("keeps locator and provenance usable without retained text", () => {
+    expect(alterBlock("evidence_anchor")).toMatch(/ADD COLUMN IF NOT EXISTS locator_payload text NOT NULL/);
   });
 });
 

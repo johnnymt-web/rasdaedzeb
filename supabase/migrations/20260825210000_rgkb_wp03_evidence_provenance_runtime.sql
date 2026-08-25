@@ -165,12 +165,27 @@ REVOKE ALL ON TABLE rgkb.source_manifestation_identity FROM authenticated;
 --    identity, so that historical wording stays resolvable and correction
 --    proceeds by a new version rather than a rewrite in place (Step 1 §5.1).
 -- -------------------------------------------------------------------------
+--    CONTENT ORIGIN applies here too. Step 2 §2.1 binds EVERY governed
+--    content-bearing object, and a localized-text version carries governed
+--    wording, so it carries its own mandatory exactly-one classification. It
+--    is NOT inherited from the knowledge version that references it, and is
+--    not inferred from language, position or any other state (§2.5).
 ALTER TABLE rgkb.localized_governed_text_version
   ADD COLUMN IF NOT EXISTS language_code text NOT NULL,
   ADD COLUMN IF NOT EXISTS governed_wording text NOT NULL,
   ADD COLUMN IF NOT EXISTS editorial_class text NOT NULL,
+  ADD COLUMN IF NOT EXISTS content_origin text NOT NULL,
+  ADD COLUMN IF NOT EXISTS origin_derivation_instance_id uuid,
   ADD CONSTRAINT localized_text_language_explicit CHECK (length(btrim(language_code)) > 0),
-  ADD CONSTRAINT localized_text_editorial_class_fixed CHECK (editorial_class IN ('draft', 'content_asserted'));
+  ADD CONSTRAINT localized_text_editorial_class_fixed CHECK (editorial_class IN ('draft', 'content_asserted')),
+  ADD CONSTRAINT localized_text_content_origin_fixed
+    CHECK (content_origin IN ('direct_source_evidence', 'derived_interpretation', 'constructed_content')),
+  ADD CONSTRAINT localized_text_origin_derivation_fk FOREIGN KEY (origin_derivation_instance_id)
+    REFERENCES rgkb.derivation_record (instance_id),
+  ADD CONSTRAINT localized_text_derived_needs_derivation
+    CHECK (content_origin <> 'derived_interpretation' OR origin_derivation_instance_id IS NOT NULL);
+
+COMMENT ON COLUMN rgkb.localized_governed_text_version.content_origin IS 'Step 2 §2.1: a localized-text version is a governed content-bearing object and carries its OWN exactly-one CONTENT ORIGIN. It is never inherited from the knowledge version that references it, never defaulted, and never inferred from language, position, evidence status or epistemic characterization (§2.5).';
 
 COMMENT ON COLUMN rgkb.localized_governed_text_version.language_code IS 'Step 2 §5.3: governed text declares its language. NOT NULL with no default — there is no implicit default language for governed content. The exact language-tag vocabulary is not fixed by Step 2 and is not constrained here.';
 
@@ -214,14 +229,17 @@ ALTER TABLE rgkb.evidence_anchor
   ADD COLUMN IF NOT EXISTS span_end integer,
   ADD COLUMN IF NOT EXISTS integrity_value text,
   ADD COLUMN IF NOT EXISTS retained_excerpt text,
-  ADD COLUMN IF NOT EXISTS extraction_derivation_instance_id uuid,
+  ADD COLUMN IF NOT EXISTS extraction_derivation_instance_id uuid NOT NULL,
   ADD CONSTRAINT evidence_anchor_expression_fk FOREIGN KEY (expression_id)
     REFERENCES rgkb.source_expression_identity (expression_id),
   ADD CONSTRAINT evidence_anchor_manifestation_fk FOREIGN KEY (manifestation_id)
     REFERENCES rgkb.source_manifestation_identity (manifestation_id),
   ADD CONSTRAINT evidence_anchor_extraction_fk FOREIGN KEY (extraction_derivation_instance_id)
     REFERENCES rgkb.derivation_record (instance_id),
-  ADD CONSTRAINT evidence_anchor_span_ordered CHECK (span_start IS NULL OR span_end IS NULL OR span_end >= span_start);
+  ADD CONSTRAINT evidence_anchor_span_ordered CHECK (span_start IS NULL OR span_end IS NULL OR span_end >= span_start),
+  ADD CONSTRAINT evidence_anchor_retention_fail_closed CHECK (retained_excerpt IS NULL);
+
+COMMENT ON CONSTRAINT evidence_anchor_retention_fail_closed ON rgkb.evidence_anchor IS 'Step 2 §4.1 permits retained excerpt text ONLY where rights permit retention. WP03 has no authority to determine that permission, and absence of a rights determination is not permission — so retention fails closed. The column exists because §4.1 fixes it; a later authorized package may replace this constraint once a governed rights determination can establish retention. No rights flag and no legal decision is invented here, and F-09 / WP09 are not closed.';
 
 COMMENT ON COLUMN rgkb.evidence_anchor.expression_id IS 'Step 2 §3.2/§4.1: the scientific binding. An evidence claim is about what an edition states, so the anchor binds to the source EXPRESSION, never to a manifestation in its place. This is an enduring identity reference, not a governed instance (§7.6).';
 
@@ -252,22 +270,26 @@ COMMENT ON COLUMN rgkb.evidence_anchor.extraction_derivation_instance_id IS 'Ste
 --    F-09 — the physical rights-document entity — remains DEFERRED. No
 --    rights-document identity family is created here.
 -- -------------------------------------------------------------------------
+--    F-09 BOUNDARY. A rights anchor MUST NOT borrow the scientific
+--    source-expression or source-manifestation identity as a surrogate
+--    rights-document authority: that would force rights material into
+--    scholarly-source semantics and would quietly manufacture the physical
+--    rights-document entity F-09 defers. It therefore carries NO
+--    expression_id and NO manifestation_id at all. Its locator is recorded,
+--    but the document authority it resolves against does not yet exist, so
+--    traversal through the rights side remains explicitly INCOMPLETE and
+--    fails closed rather than resolving to a scientific source.
 ALTER TABLE rgkb.rights_document_anchor
-  ADD COLUMN IF NOT EXISTS expression_id uuid,
-  ADD COLUMN IF NOT EXISTS manifestation_id uuid,
   ADD COLUMN IF NOT EXISTS locator_type text NOT NULL,
   ADD COLUMN IF NOT EXISTS locator_payload text NOT NULL,
   ADD COLUMN IF NOT EXISTS integrity_value text,
   ADD COLUMN IF NOT EXISTS retained_excerpt text,
   ADD COLUMN IF NOT EXISTS extraction_derivation_instance_id uuid,
-  ADD CONSTRAINT rights_anchor_expression_fk FOREIGN KEY (expression_id)
-    REFERENCES rgkb.source_expression_identity (expression_id),
-  ADD CONSTRAINT rights_anchor_manifestation_fk FOREIGN KEY (manifestation_id)
-    REFERENCES rgkb.source_manifestation_identity (manifestation_id),
   ADD CONSTRAINT rights_anchor_extraction_fk FOREIGN KEY (extraction_derivation_instance_id)
-    REFERENCES rgkb.derivation_record (instance_id);
+    REFERENCES rgkb.derivation_record (instance_id),
+  ADD CONSTRAINT rights_anchor_retention_fail_closed CHECK (retained_excerpt IS NULL);
 
-COMMENT ON TABLE rgkb.rights_document_anchor IS 'Step 2 §4.3 rights/document anchor. Distinct from scientific scholarly evidence and never a substitute for it; it participates in the same typed evidence-linking concept (§6.5). The physical rights-document entity remains DEFERRED (F-09).';
+COMMENT ON TABLE rgkb.rights_document_anchor IS 'Step 2 §4.3 rights/document anchor. Distinct from scientific scholarly evidence and never a substitute for it; it participates in the SAME typed evidence-linking concept (§6.5). It deliberately carries no source-expression or source-manifestation reference: the physical rights-document entity is DEFERRED (F-09) and a scientific source identity must never stand in for it. Rights-side traversal is therefore explicitly incomplete until F-09 is resolved.';
 
 -- -------------------------------------------------------------------------
 -- 5) Knowledge object version (Step 2 §5.2) — Pattern A family, admitted.
@@ -389,9 +411,16 @@ COMMENT ON TABLE rgkb.knowledge_unit_relation IS 'Step 2 §5.5 governed assertio
 --    evidence that a link exists; an object bearing only commentary is
 --    unsupported and a consequential path requiring its support fails closed.
 -- -------------------------------------------------------------------------
+--    ONE FAMILY, BOTH ANCHOR KINDS (§4.3, §6.5). A link may name an exact
+--    scientific evidence_anchor OR an exact rights_document_anchor. Each
+--    endpoint is a real typed foreign key, so the reference stays structurally
+--    exact and unambiguous, and a CHECK requires EXACTLY ONE of them — never
+--    both, never neither. This is one governed typed_evidence_link family, not
+--    a second ad-hoc rights evidence-link family.
 ALTER TABLE rgkb.typed_evidence_link
   ADD COLUMN IF NOT EXISTS supported_instance_id uuid NOT NULL,
-  ADD COLUMN IF NOT EXISTS evidence_anchor_instance_id uuid NOT NULL,
+  ADD COLUMN IF NOT EXISTS evidence_anchor_instance_id uuid,
+  ADD COLUMN IF NOT EXISTS rights_anchor_instance_id uuid,
   ADD COLUMN IF NOT EXISTS evidence_role_class text NOT NULL,
   ADD COLUMN IF NOT EXISTS support_characterization text,
   ADD COLUMN IF NOT EXISTS commentary text,
@@ -399,6 +428,10 @@ ALTER TABLE rgkb.typed_evidence_link
     REFERENCES rgkb.governed_instance (instance_id),
   ADD CONSTRAINT typed_evidence_link_anchor_fk FOREIGN KEY (evidence_anchor_instance_id)
     REFERENCES rgkb.evidence_anchor (instance_id),
+  ADD CONSTRAINT typed_evidence_link_rights_anchor_fk FOREIGN KEY (rights_anchor_instance_id)
+    REFERENCES rgkb.rights_document_anchor (instance_id),
+  ADD CONSTRAINT typed_evidence_link_exactly_one_anchor
+    CHECK ((evidence_anchor_instance_id IS NOT NULL) <> (rights_anchor_instance_id IS NOT NULL)),
   ADD CONSTRAINT typed_evidence_link_role_class_fixed
     CHECK (evidence_role_class IN ('supports', 'corroborates', 'contradicts', 'context')),
   ADD CONSTRAINT typed_evidence_link_support_not_numeric
@@ -447,7 +480,14 @@ ALTER TABLE rgkb.derivation_record
     REFERENCES rgkb.governed_instance (instance_id),
   ADD CONSTRAINT derivation_record_type_present CHECK (length(btrim(derivation_type)) > 0),
   ADD CONSTRAINT derivation_record_actor_attributable
-    CHECK (length(btrim(actor_kind)) > 0 AND length(btrim(actor_reference)) > 0);
+    CHECK (length(btrim(actor_kind)) > 0 AND length(btrim(actor_reference)) > 0),
+  ADD CONSTRAINT derivation_record_machine_pair_complete
+    CHECK ((machine_process_identity IS NULL) = (machine_process_version IS NULL)),
+  ADD CONSTRAINT derivation_record_machine_pair_non_blank
+    CHECK (machine_process_identity IS NULL
+           OR (length(btrim(machine_process_identity)) > 0 AND length(btrim(machine_process_version)) > 0));
+
+COMMENT ON COLUMN rgkb.derivation_record.machine_process_identity IS 'Step 2 §7.2: where a machine process participated, its identity AND version are recorded together — both present or both absent, and non-blank when present. No machine-provider taxonomy is invented; the vocabulary is not constrained.';
 
 COMMENT ON COLUMN rgkb.derivation_record.actor_reference IS 'Step 2 §7.2: typed, attributable actor. Deliberately an opaque non-blank reference and NOT a governed identity: reviewer identity (F-12) and contributor normalization (F-14) remain DEFERRED, and WP03 creates no reviewer or contributor governed family.';
 
@@ -544,6 +584,129 @@ CREATE CONSTRAINT TRIGGER knowledge_unit_version_direct_evidence_check
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION rgkb.direct_evidence_has_anchor_check();
 
+--    The same check applies unchanged to governed localized text: it is a
+--    content-bearing object carrying its own CONTENT ORIGIN, so
+--    direct_source_evidence wording must resolve through the SAME canonical
+--    typed evidence-link mechanism. One function, one mechanism, no second
+--    provenance authority.
+DROP TRIGGER IF EXISTS localized_text_direct_evidence_check ON rgkb.localized_governed_text_version;
+CREATE CONSTRAINT TRIGGER localized_text_direct_evidence_check
+  AFTER INSERT ON rgkb.localized_governed_text_version
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.direct_evidence_has_anchor_check();
+
+-- -------------------------------------------------------------------------
+--    DERIVATION / OUTPUT INTEGRITY (RG120).
+--
+--    A derivation reference is not sufficient merely because it names some
+--    derivation record. Where a governed object declares an origin or
+--    extraction derivation, that derivation's output_instance_id MUST be
+--    exactly the instance carrying the reference — otherwise the object would
+--    claim provenance from an act that produced something else.
+--
+--    Three short dedicated checks rather than one dynamic-SQL check: each
+--    names its own column directly, so there is no runtime column resolution
+--    to get wrong, and no second provenance authority is created.
+-- -------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION rgkb.knowledge_version_origin_output_check()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_output uuid;
+BEGIN
+  IF NEW.origin_derivation_instance_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT d.output_instance_id INTO v_output
+    FROM rgkb.derivation_record AS d
+   WHERE d.instance_id = NEW.origin_derivation_instance_id;
+
+  IF v_output IS DISTINCT FROM NEW.instance_id THEN
+    RAISE EXCEPTION 'RGKB Step 2 §7.2 fail closed: the referenced derivation record must name THIS governed instance as its exact output. A derivation that produced something else is not this object provenance.' USING ERRCODE = 'RG120';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION rgkb.localized_text_origin_output_check()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_output uuid;
+BEGIN
+  IF NEW.origin_derivation_instance_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT d.output_instance_id INTO v_output
+    FROM rgkb.derivation_record AS d
+   WHERE d.instance_id = NEW.origin_derivation_instance_id;
+
+  IF v_output IS DISTINCT FROM NEW.instance_id THEN
+    RAISE EXCEPTION 'RGKB Step 2 §7.2 fail closed: the referenced derivation record must name THIS localized-text version as its exact output.' USING ERRCODE = 'RG120';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION rgkb.anchor_extraction_output_check()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_output uuid;
+BEGIN
+  IF NEW.extraction_derivation_instance_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT d.output_instance_id INTO v_output
+    FROM rgkb.derivation_record AS d
+   WHERE d.instance_id = NEW.extraction_derivation_instance_id;
+
+  IF v_output IS DISTINCT FROM NEW.instance_id THEN
+    RAISE EXCEPTION 'RGKB Step 2 §4.1/§7.2 fail closed: the extraction derivation must name THIS anchor as its exact output. The provenance of the extraction act belongs to the anchor it produced.' USING ERRCODE = 'RG120';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS knowledge_unit_version_origin_output_check ON rgkb.knowledge_unit_version;
+CREATE CONSTRAINT TRIGGER knowledge_unit_version_origin_output_check
+  AFTER INSERT ON rgkb.knowledge_unit_version
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.knowledge_version_origin_output_check();
+
+DROP TRIGGER IF EXISTS localized_text_origin_output_check ON rgkb.localized_governed_text_version;
+CREATE CONSTRAINT TRIGGER localized_text_origin_output_check
+  AFTER INSERT ON rgkb.localized_governed_text_version
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.localized_text_origin_output_check();
+
+DROP TRIGGER IF EXISTS evidence_anchor_extraction_output_check ON rgkb.evidence_anchor;
+CREATE CONSTRAINT TRIGGER evidence_anchor_extraction_output_check
+  AFTER INSERT ON rgkb.evidence_anchor
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.anchor_extraction_output_check();
+
+DROP TRIGGER IF EXISTS rights_anchor_extraction_output_check ON rgkb.rights_document_anchor;
+CREATE CONSTRAINT TRIGGER rights_anchor_extraction_output_check
+  AFTER INSERT ON rgkb.rights_document_anchor
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.anchor_extraction_output_check();
+
 CREATE OR REPLACE FUNCTION rgkb.derivation_has_exact_inputs_check()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -609,17 +772,19 @@ CREATE CONSTRAINT TRIGGER derivation_record_inputs_check
 --     path treats the empty result as FAIL CLOSED — these functions never
 --     substitute a fallback.
 -- -------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION rgkb.evidence_for_instance(p_instance_id uuid)
+CREATE OR REPLACE FUNCTION rgkb.anchor_level_evidence_for_instance(p_instance_id uuid)
 RETURNS TABLE (
-  supported_instance_id           uuid,
-  evidence_link_instance_id       uuid,
-  evidence_role_class             text,
-  support_characterization        text,
-  evidence_anchor_instance_id     uuid,
-  locator_type                    text,
-  locator_payload                 text,
-  enduring_expression_identity    uuid,
-  enduring_manifestation_identity uuid
+  supported_instance_id            uuid,
+  evidence_link_instance_id        uuid,
+  evidence_role_class              text,
+  support_characterization         text,
+  anchor_kind                      text,
+  anchor_instance_id               uuid,
+  locator_type                     text,
+  locator_payload                  text,
+  enduring_expression_identity     uuid,
+  enduring_manifestation_identity  uuid,
+  canonical_source_chain_status    text
 )
 LANGUAGE sql
 STABLE
@@ -630,18 +795,36 @@ AS $$
          l.instance_id,
          l.evidence_role_class,
          l.support_characterization,
+         'scientific_evidence_anchor',
          a.instance_id,
          a.locator_type,
          a.locator_payload,
          a.expression_id,
-         a.manifestation_id
+         a.manifestation_id,
+         'incomplete_m1_unresolved'
     FROM rgkb.typed_evidence_link AS l
     JOIN rgkb.evidence_anchor AS a
       ON a.instance_id = l.evidence_anchor_instance_id
+   WHERE l.supported_instance_id = p_instance_id
+  UNION ALL
+  SELECT l.supported_instance_id,
+         l.instance_id,
+         l.evidence_role_class,
+         l.support_characterization,
+         'rights_document_anchor',
+         r.instance_id,
+         r.locator_type,
+         r.locator_payload,
+         NULL::uuid,
+         NULL::uuid,
+         'incomplete_f09_unresolved'
+    FROM rgkb.typed_evidence_link AS l
+    JOIN rgkb.rights_document_anchor AS r
+      ON r.instance_id = l.rights_anchor_instance_id
    WHERE l.supported_instance_id = p_instance_id;
 $$;
 
-COMMENT ON FUNCTION rgkb.evidence_for_instance(uuid) IS 'Step 2 §12.1 forward traversal: exact governed instance -> typed evidence link -> evidence anchor -> enduring source-hierarchy reference. Exact key joins only; no string, label, nearest-match, recency or latest heuristic. The enduring_* columns are stable-identity references and MUST NOT be reported as resolved governed instances (§7.6). An empty result is an unresolved chain, never a partial chain presented as complete (§12.5).';
+COMMENT ON FUNCTION rgkb.anchor_level_evidence_for_instance(uuid) IS 'Step 2 §12.1 ANCHOR-LEVEL traversal only — deliberately NOT a canonical provenance chain, and named so it cannot be mistaken for one. It walks exact governed instance -> typed evidence link -> anchor (scientific or rights) by exact key joins; no string, label, nearest-match, recency or latest heuristic. The enduring_* columns are stable-identity references and MUST NOT be reported as resolved governed instances (§7.6). canonical_source_chain_status is constant and always states INCOMPLETE: the canonical source chain additionally requires the governed source-identity determination that M-1 leaves unresolved, and the rights side additionally requires the physical rights-document entity that F-09 defers. No interface here claims complete canonical provenance, and any consequential path requiring it MUST FAIL CLOSED. An empty result is an unresolved chain, never a partial chain presented as complete (§12.5).';
 
 CREATE OR REPLACE FUNCTION rgkb.instances_referencing_anchor(p_anchor_instance_id uuid)
 RETURNS TABLE (
@@ -656,7 +839,7 @@ STABLE
 SECURITY INVOKER
 SET search_path = ''
 AS $$
-  SELECT l.evidence_anchor_instance_id,
+  SELECT coalesce(l.evidence_anchor_instance_id, l.rights_anchor_instance_id),
          l.instance_id,
          l.supported_instance_id,
          g.subject_type,
@@ -664,7 +847,8 @@ AS $$
     FROM rgkb.typed_evidence_link AS l
     JOIN rgkb.governed_instance AS g
       ON g.instance_id = l.supported_instance_id
-   WHERE l.evidence_anchor_instance_id = p_anchor_instance_id;
+   WHERE l.evidence_anchor_instance_id = p_anchor_instance_id
+      OR l.rights_anchor_instance_id = p_anchor_instance_id;
 $$;
 
 COMMENT ON FUNCTION rgkb.instances_referencing_anchor(uuid) IS 'Step 2 §12.1 backward traversal: evidence anchor -> typed evidence links -> the exact governed instances referencing it. Backward reachability is NOT proof of support: evidence_role_class states what the relationship means, and a contradicting link is reached by the same walk (§6.2, §12.1).';
@@ -712,9 +896,18 @@ REVOKE ALL ON FUNCTION rgkb.direct_evidence_has_anchor_check() FROM authenticate
 REVOKE ALL ON FUNCTION rgkb.derivation_has_exact_inputs_check() FROM PUBLIC;
 REVOKE ALL ON FUNCTION rgkb.derivation_has_exact_inputs_check() FROM anon;
 REVOKE ALL ON FUNCTION rgkb.derivation_has_exact_inputs_check() FROM authenticated;
-REVOKE ALL ON FUNCTION rgkb.evidence_for_instance(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION rgkb.evidence_for_instance(uuid) FROM anon;
-REVOKE ALL ON FUNCTION rgkb.evidence_for_instance(uuid) FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.anchor_level_evidence_for_instance(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.anchor_level_evidence_for_instance(uuid) FROM anon;
+REVOKE ALL ON FUNCTION rgkb.anchor_level_evidence_for_instance(uuid) FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.knowledge_version_origin_output_check() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.knowledge_version_origin_output_check() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.knowledge_version_origin_output_check() FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.localized_text_origin_output_check() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.localized_text_origin_output_check() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.localized_text_origin_output_check() FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.anchor_extraction_output_check() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.anchor_extraction_output_check() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.anchor_extraction_output_check() FROM authenticated;
 REVOKE ALL ON FUNCTION rgkb.instances_referencing_anchor(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION rgkb.instances_referencing_anchor(uuid) FROM anon;
 REVOKE ALL ON FUNCTION rgkb.instances_referencing_anchor(uuid) FROM authenticated;
@@ -726,7 +919,10 @@ REVOKE ALL ON FUNCTION rgkb.derivation_inputs_for_output(uuid) FROM authenticate
 -- Rollback (additive-only; drops nothing that existed before this migration):
 --   DROP FUNCTION IF EXISTS rgkb.derivation_inputs_for_output(uuid);
 --   DROP FUNCTION IF EXISTS rgkb.instances_referencing_anchor(uuid);
---   DROP FUNCTION IF EXISTS rgkb.evidence_for_instance(uuid);
+--   DROP FUNCTION IF EXISTS rgkb.anchor_level_evidence_for_instance(uuid);
+--   DROP FUNCTION IF EXISTS rgkb.anchor_extraction_output_check();
+--   DROP FUNCTION IF EXISTS rgkb.localized_text_origin_output_check();
+--   DROP FUNCTION IF EXISTS rgkb.knowledge_version_origin_output_check();
 --   DROP TRIGGER IF EXISTS derivation_record_inputs_check ON rgkb.derivation_record;
 --   DROP FUNCTION IF EXISTS rgkb.derivation_has_exact_inputs_check();
 --   DROP TRIGGER IF EXISTS knowledge_unit_version_direct_evidence_check ON rgkb.knowledge_unit_version;
@@ -734,12 +930,12 @@ REVOKE ALL ON FUNCTION rgkb.derivation_inputs_for_output(uuid) FROM authenticate
 --   DROP TABLE IF EXISTS rgkb.derivation_record_input;
 --   DROP FUNCTION IF EXISTS rgkb.derivation_input_write_guard();
 --   ALTER TABLE rgkb.derivation_record DROP COLUMN machine_process_version, DROP COLUMN machine_process_identity, DROP COLUMN act_time, DROP COLUMN actor_reference, DROP COLUMN actor_kind, DROP COLUMN derivation_type, DROP COLUMN output_instance_id;
---   ALTER TABLE rgkb.typed_evidence_link DROP COLUMN commentary, DROP COLUMN support_characterization, DROP COLUMN evidence_role_class, DROP COLUMN evidence_anchor_instance_id, DROP COLUMN supported_instance_id;
+--   ALTER TABLE rgkb.typed_evidence_link DROP COLUMN commentary, DROP COLUMN support_characterization, DROP COLUMN evidence_role_class, DROP COLUMN rights_anchor_instance_id, DROP COLUMN evidence_anchor_instance_id, DROP COLUMN supported_instance_id;
 --   ALTER TABLE rgkb.knowledge_unit_relation DROP COLUMN context_scope, DROP COLUMN developmental_scope, DROP COLUMN population_scope, DROP COLUMN predicate, DROP COLUMN target_version_instance_id, DROP COLUMN source_version_instance_id;
 --   ALTER TABLE rgkb.knowledge_unit_version DROP COLUMN origin_derivation_instance_id, DROP COLUMN epistemic_characterization, DROP COLUMN context_scope, DROP COLUMN developmental_scope, DROP COLUMN population_scope, DROP COLUMN knowledge_type, DROP COLUMN assertion_text_instance_id, DROP COLUMN editorial_class, DROP COLUMN content_origin;
---   ALTER TABLE rgkb.rights_document_anchor DROP COLUMN extraction_derivation_instance_id, DROP COLUMN retained_excerpt, DROP COLUMN integrity_value, DROP COLUMN locator_payload, DROP COLUMN locator_type, DROP COLUMN manifestation_id, DROP COLUMN expression_id;
+--   ALTER TABLE rgkb.rights_document_anchor DROP COLUMN extraction_derivation_instance_id, DROP COLUMN retained_excerpt, DROP COLUMN integrity_value, DROP COLUMN locator_payload, DROP COLUMN locator_type;
 --   ALTER TABLE rgkb.evidence_anchor DROP COLUMN extraction_derivation_instance_id, DROP COLUMN retained_excerpt, DROP COLUMN integrity_value, DROP COLUMN span_end, DROP COLUMN span_start, DROP COLUMN locator_payload, DROP COLUMN locator_type, DROP COLUMN manifestation_id, DROP COLUMN expression_id;
---   ALTER TABLE rgkb.localized_governed_text_version DROP COLUMN editorial_class, DROP COLUMN governed_wording, DROP COLUMN language_code;
+--   ALTER TABLE rgkb.localized_governed_text_version DROP COLUMN origin_derivation_instance_id, DROP COLUMN content_origin, DROP COLUMN editorial_class, DROP COLUMN governed_wording, DROP COLUMN language_code;
 --   DROP TABLE IF EXISTS rgkb.source_manifestation_identity;
 --   DROP TABLE IF EXISTS rgkb.source_expression_identity;
 --   DROP TABLE IF EXISTS rgkb.source_identity;

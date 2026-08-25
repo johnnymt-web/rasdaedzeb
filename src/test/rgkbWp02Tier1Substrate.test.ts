@@ -340,7 +340,7 @@ describe("WP02 Tier 1 — DEFERRED-BY-DESIGN (cannot be truthfully executed yet)
     "negative: a pattern value mismatching the catalog assignment is rejected as a fault — DEFERRED: requires governed_instance.pattern (Tier 2, WP02 §5.2.1) and a populated catalog (Step 1 §14.5)",
   );
   it.todo(
-    "negative: a stale / superseded exact-instance reference is rejected — DEFERRED: requires Tier 2 Pattern A version tables (Master Plan PRM-WP02 negative evidence)",
+    "negative: a governed context that specifically requires a CURRENT/ELIGIBLE version refuses to resolve one — DEFERRED: this is F-07, which remains OPEN and fail-closed. Per the Owner-approved WP02 Closure Criterion Clarification, historical exact governed instances remain resolvable indefinitely and blanket rejection of a stale/superseded reference is NOT a WP02 requirement; rejection applies only inside such a governed context. (Supersedes the pre-WP03 wording of this item, which asserted blanket rejection.)",
   );
   it.todo(
     "runtime: RG003 and both write guards actually raise in Postgres — DEFERRED: requires a disposable Postgres; no production or remote Supabase execution is authorized",

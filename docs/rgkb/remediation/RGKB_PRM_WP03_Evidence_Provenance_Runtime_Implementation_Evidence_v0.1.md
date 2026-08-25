@@ -44,12 +44,12 @@ byte-unchanged.**
 `source_manifestation_identity`) and one normalized dependent structure
 (`derivation_record_input`).
 
-**Altered WP02 family shells (6),** all already Owner-admitted catalog
+**Altered WP02 family shells (7),** all already Owner-admitted catalog
 families: `knowledge_unit_version`, `localized_governed_text_version`,
 `evidence_anchor`, `rights_document_anchor`, `typed_evidence_link`,
 `knowledge_unit_relation`, `derivation_record`.
 
-**New functions (7):** two immutability guards, two deferred cross-row
+**New functions (10):** two immutability guards, five deferred cross-row
 invariant checks, three traversal functions. All `SECURITY INVOKER` with
 `SET search_path = ''`.
 
@@ -70,7 +70,10 @@ referenced anywhere in the migration, and there is no `INSERT` of any kind.
 | §3.5/§7.6 | source levels are enduring identities, not governed instances | no `instance_id`, not registered, never a governance-act target |
 | §4.1 | anchor carries expression, manifestation, locator, offsets, integrity, excerpt, extraction provenance | the nine `evidence_anchor` columns |
 | §4.2 | Pattern B, no artificial version family | no `evidence_anchor_version` table; WP02 guard already refuses UPDATE/DELETE |
-| §4.3 | rights anchors are not scholarly | separate family; `expression_id` **nullable** here, mandatory on the scientific anchor |
+| §4.3 | rights anchors are not scholarly | separate family carrying **no** source-expression/manifestation reference at all — no scholarly-source surrogate (RC1-2) |
+| §2.1 | localized text is content-bearing | it carries its **own** mandatory CONTENT ORIGIN (RC1-1) |
+| §7.2 | a declared derivation must have produced *this* instance | `RG120` deferred checks on 4 sites (RC1-3) |
+| §4.1 | retained excerpt only where rights permit | retention **fails closed** — WP03 has no authority to permit it (RC1-4) |
 | §5.2 | knowledge version attributes | 9 added columns |
 | §5.3 | explicit language, wording on the version | `language_code NOT NULL` + non-blank CHECK, no default; `governed_wording NOT NULL` |
 | §5.4 | epistemic characterization is not a number | anti-numeric CHECK; no aggregation anywhere |
@@ -177,7 +180,7 @@ Pattern B guards refuse UPDATE and DELETE on links and relations alike.
 
 ## 9. Deterministic traversal
 
-Three functions: `evidence_for_instance` (forward),
+Three functions: `anchor_level_evidence_for_instance` (forward),
 `instances_referencing_anchor` (backward), `derivation_inputs_for_output`.
 
 Every step is an exact key join. There is **no** string matching, title
@@ -208,7 +211,7 @@ that as FAIL CLOSED.
 `rgkb` schema only — **no `public.` object**. RLS enabled **and forced** on all
 4 new tables, **zero policies**, `REVOKE ALL` from `PUBLIC`/`anon`/
 `authenticated` on all 4 tables and all 7 functions, **no `GRANT`**, **no
-`SECURITY DEFINER`** (7/7 `SECURITY INVOKER`, 7/7 `SET search_path = ''`).
+`SECURITY DEFINER`** (10/10 `SECURITY INVOKER`, 10/10 `SET search_path = ''`).
 
 ❓ **The live Supabase exposed-schema configuration is NOT verified**, and no
 remote Supabase access was performed or is authorized.
@@ -217,10 +220,13 @@ remote Supabase access was performed or is authorized.
 
 | Command | Result |
 |---|---|
-| `npx vitest run src/test/rgkbWp03EvidenceProvenanceRuntime.test.ts` | **56 passed, 5 todo, 0 failed** (61) |
-| `npm run test` (full suite, 11 files) | **285 passed, 16 todo, 0 failed** (301) |
+Final RC1 results, as executed:
+
+| `npx vitest run src/test/rgkbWp03EvidenceProvenanceRuntime.test.ts` | **70 passed, 5 todo, 0 failed** (75) |
+| `npm run test` (full suite, 11 files) | **299 passed, 16 todo, 0 failed** (315) |
 | `npm run typecheck` | **exit 0** |
-| offline SQL structural lint | balanced parens; even `$$` and quote counts; no newline-continued literals; **4 tables**; **15 `ALTER TABLE`**; **46 `ADD COLUMN`**; **6 triggers, 2 of them `CONSTRAINT TRIGGER`s**; **7 functions**; **0 `INSERT`**; **0 `SECURITY DEFINER`**; **0 `CREATE POLICY`**; **0 `GRANT`**; **0 `public.`**; **0 ordering constructs**; **0 student identifiers**; longest identifier 47 (< 63) |
+| offline SQL structural lint | balanced parens; even `$$` and quote counts; no newline-continued literals; **4 tables**; **15 `ALTER TABLE`**; **47 `ADD COLUMN`**; **11 triggers, 7 of them `CONSTRAINT TRIGGER`s**; **10 functions**; **0 `INSERT`**; **0 `SECURITY DEFINER`**; **0 `CREATE POLICY`**; **0 `GRANT`**; **0 `public.`**; **0 ordering constructs**; **0 student identifiers**; longest identifier 47 (< 63) |
+| migration identity | SHA-256 `f0b209dd26dfa7d244305430ed4458bd7c6d0ea1565f523bc7389f18f6415356` · 58 717 bytes · 945 lines |
 
 **Evidence level: E1/E2-class local verification only.** Structural assertions
 over migration text plus an offline lint. **The migration has not been executed
@@ -275,9 +281,22 @@ Also still deferred and untouched: **F-04**, **F-07**, **F-09**, **F-12**,
 | Containment at least as strict as WP02 | **PASS** |
 | Canonical Steps 1–8 and Master Plan unmodified | **PASS** |
 
-**Corrections made autonomously during implementation:** none of substance —
-the WP03 suite passed on first execution. The only adaptation outside WP03 was
-the single forward-compatible WP02 Tier 1 assertion described in §16.
+### 14.1 RC1 corrections (Owner source review)
+
+| # | Finding | Disposition |
+|---|---|---|
+| RC1-1 | localized text lacked its own CONTENT ORIGIN | **CORRECTED** — own mandatory 3-class column, no default, never inherited; derived requires its own derivation whose output is this version; direct source resolves through the **same** canonical link mechanism (`localized_text_direct_evidence_check` reuses the one function) |
+| RC1-2 | one linking concept excluded rights anchors | **CORRECTED** — one `typed_evidence_link` family now names an exact `evidence_anchor` **or** an exact `rights_document_anchor`, with a CHECK requiring **exactly one**. No second link family. **F-09 boundary tightened:** the rights anchor now carries **no** `expression_id`/`manifestation_id` at all, so no scholarly-source surrogate exists; rights-side traversal reports `incomplete_f09_unresolved` |
+| RC1-3 | a derivation reference could name any derivation | **CORRECTED** — `RG120` deferred checks on knowledge version, localized text, evidence anchor and rights anchor require the referenced derivation's `output_instance_id` to be exactly the referencing instance. Anchor extraction provenance is now **`NOT NULL`**. Machine identity/version are both-or-neither and non-blank when present; no provider taxonomy invented |
+| RC1-4 | `retained_excerpt` was freely writable | **CORRECTED** — `CHECK (retained_excerpt IS NULL)` on both anchor families. Retention **fails closed**: WP03 has no authority to establish permission and absence of a rights determination is not permission. No rights flag, no legal decision, F-09/WP09 not closed. Locator and provenance remain usable |
+| RC1-5 | traversal could read as a complete canonical chain | **CORRECTED** — renamed `anchor_level_evidence_for_instance`, with a constant `canonical_source_chain_status` of `incomplete_m1_unresolved` / `incomplete_f09_unresolved`. No interface claims complete canonical provenance. **M-1 is not resolved**: still no descriptor/determination family and still no cross-level source FK |
+| RC1-6 | stale evidence claims | **CORRECTED** — the WP02 Tier 1 blanket stale/superseded TODO was rewritten to match the Owner-approved Closure Criterion Clarification (historical instances remain resolvable; rejection applies only inside a governed context requiring a current/eligible version, which remains F-07 and fail-closed). The "6 altered shells" count is now **7**, and all function/trigger/test counts are re-derived from the post-RC1 runs |
+
+**Corrections made autonomously during implementation:** none of substance
+before RC1 — the WP03 suite passed on first execution. The only adaptation
+outside WP03 was the single forward-compatible WP02 Tier 1 assertion described
+in §16, plus the RC1-6 wording fix to one Tier 1 TODO. **No WP02 migration was
+touched and WP02 was not reopened.**
 
 ## 15. Explicit negatives
 
