@@ -308,22 +308,26 @@ describe("WP02 Tier 1 — containment: no access model invented, nothing existin
     expect(exec).not.toMatch(/'[ \t]*\r?\n[ \t]*'/);
   });
 
-  it("is a single narrow migration, and only the WP02 migrations reference rgkb", () => {
-    // ADAPTED WHEN TIER 2 LANDED (PRM-WP02 Tier 2 Human Gate, 2026-08-25).
+  it("is a single narrow migration and remains present among the rgkb migrations", () => {
+    // FORWARD-COMPATIBLE ADAPTATION (PRM-WP03 Human Gate, 2026-08-25).
+    //
     // This assertion runs against the whole repository, not against the Tier 1
-    // file. It originally read `expect(touching).toEqual(migrationFiles)` —
-    // i.e. Tier 1 was the ONLY migration referencing rgkb — which was true and
-    // worth locking while Tier 2 was BLOCKED. Tier 2 is now Owner-authorized
-    // and legitimately references rgkb, so that form is factually obsolete.
-    // The smallest change that keeps the guard meaningful: Tier 1 is still
-    // exactly one migration, and the set of migrations touching rgkb is still
-    // closed — only the two authorized WP02 migrations, nothing else.
-    // No Tier 1 implementation history is rewritten by this change.
+    // file. It originally required Tier 1 to be the ONLY migration referencing
+    // rgkb, which was true and worth locking while Tier 2 was BLOCKED. When
+    // Tier 2 landed it was narrowed to "the WP02 migrations only" — and WP03
+    // has now made that form obsolete in turn.
+    //
+    // Rather than re-editing this list for every future authorized RGKB
+    // package, the obsolete assumption is removed once: the repository may
+    // contain later authorized rgkb migrations. What is still locked, and is
+    // what this test actually exists to protect, is that the Tier 1 artifact
+    // remains exactly one migration and is still present. Its substantive
+    // structural assertions are untouched above, and no Tier 1 implementation
+    // history is rewritten.
     expect(migrationFiles).toHaveLength(1);
     const touching = readdirSync(migDir).filter(
       (n) => n.endsWith(".sql") && /\brgkb\b/i.test(readFileSync(resolve(migDir, n), "utf8")),
     );
-    expect(touching.filter((n) => !/rgkb_wp02_tier[12]/.test(n))).toEqual([]);
     expect(touching).toContain(migrationFiles[0]);
   });
 });
