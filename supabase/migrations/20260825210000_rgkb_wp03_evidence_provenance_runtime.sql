@@ -296,7 +296,7 @@ ALTER TABLE rgkb.rights_document_anchor
     REFERENCES rgkb.derivation_record (instance_id),
   ADD CONSTRAINT rights_anchor_retention_fail_closed CHECK (retained_excerpt IS NULL);
 
-COMMENT ON TABLE rgkb.rights_document_anchor IS 'Step 2 §4.3 rights/document anchor. Distinct from scientific scholarly evidence and never a substitute for it; it participates in the SAME typed evidence-linking concept (§6.5). It deliberately carries no source-expression or source-manifestation reference: the physical rights-document entity is DEFERRED (F-09) and a scientific source identity must never stand in for it. Rights-side traversal is therefore explicitly incomplete until F-09 is resolved.';
+COMMENT ON TABLE rgkb.rights_document_anchor IS 'Step 2 §4.3 rights/document anchor. Distinct from scientific scholarly evidence and never a substitute for it; it participates in the SAME typed evidence-linking concept (§6.5). It carries NO source-expression and NO source-manifestation reference at all: the physical rights-document entity is DEFERRED (F-09) and a scientific source identity must never stand in for it. Rights-side traversal is therefore explicitly incomplete until F-09 is resolved.';
 
 -- -------------------------------------------------------------------------
 -- 5) Knowledge object version (Step 2 §5.2) — Pattern A family, admitted.
@@ -354,7 +354,7 @@ COMMENT ON COLUMN rgkb.knowledge_unit_version.assertion_text_instance_id IS 'Ste
 
 COMMENT ON COLUMN rgkb.knowledge_unit_version.developmental_scope IS 'Step 2 §5.2/§15: applicability qualifier only. It MUST NOT be converted into a deterministic assertion that an individual is in a particular developmental stage. The developmental vocabulary is DEFERRED (F-10) and is not constrained here.';
 
-COMMENT ON COLUMN rgkb.knowledge_unit_version.epistemic_characterization IS 'Step 2 §5.4: qualitative, controlled, non-arithmetic. It MUST NOT be summed, weighted, averaged or converted into a confidence value or master score, and MUST NOT be computed from evidence-link labels. Numeric or percentage-shaped labels are refused by constraint. The exact vocabulary is DEFERRED.';
+COMMENT ON COLUMN rgkb.knowledge_unit_version.epistemic_characterization IS 'Step 2 §5.4: qualitative, controlled, non-arithmetic. It MUST NOT be summed, weighted, averaged or converted into a confidence value or master score, and MUST NOT be computed from evidence-link labels. The exact vocabulary is DEFERRED, and until it is authorized ANY value fails closed — the column can hold only NULL.';
 
 -- -------------------------------------------------------------------------
 -- 6) Knowledge object relation (Step 2 §5.5) — Pattern B family, admitted.
@@ -448,7 +448,7 @@ COMMENT ON CONSTRAINT typed_evidence_link_support_deferred ON rgkb.typed_evidenc
 
 COMMENT ON COLUMN rgkb.typed_evidence_link.evidence_role_class IS 'Step 2 §6.2: the four distinctions that must remain expressible — supports, corroborates, contradicts, context. Controlled, never free text. The exact role vocabulary is DEFERRED; this class does not close it and a later controlled specification may specialize beneath it.';
 
-COMMENT ON COLUMN rgkb.typed_evidence_link.support_characterization IS 'Step 2 §6.3 with §5.4 in full: controlled, ordinal only where defensible, non-arithmetic, never aggregated across an object''s links and never convertible into a master score. Vocabulary DEFERRED; numeric or percentage-shaped labels are refused by constraint.';
+COMMENT ON COLUMN rgkb.typed_evidence_link.support_characterization IS 'Step 2 §6.3 with §5.4 in full: controlled, ordinal only where defensible, non-arithmetic, never aggregated across an object''s links and never convertible into a master score. Vocabulary DEFERRED, and until it is authorized ANY value fails closed — the column can hold only NULL.';
 
 COMMENT ON COLUMN rgkb.typed_evidence_link.commentary IS 'Step 2 §6.4: optional free text that is explicitly NOT the authoritative pointer. Its presence is never evidence that a link exists, and it can never stand in place of one.';
 
@@ -488,6 +488,8 @@ ALTER TABLE rgkb.derivation_record
   ADD CONSTRAINT derivation_record_output_fk FOREIGN KEY (output_instance_id)
     REFERENCES rgkb.governed_instance (instance_id),
   ADD CONSTRAINT derivation_record_type_present CHECK (length(btrim(derivation_type)) > 0),
+  ADD COLUMN IF NOT EXISTS input_count integer NOT NULL,
+  ADD CONSTRAINT derivation_record_input_count_positive CHECK (input_count >= 1),
   ADD CONSTRAINT derivation_record_actor_attributable
     CHECK (length(btrim(actor_kind)) > 0 AND length(btrim(actor_reference)) > 0),
   ADD CONSTRAINT derivation_record_machine_pair_complete
@@ -765,6 +767,12 @@ BEGIN
     RAISE EXCEPTION 'RGKB Step 1 §2.3/§3.2/§3.4 fail closed: identity and ordering attributes are immutable in every editorial state. instance_id is never reused or transferred, a version is never repointed to another stable identity, and its ordering position is never rewritten.' USING ERRCODE = 'RG132';
   END IF;
 
+
+  IF (OLD.content_origin = 'derived_interpretation' AND NEW.content_origin = 'direct_source_evidence')
+     OR (OLD.content_origin = 'constructed_content' AND NEW.content_origin IN ('derived_interpretation', 'direct_source_evidence')) THEN
+    RAISE EXCEPTION 'RGKB Step 2 §2.5 fail closed: promoting derived interpretation to direct source evidence, or constructed content to either, is prohibited without exception — including while the version is still draft. The strength of the underlying evidence never converts a derivation into direct evidence.' USING ERRCODE = 'RG140';
+  END IF;
+
   IF OLD.editorial_class = 'content_asserted' THEN
     RAISE EXCEPTION 'RGKB Step 1 §5.1/§7.3 fail closed: this version has left draft, so its governance-bearing content is immutable and exit from draft is irreversible. Correction proceeds by creating a NEW version under the same stable identity.' USING ERRCODE = 'RG130';
   END IF;
@@ -792,6 +800,12 @@ BEGIN
      OR NEW.version_sequence IS DISTINCT FROM OLD.version_sequence
      OR NEW.previous_sequence IS DISTINCT FROM OLD.previous_sequence THEN
     RAISE EXCEPTION 'RGKB Step 1 §2.3/§3.2/§3.4 fail closed: identity and ordering attributes of a localized-text version are immutable in every editorial state.' USING ERRCODE = 'RG132';
+  END IF;
+
+
+  IF (OLD.content_origin = 'derived_interpretation' AND NEW.content_origin = 'direct_source_evidence')
+     OR (OLD.content_origin = 'constructed_content' AND NEW.content_origin IN ('derived_interpretation', 'direct_source_evidence')) THEN
+    RAISE EXCEPTION 'RGKB Step 2 §2.5 fail closed: promoting derived interpretation to direct source evidence, or constructed content to either, is prohibited without exception — including while the version is still draft. The strength of the underlying evidence never converts a derivation into direct evidence.' USING ERRCODE = 'RG140';
   END IF;
 
   IF OLD.editorial_class = 'content_asserted' THEN
@@ -837,8 +851,8 @@ BEGIN
     FROM rgkb.derivation_record_input AS i
    WHERE i.derivation_instance_id = NEW.instance_id;
 
-  IF v_input_count < 1 THEN
-    RAISE EXCEPTION 'RGKB Step 2 §7.2 fail closed: a derivation record must name every exact governed instance it consumed. A derivation naming no input is not a governed derivation.' USING ERRCODE = 'RG110';
+  IF v_input_count <> NEW.input_count THEN
+    RAISE EXCEPTION 'RGKB Step 2 §7.2 fail closed: a derivation record must name EVERY exact governed instance it consumed. The declared input cardinality is %, but % exact inputs are present.', NEW.input_count, v_input_count USING ERRCODE = 'RG110';
   END IF;
 
   SELECT count(*) INTO v_self_count
@@ -861,6 +875,211 @@ CREATE CONSTRAINT TRIGGER derivation_record_inputs_check
   AFTER INSERT ON rgkb.derivation_record
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION rgkb.derivation_has_exact_inputs_check();
+
+
+-- -------------------------------------------------------------------------
+-- 9b) Remaining Step 2 cross-row invariants (RC3).
+--
+--     All five are DEFERRABLE INITIALLY DEFERRED constraint triggers, so the
+--     dependent rows may be written as separate statements of one
+--     transaction, and all fire on INSERT **and** UPDATE so a draft edit
+--     cannot bypass them. Under FORCE ROW LEVEL SECURITY a caller that cannot
+--     see the dependent rows cannot establish the invariant and is refused —
+--     fail closed, never open.
+--
+--       RG160  a knowledge version may bind only an ALREADY IMMUTABLE
+--              localized-text version (Step 2 §5.3).
+--       RG150  constructed content may not carry an authoritative evidence
+--              pointer, in either direction (Step 2 §2.4).
+--       RG170  a knowledge relation must resolve to governed evidence
+--              (Step 2 §5.5, §6.1).
+--       RG180  an established derivation input set may not grow later
+--              (Step 2 §7.2, §7.3).
+-- -------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION rgkb.assertion_text_immutable_check()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_editorial_class text;
+BEGIN
+  SELECT t.editorial_class INTO v_editorial_class
+    FROM rgkb.localized_governed_text_version AS t
+   WHERE t.instance_id = NEW.assertion_text_instance_id;
+
+  IF v_editorial_class IS DISTINCT FROM 'content_asserted' THEN
+    RAISE EXCEPTION 'RGKB Step 2 §5.3 fail closed: the governed assertion must bind an already immutable localized-text version. A still-draft wording could change in place under a knowledge version that already cites it, and the wording a reader saw is never rewritten under them. Assert the localized text first, then bind it.' USING ERRCODE = 'RG160';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION rgkb.assertion_text_immutable_check() IS 'PRM-WP03 RC3 deferred check (Step 2 §5.3). A knowledge version may bind only a content_asserted localized-text version, so a bound wording can never change in place afterwards — the editorial guard already refuses every update of a content_asserted row. An unreadable or missing target fails closed. No is_bound or is_immutable flag is invented, no editorial_class is silently mutated, and no review, validation or activation state that WP03 does not implement is inferred.';
+
+DROP TRIGGER IF EXISTS knowledge_unit_version_assertion_text_check ON rgkb.knowledge_unit_version;
+CREATE CONSTRAINT TRIGGER knowledge_unit_version_assertion_text_check
+  AFTER INSERT OR UPDATE ON rgkb.knowledge_unit_version
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.assertion_text_immutable_check();
+
+CREATE OR REPLACE FUNCTION rgkb.constructed_content_no_evidence_check()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_link_count integer;
+BEGIN
+  IF NEW.content_origin <> 'constructed_content' THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT count(*) INTO v_link_count
+    FROM rgkb.typed_evidence_link AS l
+   WHERE l.supported_instance_id = NEW.instance_id;
+
+  IF v_link_count > 0 THEN
+    RAISE EXCEPTION 'RGKB Step 2 §2.4 fail closed: constructed content must not carry an evidentiary support claim, and a typed evidence link is the authoritative evidence pointer. Non-authoritative commentary remains permitted.' USING ERRCODE = 'RG150';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION rgkb.constructed_content_no_evidence_check() IS 'PRM-WP03 RC3 deferred check (Step 2 §2.4), direction B: reclassifying a draft content object to constructed_content while it already carries an authoritative typed evidence link is refused.';
+
+DROP TRIGGER IF EXISTS knowledge_unit_version_constructed_check ON rgkb.knowledge_unit_version;
+CREATE CONSTRAINT TRIGGER knowledge_unit_version_constructed_check
+  AFTER INSERT OR UPDATE ON rgkb.knowledge_unit_version
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.constructed_content_no_evidence_check();
+
+DROP TRIGGER IF EXISTS localized_text_constructed_check ON rgkb.localized_governed_text_version;
+CREATE CONSTRAINT TRIGGER localized_text_constructed_check
+  AFTER INSERT OR UPDATE ON rgkb.localized_governed_text_version
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.constructed_content_no_evidence_check();
+
+CREATE OR REPLACE FUNCTION rgkb.evidence_link_target_not_constructed_check()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_constructed_count integer;
+BEGIN
+  SELECT count(*) INTO v_constructed_count
+    FROM (
+      SELECT k.instance_id, k.content_origin
+        FROM rgkb.knowledge_unit_version AS k
+       WHERE k.instance_id = NEW.supported_instance_id
+      UNION ALL
+      SELECT t.instance_id, t.content_origin
+        FROM rgkb.localized_governed_text_version AS t
+       WHERE t.instance_id = NEW.supported_instance_id
+    ) AS supported
+   WHERE supported.content_origin = 'constructed_content';
+
+  IF v_constructed_count > 0 THEN
+    RAISE EXCEPTION 'RGKB Step 2 §2.4 fail closed: an authoritative typed evidence link must not be attached to constructed content. Constructed content may reference governed objects as commentary, but such a reference is never an authoritative pointer.' USING ERRCODE = 'RG150';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION rgkb.evidence_link_target_not_constructed_check() IS 'PRM-WP03 RC3 deferred check (Step 2 §2.4), direction A: creating a typed evidence link that targets an already-constructed content object is refused. One shared typed_evidence_link family is preserved; no ad-hoc evidence mechanism is introduced.';
+
+DROP TRIGGER IF EXISTS typed_evidence_link_target_check ON rgkb.typed_evidence_link;
+CREATE CONSTRAINT TRIGGER typed_evidence_link_target_check
+  AFTER INSERT OR UPDATE ON rgkb.typed_evidence_link
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.evidence_link_target_not_constructed_check();
+
+CREATE OR REPLACE FUNCTION rgkb.relation_has_evidence_check()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_link_count integer;
+BEGIN
+  SELECT count(*) INTO v_link_count
+    FROM rgkb.typed_evidence_link AS l
+   WHERE l.supported_instance_id = NEW.instance_id;
+
+  IF v_link_count < 1 THEN
+    RAISE EXCEPTION 'RGKB Step 2 §5.5/§6.1 fail closed: a knowledge object relation carries its evidence linkage through the typed evidence link, and a relation resolving to no governed evidence asserts a contradiction, support or supersession on nothing. A free-text evidence basis is never a substitute.' USING ERRCODE = 'RG170';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION rgkb.relation_has_evidence_check() IS 'PRM-WP03 RC3 deferred check (Step 2 §5.5, §6.1). A relation must resolve to at least one exact typed evidence link naming that exact relation instance as its supported instance. Deferral lets the relation and its link be created in one transaction. Correction remains append-only: the Pattern B guard refuses update and delete.';
+
+DROP TRIGGER IF EXISTS knowledge_unit_relation_evidence_check ON rgkb.knowledge_unit_relation;
+CREATE CONSTRAINT TRIGGER knowledge_unit_relation_evidence_check
+  AFTER INSERT OR UPDATE ON rgkb.knowledge_unit_relation
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.relation_has_evidence_check();
+
+CREATE OR REPLACE FUNCTION rgkb.derivation_input_set_frozen_check()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_declared integer;
+  v_actual   integer;
+BEGIN
+  SELECT d.input_count INTO v_declared
+    FROM rgkb.derivation_record AS d
+   WHERE d.instance_id = NEW.derivation_instance_id;
+
+  SELECT count(*) INTO v_actual
+    FROM rgkb.derivation_record_input AS i
+   WHERE i.derivation_instance_id = NEW.derivation_instance_id;
+
+  IF v_declared IS NULL OR v_actual <> v_declared THEN
+    RAISE EXCEPTION 'RGKB Step 2 §7.2/§7.3 fail closed: the exact input set a derivation consumed is fixed when the derivation is created and must not grow afterwards. Historical derivation provenance is never rewritten; correction creates a NEW derivation record.' USING ERRCODE = 'RG180';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION rgkb.derivation_input_set_frozen_check() IS 'PRM-WP03 RC3 deferred check (Step 2 §7.2, §7.3). The derivation record declares the cardinality of the exact input set it consumed, and that declaration is immutable because the record itself is. Multi-input construction stays possible within the creating transaction, where the count matches at COMMIT; a later transaction adding one more input makes the actual count exceed the declaration and is refused. No caller-writable locked, finalized or first-governance-use boolean is invented, and no timestamp, recency or ordering is used as authority.';
+
+DROP TRIGGER IF EXISTS derivation_record_input_frozen_check ON rgkb.derivation_record_input;
+CREATE CONSTRAINT TRIGGER derivation_record_input_frozen_check
+  AFTER INSERT ON rgkb.derivation_record_input
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.derivation_input_set_frozen_check();
+
+REVOKE ALL ON FUNCTION rgkb.assertion_text_immutable_check() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.assertion_text_immutable_check() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.assertion_text_immutable_check() FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.constructed_content_no_evidence_check() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.constructed_content_no_evidence_check() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.constructed_content_no_evidence_check() FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.evidence_link_target_not_constructed_check() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.evidence_link_target_not_constructed_check() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.evidence_link_target_not_constructed_check() FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.relation_has_evidence_check() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.relation_has_evidence_check() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.relation_has_evidence_check() FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.derivation_input_set_frozen_check() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.derivation_input_set_frozen_check() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.derivation_input_set_frozen_check() FROM authenticated;
 
 -- -------------------------------------------------------------------------
 -- 10) Deterministic provenance traversal (Step 2 §12.1, §12.2, §12.4).

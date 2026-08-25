@@ -49,7 +49,7 @@ families: `knowledge_unit_version`, `localized_governed_text_version`,
 `evidence_anchor`, `rights_document_anchor`, `typed_evidence_link`,
 `knowledge_unit_relation`, `derivation_record`.
 
-**New functions (12):** four immutability / editorial-boundary guards, five
+**New functions (17):** four immutability / editorial-boundary guards, ten
 deferred cross-row invariant checks, three traversal functions. All
 `SECURITY INVOKER` with `SET search_path = ''`.
 
@@ -76,11 +76,11 @@ referenced anywhere in the migration, and there is no `INSERT` of any kind.
 | §4.1 | retained excerpt only where rights permit | retention **fails closed** — WP03 has no authority to permit it (RC1-4) |
 | §5.2 | knowledge version attributes | 9 added columns |
 | §5.3 | explicit language, wording on the version | `language_code NOT NULL` + non-blank CHECK, no default; `governed_wording NOT NULL` |
-| §5.4 | epistemic characterization is not a number | anti-numeric CHECK; no aggregation anywhere |
+| §5.4 | epistemic characterization is not a number | **fails closed** — `CHECK (epistemic_characterization IS NULL)` until a controlled vocabulary is authorized (RC2-4); no aggregation anywhere |
 | §5.5 | relation binds version to version | both endpoints FK to `knowledge_unit_version(instance_id)` |
 | §6.1 | typed link is the only authoritative pointer | both endpoints are exact governed instances |
 | §6.2 | four distinctions expressible, vocabulary deferred | `evidence_role_class CHECK IN (supports, corroborates, contradicts, context)` and nothing more |
-| §6.3 | support characterization non-arithmetic | anti-numeric CHECK; never aggregated |
+| §6.3 | support characterization non-arithmetic | **fails closed** — `CHECK (support_characterization IS NULL)` until a controlled vocabulary is authorized (RC2-4); never aggregated |
 | §6.4 | free text is never the pointer | `commentary` nullable, no constraint depends on it |
 | §6.5 | one coherent linking concept | `supported_instance_id` references the registry, so any admitted family uses the same mechanism |
 | §7.2 | derivation names output, every exact input, type, actor, time, machine process | 7 columns + `derivation_record_input` + deferred `RG110`/`RG111` |
@@ -210,8 +210,8 @@ that as FAIL CLOSED.
 
 `rgkb` schema only — **no `public.` object**. RLS enabled **and forced** on all
 4 new tables, **zero policies**, `REVOKE ALL` from `PUBLIC`/`anon`/
-`authenticated` on all 4 tables and **all 12 functions**, **no `GRANT`**, **no
-`SECURITY DEFINER`** (12/12 `SECURITY INVOKER`, 12/12 `SET search_path = ''`).
+`authenticated` on all 4 tables and **all 17 functions**, **no `GRANT`**, **no
+`SECURITY DEFINER`** (17/17 `SECURITY INVOKER`, 17/17 `SET search_path = ''`).
 
 ❓ **The live Supabase exposed-schema configuration is NOT verified**, and no
 remote Supabase access was performed or is authorized.
@@ -220,14 +220,14 @@ remote Supabase access was performed or is authorized.
 
 | Command | Result |
 |---|---|
-Final RC2 results, as executed:
+Final RC3 results, as executed:
 
-| `npx vitest run src/test/rgkbWp03EvidenceProvenanceRuntime.test.ts` | **89 passed, 5 todo, 0 failed** (94) |
+| `npx vitest run src/test/rgkbWp03EvidenceProvenanceRuntime.test.ts` | **109 passed, 5 todo, 0 failed** (114) |
 | WP02 Tier 1 + Tier 2 regression | **100 passed, 11 todo, 0 failed** (111) |
-| `npm run test` (full suite, 11 files) | **318 passed, 16 todo, 0 failed** (334) |
+| `npm run test` (full suite, 11 files) | **338 passed, 16 todo, 0 failed** (354) |
 | `npm run typecheck` | **exit 0** |
-| offline SQL structural lint | balanced parens; even `$$` and quote counts; no newline-continued literals; **4 tables**; **15 `ALTER TABLE`**; **47 `ADD COLUMN`**; **13 triggers, 7 of them `CONSTRAINT TRIGGER`s**; **12 functions**; **0 `INSERT`**; **0 `SECURITY DEFINER`**; **0 `CREATE POLICY`**; **0 `GRANT`**; **0 `public.`**; **0 ordering constructs**; **0 student identifiers** |
-| migration identity | SHA-256 `38eab41f0e2422d24897d4b9ed2ec6b9cc4174db237024f039b00f1236edde6b` · 67 364 bytes · 1 061 lines |
+| offline SQL structural lint | balanced parens; even `$$` and quote counts; no newline-continued literals; **4 tables**; **15 `ALTER TABLE`**; **48 `ADD COLUMN`**; **19 triggers, 13 of them `CONSTRAINT TRIGGER`s**; **17 functions**; **0 `INSERT`**; **0 `SECURITY DEFINER`**; **0 `CREATE POLICY`**; **0 `GRANT`**; **0 `public.`**; **0 ordering constructs**; **0 student identifiers** |
+| migration identity | SHA-256 `c37cf0aeace4fa25990f79c4296f9cbc05f213a8647105cfb693abe464c6c565` · 79 236 bytes · 1 280 lines |
 
 **Evidence level: E1/E2-class local verification only.** Structural assertions
 over migration text plus an offline lint. **The migration has not been executed
@@ -240,8 +240,9 @@ SQL-text tests are **not** proof that PostgreSQL executed anything.
 
 Recorded as vitest `todo` — reported as outstanding, never as passing:
 
-1. `RG090/091`, `RG092/093`, `RG130/132/133` and the deferred
-   `RG100`/`RG110`/`RG111`/**`RG120`** actually raising in PostgreSQL —
+1. `RG090/091`, `RG092/093`, `RG130/132/133/140` and the deferred
+   `RG100`/`RG110`/`RG111`/`RG120`/**`RG150`/`RG160`/`RG170`/`RG180`**
+   actually raising in PostgreSQL —
    requires a disposable Postgres. In particular the RC2 editorial boundary
    (draft editable, `content_asserted` refused, draft exit irreversible) and
    the UPDATE-path re-evaluation of `RG100`/`RG120` are runtime behaviours.
@@ -275,7 +276,7 @@ Also still deferred and untouched: **F-04**, **F-07**, **F-09**, **F-12**,
 | CONTENT ORIGIN mandatory, single, undefaulted | **PASS** |
 | No arithmetic / master score | **PASS** |
 | Explicit language, no default | **PASS** |
-| Exact-instance pointers only | **PASS** — `object_id` / `domain_code` / `version_sequence` absent from WP03 code |
+| Exact-instance pointers only | **PASS** — `object_id` and `version_sequence` occur **only inside the RC2 editorial guards' `IS DISTINCT FROM` immutability comparisons**; they are never authoritative pointer targets, allocators, identity substitutes or resolution heuristics, and `domain_code` is absent entirely |
 | Conflict retained, no reconciliation | **PASS** |
 | Provenance survives derivation; nothing transferred | **PASS** |
 | Deterministic traversal, no heuristics | **PASS** |
@@ -295,6 +296,17 @@ Also still deferred and untouched: **F-04**, **F-07**, **F-09**, **F-12**,
 | RC1-4 | `retained_excerpt` was freely writable | **CORRECTED** — `CHECK (retained_excerpt IS NULL)` on both anchor families. Retention **fails closed**: WP03 has no authority to establish permission and absence of a rights determination is not permission. No rights flag, no legal decision, F-09/WP09 not closed. Locator and provenance remain usable |
 | RC1-5 | traversal could read as a complete canonical chain | **CORRECTED** — renamed `anchor_level_evidence_for_instance`, with a constant `canonical_source_chain_status` of `incomplete_m1_unresolved` / `incomplete_f09_unresolved`. No interface claims complete canonical provenance. **M-1 is not resolved**: still no descriptor/determination family and still no cross-level source FK |
 | RC1-6 | stale evidence claims | **CORRECTED** — the WP02 Tier 1 blanket stale/superseded TODO was rewritten to match the Owner-approved Closure Criterion Clarification (historical instances remain resolvable; rejection applies only inside a governed context requiring a current/eligible version, which remains F-07 and fail-closed). The "6 altered shells" count is now **7**, and all function/trigger/test counts are re-derived from the post-RC1 runs |
+
+### 14.3 RC3 corrections (Owner closure review)
+
+| # | Finding | Disposition |
+|---|---|---|
+| RC3-1 | prohibited CONTENT ORIGIN promotions were possible while draft | **CORRECTED** — **`RG140`** in both editorial guards rejects derived→direct and constructed→derived/direct, evaluated **before** the content_asserted branch so it binds draft rows too. Legitimate draft editing, the cross-row checks and content_asserted immutability all survive; no ranking system, and no trigger rewrites `NEW.content_origin` |
+| RC3-2 | a knowledge version could bind a still-mutable localized text | **CORRECTED** — **`RG160`** deferred check requires `assertion_text_instance_id` to reference a `content_asserted` localized-text version. Because `RG130` refuses every update of such a row, bound wording can never change in place. No `is_bound`/`is_immutable` flag invented, no `editorial_class` silently mutated, no review/validation/activation state inferred; an unreadable target fails closed |
+| RC3-3 | constructed content could acquire an authoritative evidence pointer | **CORRECTED** — **`RG150`** closes **both** directions: a link targeting constructed content is refused (`typed_evidence_link_target_check`), and reclassifying a draft object to constructed while a link exists is refused (both content families). Commentary stays permitted; the shared `typed_evidence_link` family is preserved and no ad-hoc mechanism added |
+| RC3-4 | a relation could exist with zero governed evidence | **CORRECTED** — **`RG170`** deferred check requires at least one `typed_evidence_link` naming that exact relation instance. Deferral lets relation and link be created in one transaction. Free-text evidence basis stays prohibited; no second link family; correction stays append-only |
+| RC3-5 | a later INSERT could enlarge a historical derivation input set | **CORRECTED** — the derivation record now declares an immutable `input_count`; `RG110` requires the actual set to **equal** it at COMMIT, and **`RG180`** refuses any later input INSERT that would exceed it. Multi-input initial construction stays possible; update/delete stay refused (`RG092`/`RG093`); correction uses a new derivation record. **No caller-writable locked/finalized/first-governance-use boolean, and no timestamp, recency or ordering used as authority** |
+| RC3-6 | stale evidence prose | **CORRECTED** — §4 fail-closed vocabulary rows, the self-audit row on `object_id`/`version_sequence`, the two stale SQL comments, and recomputed counts throughout |
 
 ### 14.2 RC2 corrections (Owner final source review)
 

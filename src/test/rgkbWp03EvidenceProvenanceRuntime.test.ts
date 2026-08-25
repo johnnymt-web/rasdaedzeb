@@ -440,8 +440,8 @@ describe("WP03 — deterministic traversal", () => {
 
   it("is SECURITY INVOKER with a safe search_path, never a definer path", () => {
     expect(exec).not.toMatch(/SECURITY DEFINER/i);
-    expect((exec.match(/SECURITY INVOKER/g) || []).length).toBe(12);
-    expect((exec.match(/SET search_path = ''/g) || []).length).toBe(12);
+    expect((exec.match(/SECURITY INVOKER/g) || []).length).toBe(17);
+    expect((exec.match(/SET search_path = ''/g) || []).length).toBe(17);
   });
 });
 
@@ -627,9 +627,15 @@ describe("WP03 RC2 — Pattern A editorial immutability", () => {
   });
 
   it("re-evaluates the cross-row invariants on UPDATE, not only INSERT", () => {
-    // A draft edit must not bypass RG100 or RG120.
-    const updateTriggers = exec.match(/AFTER INSERT OR UPDATE ON rgkb\.(knowledge_unit_version|localized_governed_text_version)/g) || [];
-    expect(updateTriggers).toHaveLength(4);
+    // A draft edit must not bypass any cross-row invariant, so NO constraint
+    // trigger on either content-bearing table may fire on INSERT only.
+    expect(exec).not.toMatch(
+      /AFTER INSERT ON rgkb\.(knowledge_unit_version|localized_governed_text_version)\b/,
+    );
+    const updateTriggers = exec.match(
+      /AFTER INSERT OR UPDATE ON rgkb\.(knowledge_unit_version|localized_governed_text_version)/g,
+    ) || [];
+    expect(updateTriggers.length).toBeGreaterThanOrEqual(4);
   });
 });
 
@@ -710,9 +716,143 @@ describe("WP03 RC2 — deferred controlled vocabularies fail closed", () => {
   });
 });
 
+describe("WP03 RC3 — CONTENT ORIGIN transition prohibitions", () => {
+  it("rejects every promotion Step 2 §2.5 fixes, in both guards", () => {
+    const guards = exec.match(/ERRCODE = 'RG140'/g) || [];
+    expect(guards).toHaveLength(2); // knowledge version + localized text
+    expect(exec).toMatch(
+      /OLD\.content_origin = 'derived_interpretation' AND NEW\.content_origin = 'direct_source_evidence'/,
+    );
+    expect(exec).toMatch(
+      /OLD\.content_origin = 'constructed_content' AND NEW\.content_origin IN \('derived_interpretation', 'direct_source_evidence'\)/,
+    );
+  });
+
+  it("applies even while the version is still draft", () => {
+    // the transition check sits BEFORE the content_asserted branch, so a draft
+    // row is still subject to it
+    for (const m of exec.match(/RG140[\s\S]{0,400}?RG130/g) || []) expect(m).toMatch(/RG130/);
+    expect((exec.match(/RG140[\s\S]{0,400}?RG130/g) || []).length).toBe(2);
+  });
+
+  it("never rewrites content_origin and invents no ranking system", () => {
+    expect(code).not.toMatch(/NEW\.content_origin\s*:=/);
+    expect(code).not.toMatch(/content_origin_rank|origin_level|origin_score/i);
+  });
+});
+
+describe("WP03 RC3 — a bound localized text must already be immutable", () => {
+  it("refuses binding a still-draft localized-text version", () => {
+    expect(exec).toMatch(/ERRCODE = 'RG160'/);
+    expect(exec).toMatch(/v_editorial_class IS DISTINCT FROM 'content_asserted'/);
+    expect(exec).toMatch(
+      /CREATE CONSTRAINT TRIGGER knowledge_unit_version_assertion_text_check\s+AFTER INSERT OR UPDATE ON rgkb\.knowledge_unit_version\s+DEFERRABLE INITIALLY DEFERRED/,
+    );
+  });
+
+  it("keeps a content_asserted localized version bindable", () => {
+    // the check passes only for content_asserted, so that value is the
+    // admissible one; nothing else is required of the binding
+    expect(exec).toMatch(/SELECT t\.editorial_class INTO v_editorial_class/);
+  });
+
+  it("guarantees bound wording cannot change afterwards", () => {
+    // content_asserted rows are refused every UPDATE by the editorial guard
+    expect(exec).toMatch(/ERRCODE = 'RG130'/);
+  });
+
+  it("invents no is_bound / is_immutable flag and mutates no editorial_class", () => {
+    expect(code).not.toMatch(/is_bound|is_immutable|bound_at|is_published|is_activated/i);
+    expect(code).not.toMatch(/NEW\.editorial_class\s*:=|OLD\.editorial_class\s*:=/);
+  });
+});
+
+describe("WP03 RC3 — constructed content carries no authoritative evidence", () => {
+  it("closes direction A: a link targeting constructed content is refused", () => {
+    expect(exec).toMatch(/CREATE OR REPLACE FUNCTION rgkb\.evidence_link_target_not_constructed_check\(/);
+    expect(exec).toMatch(
+      /CREATE CONSTRAINT TRIGGER typed_evidence_link_target_check\s+AFTER INSERT OR UPDATE ON rgkb\.typed_evidence_link/,
+    );
+  });
+
+  it("closes direction B: reclassifying to constructed while a link exists is refused", () => {
+    expect(exec).toMatch(/CREATE OR REPLACE FUNCTION rgkb\.constructed_content_no_evidence_check\(/);
+    for (const t of ["knowledge_unit_version_constructed_check", "localized_text_constructed_check"]) {
+      expect(exec).toMatch(new RegExp(`CREATE CONSTRAINT TRIGGER ${t}\\s+AFTER INSERT OR UPDATE`));
+    }
+  });
+
+  it("raises RG150 on both directions and keeps commentary permitted", () => {
+    expect((exec.match(/ERRCODE = 'RG150'/g) || []).length).toBe(2);
+    expect(alterBlock("typed_evidence_link")).toMatch(/ADD COLUMN IF NOT EXISTS commentary text/);
+  });
+
+  it("introduces no ad-hoc evidence mechanism and keeps the shared family", () => {
+    expect(code).not.toMatch(/rights_evidence_link|rights_typed_link|evidence_note|support_field/);
+    expect(alterBlock("typed_evidence_link")).toMatch(/rights_anchor_instance_id\)\s+REFERENCES/);
+  });
+});
+
+describe("WP03 RC3 — a knowledge relation must resolve to governed evidence", () => {
+  it("refuses a relation with zero typed evidence links", () => {
+    expect(exec).toMatch(/ERRCODE = 'RG170'/);
+    expect(exec).toMatch(
+      /CREATE CONSTRAINT TRIGGER knowledge_unit_relation_evidence_check\s+AFTER INSERT OR UPDATE ON rgkb\.knowledge_unit_relation\s+DEFERRABLE INITIALLY DEFERRED/,
+    );
+  });
+
+  it("requires the link to name that exact relation instance", () => {
+    expect(exec).toMatch(/relation_has_evidence_check[\s\S]{0,800}l\.supported_instance_id = NEW\.instance_id/);
+  });
+
+  it("keeps free-text evidence basis prohibited and adds no second link family", () => {
+    expect(alterBlock("knowledge_unit_relation")).not.toMatch(/evidence_basis|evidence_note/i);
+    const linkFamilies = exec.match(/CREATE TABLE IF NOT EXISTS rgkb\.[a-z_]*evidence[a-z_]*/g) || [];
+    expect(linkFamilies).toHaveLength(0);
+  });
+});
+
+describe("WP03 RC3 — derivation input set cannot grow historically", () => {
+  it("declares an immutable input cardinality on the derivation record", () => {
+    const block = alterBlock("derivation_record");
+    expect(block).toMatch(/ADD COLUMN IF NOT EXISTS input_count integer NOT NULL/);
+    expect(block).toMatch(/CHECK \(input_count >= 1\)/);
+  });
+
+  it("requires the actual input set to equal the declaration at COMMIT", () => {
+    expect(exec).toMatch(/v_input_count <> NEW\.input_count/);
+    expect(exec).toMatch(/ERRCODE = 'RG110'/);
+  });
+
+  it("refuses a later INSERT that would enlarge the historical set", () => {
+    expect(exec).toMatch(/ERRCODE = 'RG180'/);
+    expect(exec).toMatch(
+      /CREATE CONSTRAINT TRIGGER derivation_record_input_frozen_check\s+AFTER INSERT ON rgkb\.derivation_record_input\s+DEFERRABLE INITIALLY DEFERRED/,
+    );
+    expect(exec).toMatch(/v_declared IS NULL OR v_actual <> v_declared/);
+  });
+
+  it("keeps multi-input initial construction possible", () => {
+    // the join table takes any number of exact inputs; only the declared
+    // cardinality must match, so N inputs in the creating transaction is fine
+    const body = /CREATE TABLE IF NOT EXISTS rgkb\.derivation_record_input \(([\s\S]*?)\n\);/.exec(exec)![1];
+    expect(body).toMatch(/PRIMARY KEY \(derivation_instance_id, input_instance_id\)/);
+  });
+
+  it("still refuses update and delete of inputs", () => {
+    expect(exec).toMatch(/ERRCODE = 'RG092'/);
+    expect(exec).toMatch(/ERRCODE = 'RG093'/);
+  });
+
+  it("invents no caller-writable lock and uses no time or ordering authority", () => {
+    expect(code).not.toMatch(/\blocked\b|finalized|is_frozen|first_governance_use/i);
+    expect(code).not.toMatch(/ORDER\s+BY|\bLIMIT\b|\bDESC\b|now\(\)|current_timestamp/i);
+  });
+});
+
 describe("WP03 — DEFERRED-BY-EXECUTION-EVIDENCE (runtime only)", () => {
   it.todo(
-    "runtime: RG090/091, RG092/093, RG130/132/133 and the deferred RG100 / RG110 / RG111 / RG120 checks actually raise in Postgres — DEFERRED: requires a disposable Postgres; no production or remote Supabase execution is authorized",
+    "runtime: RG090/091, RG092/093, RG130/132/133/140 and the deferred RG100 / RG110 / RG111 / RG120 / RG150 / RG160 / RG170 / RG180 checks actually raise in Postgres — DEFERRED: requires a disposable Postgres; no production or remote Supabase execution is authorized",
   );
   it.todo(
     "runtime: a direct_source_evidence knowledge version with no typed evidence link is refused at COMMIT, and a derivation with no input is refused at COMMIT — DEFERRED: deferred-constraint semantics are observable only in a live transaction",
