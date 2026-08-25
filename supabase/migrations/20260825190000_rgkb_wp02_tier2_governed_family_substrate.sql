@@ -129,10 +129,20 @@ ALTER TABLE rgkb.subject_type_catalog
 --    catalog assignment. pattern is DERIVED and is not a second authoritative
 --    classification.
 --
---    Mechanism: a composite foreign key (subject_type, pattern) into the
---    catalog. This is the narrowest mechanism that makes divergence
---    structurally impossible. A caller-supplied contradictory pattern is
---    REJECTED as a fault; it is never silently corrected to the catalog value.
+--    Derivation authority: the catalog, and only the catalog. A BEFORE INSERT
+--    trigger (§6) READS the catalog assignment for the row's subject_type and:
+--      * derives pattern when the caller omitted it;
+--      * REJECTS a supplied value that contradicts the catalog (RG081) — it is
+--        never silently corrected;
+--      * fails closed when the subject_type has no catalog assignment (RG080),
+--        which is also how an unknown, unresolved or excluded subject type is
+--        refused.
+--    The 19 assignments are NOT duplicated into CASE logic, an enum, constants
+--    or a second table; there is exactly one family-to-pattern truth source.
+--
+--    The composite foreign key (subject_type, pattern) into the catalog remains
+--    as DEFENCE IN DEPTH: even if the derivation trigger were ever bypassed,
+--    divergence stays structurally impossible.
 --
 --    UNIQUE (instance_id, subject_type) exists so a concrete member table can
 --    carry a composite foreign key back to it (§4), which is what makes one
@@ -200,6 +210,58 @@ $$;
 
 COMMENT ON FUNCTION rgkb.governed_member_write_guard() IS 'PRM-WP02 Tier 2 immutability guard for concrete governed member tables — Pattern A versions and Pattern B records (Step 1 §2.3, §3.2, §5.3).';
 
+CREATE OR REPLACE FUNCTION rgkb.stable_identity_has_version_check()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_version_count integer;
+BEGIN
+  EXECUTE format('SELECT count(*) FROM rgkb.%I WHERE object_id = $1', TG_TABLE_NAME || '_version')
+    INTO v_version_count
+    USING NEW.object_id;
+
+  IF v_version_count < 1 THEN
+    RAISE EXCEPTION 'RGKB Step 1 §4 fail closed: one governed_object MUST own one or more governed_object_version instances. A stable identity holding no version instance asserts no governed meaning and must not remain a committed state.' USING ERRCODE = 'RG070';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION rgkb.stable_identity_has_version_check() IS 'PRM-WP02 Tier 2 deferred cardinality check (Step 1 §4). Evaluated at COMMIT: a Pattern A stable identity that owns no governed version is refused, so no orphan stable identity can be committed. A caller that cannot see the version row cannot establish the invariant and is refused — fail closed, never open.';
+
+CREATE OR REPLACE FUNCTION rgkb.governed_instance_pattern_derivation()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_catalog_pattern text;
+BEGIN
+  SELECT c.pattern INTO v_catalog_pattern
+    FROM rgkb.subject_type_catalog AS c
+   WHERE c.subject_type = NEW.subject_type;
+
+  IF v_catalog_pattern IS NULL THEN
+    RAISE EXCEPTION 'RGKB Step 1 §2.1/§2.5 fail closed: the pattern of subject_type % cannot be established from the controlled subject-type catalog. An unknown, unresolved or excluded subject type is never admitted, and absence of a catalog assignment is not permission.', NEW.subject_type USING ERRCODE = 'RG080';
+  END IF;
+
+  IF NEW.pattern IS NULL THEN
+    NEW.pattern := v_catalog_pattern;
+  ELSIF NEW.pattern <> v_catalog_pattern THEN
+    RAISE EXCEPTION 'RGKB Step 1 §2.1 fail closed: pattern is DERIVED from the controlled subject-type catalog and is not a second classification authority. The supplied value contradicts the catalog assignment for subject_type %, and is rejected as a governance/schema fault rather than silently corrected.', NEW.subject_type USING ERRCODE = 'RG081';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION rgkb.governed_instance_pattern_derivation() IS 'PRM-WP02 Tier 2 derivation of rgkb.governed_instance.pattern (Step 1 §2.1). The controlled catalog is the only family-to-pattern authority: an omitted pattern is derived from it, a contradictory supplied pattern is refused (never corrected), and an unresolvable subject_type fails closed. The composite foreign key to the catalog remains as defence in depth.';
+
 -- -----------------------------------------------------------------------
 -- 4) Concrete member substrate — 11 Pattern A families.
 -- -----------------------------------------------------------------------
@@ -221,9 +283,44 @@ COMMENT ON FUNCTION rgkb.governed_member_write_guard() IS 'PRM-WP02 Tier 2 immut
 --
 --    version_sequence is not an identity, is not a governance-act target, and
 --    is never a current-version tie-break (§3.4, §9.4). Nothing in this
---    migration selects, orders or compares by it. Uniqueness of
---    (object_id, version_sequence) is enforced; gaps are permitted and carry
---    no meaning.
+--    migration selects, orders, compares, maximises or limits by it.
+--
+--    MONOTONICITY (§2.3, §3.4) is enforced STRUCTURALLY, with no reads at all,
+--    so it does not depend on row visibility under row level security:
+--
+--      * previous_sequence names the version this one was authored after,
+--        within the same stable identity, and is NULL on the first version;
+--      * CHECK (version_sequence > previous_sequence) makes the step strictly
+--        increasing — GAPS REMAIN PERMITTED, since only the direction is
+--        constrained, never the size of the step;
+--      * a self foreign key (object_id, previous_sequence) -> (object_id,
+--        version_sequence) makes the named predecessor have to exist, for this
+--        same stable identity;
+--      * UNIQUE (object_id, previous_sequence) lets each version be followed
+--        by at most one successor, so the chain cannot branch;
+--      * a partial unique index on (object_id) WHERE previous_sequence IS NULL
+--        allows exactly one first version per stable identity.
+--
+--    Together these force the version set of one stable identity to be a
+--    single linear chain that can only be extended at its tail, so every newly
+--    created version necessarily carries a version_sequence strictly greater
+--    than every version created before it. That is monotonic creation order.
+--
+--    THIS IS NOT A CURRENCY MECHANISM. The chain records authoring order and
+--    nothing else. It confers no scientific, approval, validation, runtime,
+--    precedence or currency meaning, it is never a governance-act target, and
+--    it MUST NOT be read as "the current version" — resolution remains F-07's
+--    open question and the resolver remains fail-closed (§10.1 of Step 1 and
+--    the untouched rgkb.resolve_current_version).
+--
+--    CARDINALITY (§4): one governed_object MUST own one or more version
+--    instances. A stable identity holding none asserts no governed meaning.
+--    Each stable-identity table therefore carries a DEFERRABLE INITIALLY
+--    DEFERRED constraint trigger that refuses, at COMMIT, a stable identity
+--    with zero versions (RG070). Deferral is what lets the first identity and
+--    its first version be created in one transaction. A caller that cannot see
+--    the version row cannot establish the invariant and is refused — fail
+--    closed, never open.
 --
 --    domain_code carries NO format constraint here: Step 1 §3.3 defers the
 --    allocation format, the allocation authority and the collision-prevention
@@ -253,20 +350,36 @@ CREATE TRIGGER knowledge_unit_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.knowledge_unit
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS knowledge_unit_has_version_check ON rgkb.knowledge_unit;
+CREATE CONSTRAINT TRIGGER knowledge_unit_has_version_check
+  AFTER INSERT ON rgkb.knowledge_unit
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.knowledge_unit_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'knowledge_unit',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'knowledge_unit',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT knowledge_unit_version_subject_type_fixed CHECK (subject_type = 'knowledge_unit'),
+  CONSTRAINT knowledge_unit_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT knowledge_unit_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT knowledge_unit_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.knowledge_unit (object_id),
-  CONSTRAINT knowledge_unit_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT knowledge_unit_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT knowledge_unit_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.knowledge_unit_version (object_id, version_sequence),
+  CONSTRAINT knowledge_unit_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS knowledge_unit_version_first_unique
+  ON rgkb.knowledge_unit_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.knowledge_unit_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family knowledge_unit. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.knowledge_unit_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.knowledge_unit_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.knowledge_unit_version FORCE ROW LEVEL SECURITY;
@@ -298,20 +411,36 @@ CREATE TRIGGER guardrail_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.guardrail
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS guardrail_has_version_check ON rgkb.guardrail;
+CREATE CONSTRAINT TRIGGER guardrail_has_version_check
+  AFTER INSERT ON rgkb.guardrail
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.guardrail_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'guardrail',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'guardrail',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT guardrail_version_subject_type_fixed CHECK (subject_type = 'guardrail'),
+  CONSTRAINT guardrail_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT guardrail_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT guardrail_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.guardrail (object_id),
-  CONSTRAINT guardrail_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT guardrail_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT guardrail_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.guardrail_version (object_id, version_sequence),
+  CONSTRAINT guardrail_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS guardrail_version_first_unique
+  ON rgkb.guardrail_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.guardrail_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family guardrail. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.guardrail_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.guardrail_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.guardrail_version FORCE ROW LEVEL SECURITY;
@@ -343,20 +472,36 @@ CREATE TRIGGER interpretation_rule_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.interpretation_rule
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS interpretation_rule_has_version_check ON rgkb.interpretation_rule;
+CREATE CONSTRAINT TRIGGER interpretation_rule_has_version_check
+  AFTER INSERT ON rgkb.interpretation_rule
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.interpretation_rule_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'interpretation_rule',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'interpretation_rule',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT interpretation_rule_version_subject_type_fixed CHECK (subject_type = 'interpretation_rule'),
+  CONSTRAINT interpretation_rule_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT interpretation_rule_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT interpretation_rule_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.interpretation_rule (object_id),
-  CONSTRAINT interpretation_rule_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT interpretation_rule_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT interpretation_rule_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.interpretation_rule_version (object_id, version_sequence),
+  CONSTRAINT interpretation_rule_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS interpretation_rule_version_first_unique
+  ON rgkb.interpretation_rule_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.interpretation_rule_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family interpretation_rule. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.interpretation_rule_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.interpretation_rule_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.interpretation_rule_version FORCE ROW LEVEL SECURITY;
@@ -388,20 +533,36 @@ CREATE TRIGGER construct_definition_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.construct_definition
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS construct_definition_has_version_check ON rgkb.construct_definition;
+CREATE CONSTRAINT TRIGGER construct_definition_has_version_check
+  AFTER INSERT ON rgkb.construct_definition
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.construct_definition_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'construct_definition',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'construct_definition',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT construct_definition_version_subject_type_fixed CHECK (subject_type = 'construct_definition'),
+  CONSTRAINT construct_definition_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT construct_definition_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT construct_definition_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.construct_definition (object_id),
-  CONSTRAINT construct_definition_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT construct_definition_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT construct_definition_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.construct_definition_version (object_id, version_sequence),
+  CONSTRAINT construct_definition_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS construct_definition_version_first_unique
+  ON rgkb.construct_definition_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.construct_definition_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family construct_definition. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.construct_definition_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.construct_definition_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.construct_definition_version FORCE ROW LEVEL SECURITY;
@@ -433,20 +594,36 @@ CREATE TRIGGER rights_decision_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.rights_decision
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS rights_decision_has_version_check ON rgkb.rights_decision;
+CREATE CONSTRAINT TRIGGER rights_decision_has_version_check
+  AFTER INSERT ON rgkb.rights_decision
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.rights_decision_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'rights_decision',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'rights_decision',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT rights_decision_version_subject_type_fixed CHECK (subject_type = 'rights_decision'),
+  CONSTRAINT rights_decision_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT rights_decision_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT rights_decision_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.rights_decision (object_id),
-  CONSTRAINT rights_decision_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT rights_decision_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT rights_decision_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.rights_decision_version (object_id, version_sequence),
+  CONSTRAINT rights_decision_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS rights_decision_version_first_unique
+  ON rgkb.rights_decision_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.rights_decision_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family rights_decision. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.rights_decision_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.rights_decision_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.rights_decision_version FORCE ROW LEVEL SECURITY;
@@ -478,20 +655,36 @@ CREATE TRIGGER instrument_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.instrument
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS instrument_has_version_check ON rgkb.instrument;
+CREATE CONSTRAINT TRIGGER instrument_has_version_check
+  AFTER INSERT ON rgkb.instrument
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.instrument_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'instrument',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'instrument',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT instrument_version_subject_type_fixed CHECK (subject_type = 'instrument'),
+  CONSTRAINT instrument_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT instrument_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT instrument_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.instrument (object_id),
-  CONSTRAINT instrument_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT instrument_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT instrument_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.instrument_version (object_id, version_sequence),
+  CONSTRAINT instrument_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS instrument_version_first_unique
+  ON rgkb.instrument_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.instrument_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family instrument. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.instrument_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.instrument_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.instrument_version FORCE ROW LEVEL SECURITY;
@@ -523,20 +716,36 @@ CREATE TRIGGER localized_governed_text_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.localized_governed_text
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS localized_governed_text_has_version_check ON rgkb.localized_governed_text;
+CREATE CONSTRAINT TRIGGER localized_governed_text_has_version_check
+  AFTER INSERT ON rgkb.localized_governed_text
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.localized_governed_text_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'localized_governed_text',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'localized_governed_text',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT localized_governed_text_version_subject_type_fixed CHECK (subject_type = 'localized_governed_text'),
+  CONSTRAINT localized_governed_text_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT localized_governed_text_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT localized_governed_text_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.localized_governed_text (object_id),
-  CONSTRAINT localized_governed_text_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT localized_governed_text_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT localized_governed_text_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.localized_governed_text_version (object_id, version_sequence),
+  CONSTRAINT localized_governed_text_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS localized_governed_text_version_first_unique
+  ON rgkb.localized_governed_text_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.localized_governed_text_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family localized_governed_text. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.localized_governed_text_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.localized_governed_text_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.localized_governed_text_version FORCE ROW LEVEL SECURITY;
@@ -568,20 +777,36 @@ CREATE TRIGGER validation_derivation_rule_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.validation_derivation_rule
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS validation_derivation_rule_has_version_check ON rgkb.validation_derivation_rule;
+CREATE CONSTRAINT TRIGGER validation_derivation_rule_has_version_check
+  AFTER INSERT ON rgkb.validation_derivation_rule
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.validation_derivation_rule_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'validation_derivation_rule',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'validation_derivation_rule',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT validation_derivation_rule_version_subject_type_fixed CHECK (subject_type = 'validation_derivation_rule'),
+  CONSTRAINT validation_derivation_rule_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT validation_derivation_rule_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT validation_derivation_rule_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.validation_derivation_rule (object_id),
-  CONSTRAINT validation_derivation_rule_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT validation_derivation_rule_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT validation_derivation_rule_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.validation_derivation_rule_version (object_id, version_sequence),
+  CONSTRAINT validation_derivation_rule_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS validation_derivation_rule_version_first_unique
+  ON rgkb.validation_derivation_rule_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.validation_derivation_rule_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family validation_derivation_rule. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.validation_derivation_rule_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.validation_derivation_rule_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.validation_derivation_rule_version FORCE ROW LEVEL SECURITY;
@@ -613,20 +838,36 @@ CREATE TRIGGER validation_applicability_matrix_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.validation_applicability_matrix
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS validation_applicability_matrix_has_version_check ON rgkb.validation_applicability_matrix;
+CREATE CONSTRAINT TRIGGER validation_applicability_matrix_has_version_check
+  AFTER INSERT ON rgkb.validation_applicability_matrix
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.validation_applicability_matrix_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'validation_applicability_matrix',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'validation_applicability_matrix',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT validation_applicability_matrix_version_subject_type_fixed CHECK (subject_type = 'validation_applicability_matrix'),
+  CONSTRAINT validation_applicability_matrix_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT validation_applicability_matrix_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT validation_applicability_matrix_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.validation_applicability_matrix (object_id),
-  CONSTRAINT validation_applicability_matrix_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT validation_applicability_matrix_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT validation_applicability_matrix_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.validation_applicability_matrix_version (object_id, version_sequence),
+  CONSTRAINT validation_applicability_matrix_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS validation_applicability_matrix_version_first_unique
+  ON rgkb.validation_applicability_matrix_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.validation_applicability_matrix_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family validation_applicability_matrix. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.validation_applicability_matrix_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.validation_applicability_matrix_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.validation_applicability_matrix_version FORCE ROW LEVEL SECURITY;
@@ -658,20 +899,36 @@ CREATE TRIGGER integrated_profile_architecture_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.integrated_profile_architecture
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS integrated_profile_architecture_has_version_check ON rgkb.integrated_profile_architecture;
+CREATE CONSTRAINT TRIGGER integrated_profile_architecture_has_version_check
+  AFTER INSERT ON rgkb.integrated_profile_architecture
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.integrated_profile_architecture_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'integrated_profile_architecture',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'integrated_profile_architecture',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT integrated_profile_architecture_version_subject_type_fixed CHECK (subject_type = 'integrated_profile_architecture'),
+  CONSTRAINT integrated_profile_architecture_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT integrated_profile_architecture_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT integrated_profile_architecture_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.integrated_profile_architecture (object_id),
-  CONSTRAINT integrated_profile_architecture_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT integrated_profile_architecture_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT integrated_profile_architecture_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.integrated_profile_architecture_version (object_id, version_sequence),
+  CONSTRAINT integrated_profile_architecture_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS integrated_profile_architecture_version_first_unique
+  ON rgkb.integrated_profile_architecture_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.integrated_profile_architecture_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family integrated_profile_architecture. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.integrated_profile_architecture_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.integrated_profile_architecture_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.integrated_profile_architecture_version FORCE ROW LEVEL SECURITY;
@@ -703,20 +960,36 @@ CREATE TRIGGER instrument_scale_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.instrument_scale
   FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_write_guard();
 
+DROP TRIGGER IF EXISTS instrument_scale_has_version_check ON rgkb.instrument_scale;
+CREATE CONSTRAINT TRIGGER instrument_scale_has_version_check
+  AFTER INSERT ON rgkb.instrument_scale
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION rgkb.stable_identity_has_version_check();
+
 CREATE TABLE IF NOT EXISTS rgkb.instrument_scale_version (
-  instance_id      uuid PRIMARY KEY,
-  subject_type     text NOT NULL DEFAULT 'instrument_scale',
-  object_id        uuid NOT NULL,
-  version_sequence integer NOT NULL,
+  instance_id       uuid PRIMARY KEY,
+  subject_type      text NOT NULL DEFAULT 'instrument_scale',
+  object_id         uuid NOT NULL,
+  version_sequence  integer NOT NULL,
+  previous_sequence integer,
   CONSTRAINT instrument_scale_version_subject_type_fixed CHECK (subject_type = 'instrument_scale'),
+  CONSTRAINT instrument_scale_version_monotonic CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence),
   CONSTRAINT instrument_scale_version_instance_fk FOREIGN KEY (instance_id, subject_type)
     REFERENCES rgkb.governed_instance (instance_id, subject_type),
   CONSTRAINT instrument_scale_version_object_fk FOREIGN KEY (object_id)
     REFERENCES rgkb.instrument_scale (object_id),
-  CONSTRAINT instrument_scale_version_sequence_unique UNIQUE (object_id, version_sequence)
+  CONSTRAINT instrument_scale_version_sequence_unique UNIQUE (object_id, version_sequence),
+  CONSTRAINT instrument_scale_version_previous_fk FOREIGN KEY (object_id, previous_sequence)
+    REFERENCES rgkb.instrument_scale_version (object_id, version_sequence),
+  CONSTRAINT instrument_scale_version_previous_unique UNIQUE (object_id, previous_sequence)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS instrument_scale_version_first_unique
+  ON rgkb.instrument_scale_version (object_id) WHERE previous_sequence IS NULL;
+
 COMMENT ON TABLE rgkb.instrument_scale_version IS 'Step 1 §2.3 Pattern A governed version instance for the accepted catalog family instrument_scale. Its primary key is the registry instance_id (§3.2). version_sequence is ordering only and is never an identity, a governance-act target or a tie-break (§3.4, §9.4).';
+
+COMMENT ON COLUMN rgkb.instrument_scale_version.previous_sequence IS 'Step 1 §2.3/§3.4 monotonicity structure: the version_sequence this version was authored after, within the same stable identity. NULL on the first version only. It carries authoring order and nothing else — no scientific, approval, validation, runtime, precedence or currency meaning, and it is never a governance-act target or a resolution tie-break.';
 
 ALTER TABLE rgkb.instrument_scale_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rgkb.instrument_scale_version FORCE ROW LEVEL SECURITY;
@@ -944,9 +1217,18 @@ CREATE TRIGGER derivation_record_write_guard
 --    b) NO ORPHAN REGISTRY ROW — a DEFERRABLE INITIALLY DEFERRED constraint
 --       trigger evaluated at COMMIT. It requires exactly one member row for
 --       the registry row, in the member table its own subject_type and pattern
---       determine. Being deferred, it does not care in which order the two
---       rows were written, only that both are present when the transaction
---       commits: creation is atomic, or it fails entirely.
+--       determine.
+--
+--       STATEMENT ORDER. The member table's foreign key into the registry is
+--       IMMEDIATE, so within the transaction the registry row is written
+--       first and the member row second. Deferral does not make the order
+--       arbitrary; it makes the ORPHAN TEST happen at commit rather than at
+--       the registry INSERT, which is what allows the two writes to be
+--       separate statements of one transaction at all. Step 1 §11.5 requires
+--       the two to come into existence in the same committed transaction, not
+--       in an arbitrary statement order, so this satisfies it. The immediate
+--       member->registry key is deliberately NOT weakened to make a broader
+--       claim true.
 --
 --    This deliberately does NOT expose a general registry INSERT path. A bare
 --    registry INSERT is accepted by the statement and then REFUSED at commit,
@@ -979,6 +1261,11 @@ DROP TRIGGER IF EXISTS governed_instance_write_guard ON rgkb.governed_instance;
 CREATE TRIGGER governed_instance_write_guard
   BEFORE UPDATE OR DELETE ON rgkb.governed_instance
   FOR EACH ROW EXECUTE FUNCTION rgkb.governed_instance_write_guard();
+
+DROP TRIGGER IF EXISTS governed_instance_pattern_derivation ON rgkb.governed_instance;
+CREATE TRIGGER governed_instance_pattern_derivation
+  BEFORE INSERT ON rgkb.governed_instance
+  FOR EACH ROW EXECUTE FUNCTION rgkb.governed_instance_pattern_derivation();
 
 CREATE OR REPLACE FUNCTION rgkb.governed_instance_membership_check()
 RETURNS trigger
@@ -1031,6 +1318,12 @@ REVOKE ALL ON FUNCTION rgkb.governed_member_write_guard() FROM authenticated;
 REVOKE ALL ON FUNCTION rgkb.governed_instance_membership_check() FROM PUBLIC;
 REVOKE ALL ON FUNCTION rgkb.governed_instance_membership_check() FROM anon;
 REVOKE ALL ON FUNCTION rgkb.governed_instance_membership_check() FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.stable_identity_has_version_check() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.stable_identity_has_version_check() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.stable_identity_has_version_check() FROM authenticated;
+REVOKE ALL ON FUNCTION rgkb.governed_instance_pattern_derivation() FROM PUBLIC;
+REVOKE ALL ON FUNCTION rgkb.governed_instance_pattern_derivation() FROM anon;
+REVOKE ALL ON FUNCTION rgkb.governed_instance_pattern_derivation() FROM authenticated;
 
 -- =========================================================================
 -- Rollback (additive-only; drops nothing that existed before this migration,
@@ -1066,6 +1359,8 @@ REVOKE ALL ON FUNCTION rgkb.governed_instance_membership_check() FROM authentica
 --   DROP TABLE IF EXISTS rgkb.rights_document_anchor;
 --   DROP TABLE IF EXISTS rgkb.typed_evidence_link;
 --   DROP TABLE IF EXISTS rgkb.derivation_record;
+--   DROP FUNCTION IF EXISTS rgkb.governed_instance_pattern_derivation();
+--   DROP FUNCTION IF EXISTS rgkb.stable_identity_has_version_check();
 --   DROP FUNCTION IF EXISTS rgkb.governed_instance_membership_check();
 --   DROP FUNCTION IF EXISTS rgkb.governed_member_write_guard();
 --   DROP FUNCTION IF EXISTS rgkb.stable_identity_write_guard();

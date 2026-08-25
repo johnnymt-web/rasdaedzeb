@@ -760,21 +760,39 @@ identical to Tier 1's.
 
 Both added as `NOT NULL`.
 
-`pattern` is derived by the **narrowest mechanism that makes divergence
-structurally impossible** — a composite foreign key:
+**The catalog is the actual derivation authority** (RC1 correction). A `BEFORE
+INSERT` trigger reads the catalog assignment for the row's `subject_type` and:
+
+| Caller input | Behaviour |
+|---|---|
+| `pattern` omitted (NULL) | **derived** from the catalog — `NEW.pattern := v_catalog_pattern` |
+| `pattern` contradicts the catalog | **`RG081` — fail closed.** Rejected as a governance/schema fault, **never silently corrected** |
+| `subject_type` has no catalog assignment | **`RG080` — fail closed.** This is also how an unknown, unresolved or excluded subject type is refused |
+
+```sql
+SELECT c.pattern INTO v_catalog_pattern
+  FROM rgkb.subject_type_catalog AS c
+ WHERE c.subject_type = NEW.subject_type;
+```
+
+- The **19 assignments are not duplicated** into `CASE` logic, an enum,
+  constants or another table — asserted by test. There is exactly **one**
+  family-to-pattern truth source, and it is frozen (T3).
+- Assignment to `NEW.pattern` occurs **exactly once**, in the derivation branch;
+  the contradiction branch raises rather than assigns — asserted by test.
+- Under zero-policy RLS an invisible catalog row yields `RG080`: **fail closed,
+  never open.**
+
+The composite foreign key
 
 ```sql
 FOREIGN KEY (subject_type, pattern)
   REFERENCES rgkb.subject_type_catalog (subject_type, pattern)
 ```
 
-- `pattern` **equals** the catalog assignment of `subject_type`, or the write is
-  rejected (Step 1 §2.1).
-- It is **never independently authoritative**: the catalog is the only source,
-  and the catalog is frozen.
-- A contradictory caller-provided value is **rejected as a fault, never silently
-  corrected**. No trigger assigns `NEW.pattern` or `NEW.subject_type` — asserted
-  by test.
+**remains as defence in depth**: even if the derivation trigger were bypassed,
+divergence stays structurally impossible.
+
 - **No second pattern truth store** exists: no member table declares a `pattern`
   column.
 - `subject_type` is **not transferable after allocation** — the registry write
@@ -788,13 +806,63 @@ Two strictly distinct identity levels per family:
 | Table | Role |
 |---|---|
 | `rgkb.<family>` | **Stable conceptual identity** — `object_id uuid PK DEFAULT gen_random_uuid()`, `domain_code text NOT NULL UNIQUE`. Carries **no** `instance_id` and **no** `version_sequence`. It is **not** a `governed_instance` and **never** a governance-act target (Step 1 §2.1, §2.2, §11.1). |
-| `rgkb.<family>_version` | **Governed version instance** — `instance_id uuid PRIMARY KEY` (the registry identity is its own identity, §3.2 — no second duplicating identity), `object_id` FK to exactly one stable identity (§4), `version_sequence integer NOT NULL` with `UNIQUE (object_id, version_sequence)`. |
+| `rgkb.<family>_version` | **Governed version instance** — `instance_id uuid PRIMARY KEY` (the registry identity is its own identity, §3.2 — no second duplicating identity), `object_id` FK to exactly one stable identity (§4), `version_sequence integer NOT NULL` with `UNIQUE (object_id, version_sequence)`, and `previous_sequence` carrying monotonicity. |
 
 `version_sequence` is **ordering only**: it is not part of any primary key, is
-referenced by no foreign key, is never a governance-act target, and **nothing in
-the migration orders, compares, maximises or limits by it** — so it cannot act
-as a current-version tie-break (§3.4, §9.4). Gaps are permitted and carry no
-meaning.
+never a governance-act target, and **nothing in the migration orders, compares,
+maximises or limits by it** — so it cannot act as a current-version tie-break
+(§3.4, §9.4).
+
+### T5.1 Monotonicity — enforced structurally, with no reads (RC1 correction)
+
+Step 1 §2.3/§3.4 require `version_sequence` to be **monotonic within its owning
+stable identity**, with gaps permitted. Four mechanisms per family, all
+declarative:
+
+| Mechanism | Effect |
+|---|---|
+| `previous_sequence integer` | names the version this one was authored after; `NULL` on the first version only |
+| `CHECK (previous_sequence IS NULL OR version_sequence > previous_sequence)` | the step is **strictly increasing** |
+| `FOREIGN KEY (object_id, previous_sequence) → (object_id, version_sequence)` (self) | the named predecessor **must exist**, for this same stable identity |
+| `UNIQUE (object_id, previous_sequence)` | each version has **at most one successor** — the chain cannot branch |
+| partial `UNIQUE INDEX (object_id) WHERE previous_sequence IS NULL` | **exactly one first version** per stable identity |
+
+Together these force the versions of one stable identity into a **single linear
+chain extendable only at its tail**, so every newly created version necessarily
+carries a `version_sequence` strictly greater than every version created before
+it. **That is monotonic creation order.**
+
+**Gaps remain permitted:** only the *direction* of the step is constrained,
+never its size — 1 → 5 → 17 is valid. Asserted by test (no `previous_sequence +
+1`, no equality constraint).
+
+**No reads are involved.** The mechanism is `CHECK` + `FOREIGN KEY` + `UNIQUE` +
+a partial index. It therefore does **not** depend on row visibility, and cannot
+fail open under `FORCE ROW LEVEL SECURITY` — which is precisely why the pre-RC1
+deferral was wrong rather than merely conservative.
+
+**This is not a currency mechanism.** The chain records authoring order and
+nothing else: no scientific, approval, validation, runtime, precedence or
+currency meaning, never a governance-act target, and it **must not** be read as
+"the current version". Resolution remains F-07's open question and the resolver
+remains fail-closed (T8).
+
+### T5.2 Stable identity must own ≥ 1 version (RC1 correction)
+
+Step 1 §4: one `governed_object` **MUST** own one or more version instances; a
+stable identity holding none asserts no governed meaning. The schema previously
+enforced only *version → exactly one object*, not the reverse.
+
+Each of the 11 stable-identity tables now carries a `DEFERRABLE INITIALLY
+DEFERRED` constraint trigger that refuses, **at COMMIT**, a stable identity with
+zero versions (`RG070`). Deferral is exactly what allows the first identity and
+its first version to be created in one transaction, while subsequent versions
+remain permitted.
+
+**No placeholder version is fabricated** — the migration contains exactly one
+`INSERT`, the catalog seed. Under zero-policy RLS a caller who cannot see the
+version row cannot establish the invariant and is **refused: fail closed, never
+open.**
 
 `domain_code` carries **no invented allocation format or policy**: Step 1 §3.3
 defers the format, the allocation authority and the collision-prevention
@@ -850,9 +918,19 @@ registry's `subject_type`**, and therefore (through T4's catalog key) with its
 **(b) No orphan registry row — at COMMIT.** A `DEFERRABLE INITIALLY DEFERRED`
 constraint trigger requires exactly one member row for the registry row, in the
 member table its own `subject_type` and `pattern` determine (`<subject_type>` for
-Pattern B, `<subject_type>_version` for Pattern A). Being deferred, it does not
-care in which order the two rows were written — only that both are present at
-commit. Creation is atomic, or it fails entirely (`RG060`).
+Pattern B, `<subject_type>_version` for Pattern A). Creation is atomic, or it
+fails entirely (`RG060`).
+
+**Statement order (RC1 wording correction).** The member table's foreign key
+into the registry is **immediate**, so within the transaction the **registry row
+is written first and the member row second**. The pre-RC1 wording claimed the
+two could be written "in either order"; that was wrong. Deferral does not make
+the order arbitrary — it moves the **orphan test** to commit rather than to the
+registry `INSERT`, which is what allows the two writes to be separate statements
+of one transaction at all. Step 1 §11.5 requires them to come into existence in
+the **same committed transaction**, not in an arbitrary statement order, so this
+satisfies it. The immediate member → registry key is deliberately **not**
+weakened to make a broader prose claim true.
 
 **This is not a general registry INSERT path.** A bare registry `INSERT` is
 accepted by the statement and then **refused at commit**, so the only
@@ -920,9 +998,12 @@ remote Supabase access was performed or is authorized.
 
 ## T11. No WP03 or later-Step domain semantics
 
-Across all 30 tables the complete column set is exactly five identifiers:
-`object_id`, `domain_code`, `instance_id`, `subject_type`, `version_sequence` —
-the Step 1 identity/version attributes and nothing else. No evidence-location,
+Across all 30 tables the complete column set is exactly six identifiers:
+`object_id`, `domain_code`, `instance_id`, `subject_type`, `version_sequence`
+and `previous_sequence` — the Step 1 identity/version attributes and nothing
+else. (`previous_sequence` is the structural realization of §2.3/§3.4
+monotonicity, an ordering attribute, not domain payload — T5.1.) No
+evidence-location,
 locator, excerpt, fingerprint, epistemic, claim-taxonomy, disposition,
 orchestration, consent, safeguarding, purpose, assent, uncertainty or
 discrepancy vocabulary appears in executable code. No Step 2/3/4/5/6/7 semantics
@@ -963,28 +1044,44 @@ adding one would modify `package.json`, which is out of scope.
 
 ## T14. DEFERRED-BY-DESIGN
 
-Recorded as vitest `todo` (reported as outstanding, never as passing):
+Recorded as vitest `todo` (reported as outstanding, never as passing). **Every
+remaining item is runtime-only or remote-only** — no structural Tier 2 invariant
+is deferred after RC1:
 
 1. **Runtime raising** of `RG030/031/032`, `RG040/041`, `RG050/051`,
-   `RG011/012` and the deferred `RG060` — requires a disposable Postgres; no
-   production or remote Supabase execution is authorized.
+   `RG011/012`, `RG080/081` and the deferred `RG060` / `RG070` checks — requires
+   a disposable Postgres; no production or remote Supabase execution is
+   authorized.
 2. **Deferred-constraint semantics** — that a bare registry `INSERT` is accepted
-   by the statement and refused at `COMMIT` can only be observed in a live
-   transaction.
-3. **Strict monotonicity of `version_sequence`** within its owning `object_id` —
-   `UNIQUE (object_id, version_sequence)` is enforced structurally, but
-   enforcing *ordering* beyond uniqueness requires reading existing rows, which
-   `FORCE ROW LEVEL SECURITY` makes unreliable; and the governed write boundary
-   that would own such a check is itself deferred by Step 1 §11.5.
-4. **`domain_code` never reused across a family's lifetime** — uniqueness plus
+   by the statement and refused at `COMMIT`, and that a stable identity with no
+   version is refused at `COMMIT`, can only be observed in a live transaction.
+3. **`domain_code` never reused across a family's lifetime** — uniqueness plus
    non-deletion prevents reuse while rows persist, but a retired-code ledger
    would require the allocation authority Step 1 §3.3 defers. Cross-family
    global uniqueness is likewise not fixed by any controlling source and was not
    invented.
-5. **Live Supabase API-exposed schema list excludes `rgkb`** — requires a remote
+4. **Live Supabase API-exposed schema list excludes `rgkb`** — requires a remote
    check, which is not authorized.
 
-No fixture was manufactured to make any of these appear to pass.
+**Removed by RC1:** the pre-RC1 draft deferred *strict monotonicity of
+`version_sequence`*, reasoning that enforcing ordering required reading rows,
+which `FORCE ROW LEVEL SECURITY` makes unreliable. That reasoning was wrong: the
+constraint is expressible **declaratively**, with no reads at all (T5.1). It is
+now implemented, and the deferral is withdrawn rather than reworded.
+
+No fixture was manufactured to make any deferred item appear to pass.
+
+## T16. RC1 corrections (Owner-identified)
+
+| # | Defect | Disposition |
+|---|---|---|
+| A | `version_sequence` monotonicity was deferred, with only `UNIQUE (object_id, version_sequence)` enforced | **CORRECTED** — declarative chain: `previous_sequence` + strict-increase `CHECK` + self `FOREIGN KEY` + `UNIQUE (object_id, previous_sequence)` + partial unique first-version index, on all 11 Pattern A families. No reads, gaps preserved, no currency semantics (T5.1) |
+| B | Stable identity could commit with zero versions (Step 1 §4 reverse cardinality unenforced) | **CORRECTED** — `DEFERRABLE INITIALLY DEFERRED` constraint trigger on all 11 stable-identity tables, `RG070`, fail-closed under RLS, no placeholder version (T5.2) |
+| C | `pattern` was only *validated* by composite FK, which is not evidence that it is DERIVED | **CORRECTED** — `BEFORE INSERT` derivation from the catalog: omitted → derived; contradictory → `RG081` fail closed, never corrected; unresolvable `subject_type` → `RG080`. Catalog remains the sole authority; assignments not duplicated. FK retained as defence in depth (T4) |
+| D | Evidence claimed the two rows could be written "in either order" | **CORRECTED** — the member → registry FK is immediate, so registry is written first; deferral moves the orphan *test* to commit, not the ordering. The FK was not weakened (T7) |
+
+All three structural defects (A, B, C) are **implemented**, not reworded. No new
+Owner policy decision was required, so no Genuine Exception arises.
 
 ## T15. Non-authorization
 

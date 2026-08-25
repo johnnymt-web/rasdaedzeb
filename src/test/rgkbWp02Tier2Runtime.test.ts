@@ -162,19 +162,44 @@ describe("WP02 Tier 2 — registry subject_type and DERIVED pattern", () => {
     );
   });
 
-  it("never silently corrects a contradictory pattern — no derivation write-back", () => {
-    // A trigger that ASSIGNED NEW.pattern from the catalog would be a silent
-    // correction; the constraint rejects instead. `:=` is plpgsql assignment —
-    // a bare `=` here is a comparison and is legitimate.
-    expect(code).not.toMatch(/NEW\.pattern\s*:=/);
-    expect(code).not.toMatch(/NEW\.subject_type\s*:=/);
+  it("derives pattern from the catalog when the caller omits it", () => {
+    expect(exec).toMatch(
+      /SELECT c\.pattern INTO v_catalog_pattern\s+FROM rgkb\.subject_type_catalog AS c\s+WHERE c\.subject_type = NEW\.subject_type;/,
+    );
+    expect(exec).toMatch(/IF NEW\.pattern IS NULL THEN\s+NEW\.pattern := v_catalog_pattern;/);
+    expect(exec).toMatch(
+      /CREATE TRIGGER governed_instance_pattern_derivation\s+BEFORE INSERT ON rgkb\.governed_instance/,
+    );
+  });
+
+  it("fails closed on a contradictory supplied pattern, and never corrects it", () => {
+    // The ELSIF branch raises; it does not assign. Assignment appears exactly
+    // once, in the IS NULL derivation branch above.
+    expect(exec).toMatch(/ELSIF NEW\.pattern <> v_catalog_pattern THEN[\s\S]{0,400}ERRCODE = 'RG081'/);
+    expect((exec.match(/NEW\.pattern :=/g) || []).length).toBe(1);
+  });
+
+  it("fails closed when subject_type has no catalog assignment", () => {
+    expect(exec).toMatch(/IF v_catalog_pattern IS NULL THEN[\s\S]{0,400}ERRCODE = 'RG080'/);
+  });
+
+  it("keeps the composite foreign key as defence in depth", () => {
+    expect(exec).toMatch(/CONSTRAINT governed_instance_pattern_derives_from_catalog/);
   });
 
   it("introduces no second pattern truth store", () => {
-    // pattern exists on the registry and in the catalog only.
+    // The catalog is the only family-to-pattern authority: no member table
+    // declares a pattern column, and the 19 assignments are not duplicated
+    // into CASE logic, an enum, constants or another table.
     const patternColumns = [...code.matchAll(/^\s*pattern\s+text/gm)];
-    expect(patternColumns).toHaveLength(0); // no member table declares its own pattern
+    expect(patternColumns).toHaveLength(0);
     expect((code.match(/ADD COLUMN IF NOT EXISTS pattern text/g) || []).length).toBe(1);
+    expect(code).not.toMatch(/\bCASE\b|\bENUM\b|CREATE TYPE/i);
+    for (const f of [...PATTERN_A, ...PATTERN_B]) {
+      // each family name appears in the seed and in its own DDL, never in a
+      // second pattern-deciding construct
+      expect(code).not.toMatch(new RegExp(`WHEN '${f}'`));
+    }
   });
 
   it("keeps subject_type non-transferable after allocation", () => {
@@ -245,7 +270,64 @@ describe("WP02 Tier 2 — Pattern A structural contract (11 families)", () => {
     // Not a primary key anywhere, and nothing orders/compares by it.
     expect(code).not.toMatch(/version_sequence[^,\n]*PRIMARY KEY/);
     expect(code).not.toMatch(/ORDER\s+BY|\bLIMIT\b|\bDESC\b|\bMAX\s*\(|GREATEST/i);
-    expect(code).not.toMatch(/REFERENCES[^;]*\(version_sequence\)/);
+  });
+
+  it("enforces monotonic creation order structurally, for all 11 families", () => {
+    for (const f of PATTERN_A) {
+      const body = tableBody(`${f}_version`);
+      // strictly increasing step
+      expect(body).toMatch(
+        new RegExp(`CONSTRAINT ${f}_version_monotonic CHECK \\(previous_sequence IS NULL OR version_sequence > previous_sequence\\)`),
+      );
+      // the named predecessor must exist, for this same stable identity
+      expect(body).toMatch(
+        new RegExp(`CONSTRAINT ${f}_version_previous_fk FOREIGN KEY \\(object_id, previous_sequence\\)\\s+REFERENCES rgkb\\.${f}_version \\(object_id, version_sequence\\)`),
+      );
+      // at most one successor per predecessor — the chain cannot branch
+      expect(body).toMatch(
+        new RegExp(`CONSTRAINT ${f}_version_previous_unique UNIQUE \\(object_id, previous_sequence\\)`),
+      );
+      // exactly one first version per stable identity
+      expect(exec).toMatch(
+        new RegExp(`CREATE UNIQUE INDEX IF NOT EXISTS ${f}_version_first_unique\\s+ON rgkb\\.${f}_version \\(object_id\\) WHERE previous_sequence IS NULL;`),
+      );
+    }
+  });
+
+  it("permits gaps — only the direction of the step is constrained", () => {
+    // A constraint fixing the step size (e.g. = previous + 1) would forbid gaps.
+    expect(code).not.toMatch(/previous_sequence\s*\+\s*1/);
+    expect(code).not.toMatch(/version_sequence\s*=\s*previous_sequence/);
+  });
+
+  it("derives monotonicity without reading rows, so it cannot fail open under RLS", () => {
+    // The mechanism is CHECK + FK + UNIQUE + partial index only. No SELECT,
+    // no count(), no trigger participates in ordering.
+    const monotonicPieces = exec.match(/_version_monotonic|_version_previous_fk|_version_previous_unique|_version_first_unique/g) || [];
+    expect(monotonicPieces).toHaveLength(44); // 4 mechanisms x 11 families
+    expect(code).not.toMatch(/version_sequence[\s\S]{0,80}(SELECT|count\s*\()/i);
+  });
+
+  it("requires every stable identity to own at least one version (Step 1 §4)", () => {
+    expect(exec).toMatch(/ERRCODE = 'RG070'/);
+    expect(exec).toMatch(/v_version_count < 1/);
+    for (const f of PATTERN_A) {
+      expect(exec).toMatch(
+        new RegExp(`CREATE CONSTRAINT TRIGGER ${f}_has_version_check\\s+AFTER INSERT ON rgkb\\.${f}\\s+DEFERRABLE INITIALLY DEFERRED\\s+FOR EACH ROW`),
+      );
+    }
+  });
+
+  it("resolves the version table for the cardinality check from the identity table name", () => {
+    expect(exec).toMatch(
+      /format\('SELECT count\(\*\) FROM rgkb\.%I WHERE object_id = \$1', TG_TABLE_NAME \|\| '_version'\)/,
+    );
+  });
+
+  it("creates no placeholder version to satisfy the cardinality rule", () => {
+    // Only the catalog seed inserts anything; no version row is fabricated.
+    expect((exec.match(/INSERT\s+INTO/gi) || []).length).toBe(1);
+    expect(exec).toMatch(/INSERT INTO rgkb\.subject_type_catalog/);
   });
 
   it("makes stable identities immutable and non-deletable", () => {
@@ -275,6 +357,7 @@ describe("WP02 Tier 2 — Pattern A structural contract (11 families)", () => {
         "subject_type",
         "object_id",
         "version_sequence",
+        "previous_sequence",
       ]);
     }
   });
@@ -401,7 +484,7 @@ describe("WP02 Tier 2 — containment: no access model invented", () => {
 
   it("uses no SECURITY DEFINER", () => {
     expect(exec).not.toMatch(/SECURITY DEFINER/i);
-    expect((exec.match(/SECURITY INVOKER/g) || []).length).toBe(5);
+    expect((exec.match(/SECURITY INVOKER/g) || []).length).toBe(7);
   });
 
   it("touches no object in the public schema", () => {
@@ -437,7 +520,16 @@ describe("WP02 Tier 2 — no later-Step domain semantics", () => {
         .map((l) => l.trim().split(/\s+/)[0]),
     );
     expect(new Set(cols)).toEqual(
-      new Set(["object_id", "domain_code", "instance_id", "subject_type", "version_sequence"]),
+      new Set([
+        "object_id",
+        "domain_code",
+        "instance_id",
+        "subject_type",
+        "version_sequence",
+        // previous_sequence is the structural realization of Step 1 §2.3/§3.4
+        // monotonicity — an ordering attribute, not domain payload.
+        "previous_sequence",
+      ]),
     );
   });
 
@@ -453,13 +545,10 @@ describe("WP02 Tier 2 — no later-Step domain semantics", () => {
 
 describe("WP02 Tier 2 — DEFERRED-BY-DESIGN (cannot be truthfully executed yet)", () => {
   it.todo(
-    "runtime: RG030/031/032, RG040/041, RG050/051, RG011/012 and the deferred RG060 membership check actually raise in Postgres — DEFERRED: requires a disposable Postgres; no production or remote Supabase execution is authorized",
+    "runtime: RG030/031/032, RG040/041, RG050/051, RG011/012, RG080/081 and the deferred RG060 / RG070 checks actually raise in Postgres — DEFERRED: requires a disposable Postgres; no production or remote Supabase execution is authorized",
   );
   it.todo(
-    "runtime: a bare governed_instance INSERT is accepted by the statement and refused at COMMIT — DEFERRED: same dependency; the deferred-constraint semantics can only be observed in a live transaction",
-  );
-  it.todo(
-    "structural: version_sequence is strictly monotonic within its owning object_id — DEFERRED: enforcing more than (object_id, version_sequence) uniqueness requires reading existing rows, which FORCE ROW LEVEL SECURITY makes unreliable, and the governed write boundary that would own this check is itself deferred by Step 1 §11.5",
+    "runtime: a bare governed_instance INSERT is accepted by the statement and refused at COMMIT, and a stable identity with no version is refused at COMMIT — DEFERRED: same dependency; deferred-constraint semantics can only be observed in a live transaction",
   );
   it.todo(
     "structural: domain_code is never reused across the lifetime of a family — DEFERRED: uniqueness plus non-deletion prevents reuse while rows persist, but a retired-code ledger would require the allocation authority Step 1 §3.3 defers",
